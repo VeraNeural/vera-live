@@ -693,10 +693,21 @@ export default function VeraHome() {
             <p className="section-label">The VERA Ecosystem</p>
             <div className="ecosystem-grid">
               {ecosystem.map((item) => (
+                (() => {
+                  const isExternal = item.href.startsWith('http://') || item.href.startsWith('https://');
+                  return (
                 <a
                   key={item.id}
                   href={item.href}
                   className="ecosystem-card"
+                  target={isExternal ? '_blank' : undefined}
+                  rel={isExternal ? 'noreferrer' : undefined}
+                  onClick={(e) => {
+                    if (!isExternal) {
+                      e.preventDefault();
+                      router.push(item.href);
+                    }
+                  }}
                 >
                   <div className="ecosystem-icon">
                     {renderIcon(item.iconType, isDark)}
@@ -704,6 +715,8 @@ export default function VeraHome() {
                   <div className="ecosystem-name">{item.name}</div>
                   <div className="ecosystem-essence">{item.essence}</div>
                 </a>
+                  );
+                })()
               ))}
             </div>
           </section>

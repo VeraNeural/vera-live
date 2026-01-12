@@ -565,7 +565,21 @@ export default function VeraHome() {
           <p style={styles.sectionLabel}>The VERA Ecosystem</p>
           <div style={styles.ecosystemGrid}>
             {ecosystem.map((space) => (
-              <a key={space.id} href={space.href} style={styles.ecosystemCard}>
+              <a
+                key={space.id}
+                href={space.href}
+                style={styles.ecosystemCard}
+                onClick={(e) => {
+                  const isExternal =
+                    space.href.startsWith('http://') || space.href.startsWith('https://');
+                  if (!isExternal) {
+                    e.preventDefault();
+                    router.push(space.href);
+                  }
+                }}
+                target={space.href.startsWith('http://') || space.href.startsWith('https://') ? '_blank' : undefined}
+                rel={space.href.startsWith('http://') || space.href.startsWith('https://') ? 'noreferrer' : undefined}
+              >
                 <div style={{
                   width: 48,
                   height: 48,
