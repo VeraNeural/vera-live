@@ -49,7 +49,7 @@ export default function VeraHome() {
 
   const ecosystem = [
     { id: 'sanctuary', name: 'Sanctuary', essence: 'YOUR SPACE', href: '/sanctuary', iconType: 'home' },
-    { id: 'pulse', name: 'Pulse', essence: 'CONNECT WITH OTHERS', href: 'https://pulse-kappa-three.vercel.app/', iconType: 'heart' },
+    { id: 'pulse', name: 'Pulse', essence: 'CONNECT WITH OTHERS', href: '/pulse', iconType: 'heart' },
     { id: 'professionals', name: 'Professionals', essence: 'EXPERTS & THERAPISTS', href: '/professionals', iconType: 'users' },
     { id: 'assessment', name: 'Assessment', essence: 'KNOW YOURSELF', href: '/assessment', iconType: 'compass' },
     { id: 'vds', name: 'VDS Studio', essence: 'CREATE BEAUTY', href: 'https://vds.veraneural.com', iconType: 'design' },

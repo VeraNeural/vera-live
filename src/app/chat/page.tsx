@@ -51,7 +51,7 @@ export default function VeraHome() {
 
   const ecosystem = [
     { id: 'sanctuary', name: 'Sanctuary', desc: '7 immersive healing rooms', href: '/sanctuary' },
-    { id: 'pulse', name: 'Pulse', desc: 'Community where everyone gets seen', href: 'https://pulse-kappa-three.vercel.app/' },
+    { id: 'pulse', name: 'Pulse', desc: 'Community where everyone gets seen', href: '/pulse' },
     { id: 'vds', name: 'VDS Studio', desc: 'Professional design services', href: 'https://vds.veraneural.com' },
     { id: 'edutask', name: 'Edutask', desc: 'Courses and certifications', href: '/edutask' },
     { id: 'therapists', name: 'Therapists', desc: 'Trusted professional support', href: '/therapists' },

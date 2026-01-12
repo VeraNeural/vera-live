@@ -53,7 +53,7 @@ export default function SanctuarySpace() {
 
   const handleRoomClick = (room: Room) => {
     if (room.id === 'pulse') {
-      window.location.href = 'https://pulse-kappa-three.vercel.app/';
+      router.push('/pulse');
       return;
     }
     
