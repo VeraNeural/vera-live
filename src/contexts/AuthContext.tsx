@@ -1,8 +1,8 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
-import { User, Session } from '@supabase/supabase-js';
+import type { SupabaseClient, User, Session } from '@supabase/supabase-js';
 
 type AuthContextType = {
   user: User | null;
@@ -21,12 +21,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const supabaseRef = useRef<SupabaseClient | null>(null);
+
+  const getSupabase = () => {
+    const supabase = supabaseRef.current;
+    if (!supabase) {
+      throw new Error('Supabase client not initialized');
+    }
+    return supabase;
+  };
 
   useEffect(() => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!url || !anonKey) {
+      console.error(
+        'Missing Supabase env vars. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.'
+      );
+      setLoading(false);
+      return;
+    }
+
+    if (!supabaseRef.current) {
+      supabaseRef.current = createBrowserClient(url, anonKey);
+    }
+
+    const supabase = supabaseRef.current;
+
     // Get initial session
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -50,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string, displayName: string) => {
+    const supabase = getSupabase();
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -75,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
+    const supabase = getSupabase();
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -84,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
+    const supabase = getSupabase();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -95,6 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    const supabase = getSupabase();
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   };
