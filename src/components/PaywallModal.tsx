@@ -12,6 +12,16 @@ type PaywallModalProps = {
 export default function PaywallModal({ isOpen, onClose, roomName, isDark }: PaywallModalProps) {
   const router = useRouter();
 
+  const handleStartTrial = async () => {
+    const response = await fetch('/api/checkout', { method: 'POST' });
+    const { url, error } = await response.json();
+    if (url) {
+      window.location.href = url;
+    } else {
+      alert(error || 'Failed to start checkout');
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -213,13 +223,7 @@ export default function PaywallModal({ isOpen, onClose, roomName, isDark }: Payw
             </div>
           </div>
 
-          <button
-            className="trial-btn"
-            onClick={() => {
-              onClose();
-              router.push('/signup');
-            }}
-          >
+          <button className="trial-btn" onClick={handleStartTrial}>
             Start 7-Day Free Trial
           </button>
 
