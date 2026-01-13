@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, CSSProperties } from 'react';
+import { useState, useEffect, useRef, CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function VeraHome() {
@@ -9,6 +9,9 @@ export default function VeraHome() {
   const [timeOfDay, setTimeOfDay] = useState<'morning' | 'afternoon' | 'evening' | 'night'>('morning');
   const [breathPhase, setBreathPhase] = useState(0);
   const [inputValue, setInputValue] = useState('');
+  const [messages, setMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; content: string }>>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -25,6 +28,10 @@ export default function VeraHome() {
 
     return () => clearInterval(breathInterval);
   }, []);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const isDark = timeOfDay === 'evening' || timeOfDay === 'night';
   const breathValue = Math.sin(breathPhase * 0.0628) * 0.5 + 0.5;
@@ -59,6 +66,52 @@ export default function VeraHome() {
   ];
 
   const dustPositions = [65, 78, 45, 82, 55, 72, 38, 88, 50, 75, 42, 68];
+
+  const sendMessage = async () => {
+    if (!inputValue.trim() || isLoading) return;
+
+    const userMessage = {
+      id: Date.now().toString(),
+      role: 'user' as const,
+      content: inputValue.trim(),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputValue('');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [...messages, userMessage].map(m => ({
+            role: m.role,
+            content: m.content,
+          })),
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to get response');
+
+      const data = await response.json();
+      
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: data.content,
+      }]);
+    } catch (error) {
+      console.error('Chat error:', error);
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: "I'm having trouble connecting right now. Please try again in a moment.",
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const colors = {
     bg: isDark
@@ -533,16 +586,58 @@ export default function VeraHome() {
 
         {/* Chat */}
         <section style={{ marginBottom: 50 }}>
+          {messages.length > 0 && (
+            <div style={{ marginBottom: 24, maxHeight: '50vh', overflowY: 'auto' }}>
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
+                    marginBottom: 12,
+                  }}
+                >
+                  <div style={{
+                    maxWidth: '70%',
+                    padding: '12px 16px',
+                    borderRadius: message.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                    background: message.role === 'user'
+                      ? 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)'
+                      : colors.cardBg,
+                    color: message.role === 'user' ? 'white' : colors.text,
+                    fontSize: '0.95rem',
+                    lineHeight: 1.6,
+                    border: message.role === 'assistant' ? `1px solid ${colors.cardBorder}` : 'none',
+                  }}>
+                    {message.content}
+                  </div>
+                </div>
+              ))}
+              {isLoading && (
+                <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                  <div style={{
+                    padding: '12px 20px',
+                    borderRadius: '16px 16px 16px 4px',
+                    background: colors.cardBg,
+                    border: `1px solid ${colors.cardBorder}`,
+                  }}>
+                    <span style={{ color: colors.textMuted }}>...</span>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
           <div style={styles.chatContainer}>
             <input
               type="text"
               placeholder="Ask VERA anything..."
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && router.push('/chat')}
+              onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
               style={styles.chatInput}
             />
-            <button onClick={() => router.push('/chat')} style={styles.chatSubmit}>
+            <button onClick={sendMessage} style={styles.chatSubmit}>
               Ask VERA
             </button>
           </div>
