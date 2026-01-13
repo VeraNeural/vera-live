@@ -52,7 +52,7 @@ export default function VeraHome() {
   const ecosystem = [
     { id: 'sanctuary', name: 'Sanctuary', desc: '7 immersive healing rooms', href: '/sanctuary' },
     { id: 'pulse', name: 'Pulse', desc: 'Community where everyone gets seen', href: '/pulse' },
-    { id: 'vds', name: 'VDS Studio', desc: 'Professional design services', href: 'https://vds.veraneural.com' },
+    { id: 'vds', name: 'VDS Studio', desc: 'Professional design services', href: '/vds' },
     { id: 'edutask', name: 'Edutask', desc: 'Courses and certifications', href: '/edutask' },
     { id: 'therapists', name: 'Therapists', desc: 'Trusted professional support', href: '/therapists' },
     { id: 'partners', name: 'Partners', desc: 'Businesses you can trust', href: '/partners' },
@@ -476,7 +476,7 @@ export default function VeraHome() {
               fontWeight: 300,
               margin: 0,
               lineHeight: 1.5,
-            }}>AI that helps you do anything — your way, your pace</p>
+            }}>AI that helps you do anything, your way, your pace</p>
           </div>
 
           {/* Orb */}

@@ -10,20 +10,33 @@ export default function VeraHome() {
   const [breathPhase, setBreathPhase] = useState(0);
   const [inputValue, setInputValue] = useState('');
 
-  useEffect(() => {
-    setMounted(true);
-    
+  // Function to calculate time of day
+  const calculateTimeOfDay = () => {
     const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) setTimeOfDay('morning');
-    else if (hour >= 12 && hour < 17) setTimeOfDay('afternoon');
-    else if (hour >= 17 && hour < 21) setTimeOfDay('evening');
-    else setTimeOfDay('night');
+    if (hour >= 5 && hour < 12) return 'morning';
+    if (hour >= 12 && hour < 17) return 'afternoon';
+    if (hour >= 17 && hour < 21) return 'evening';
+    return 'night';
+  };
+
+  useEffect(() => {
+    // Set time immediately
+    setTimeOfDay(calculateTimeOfDay());
+    setMounted(true);
+
+    // Update time every minute
+    const timeInterval = setInterval(() => {
+      setTimeOfDay(calculateTimeOfDay());
+    }, 60000);
 
     const breathInterval = setInterval(() => {
       setBreathPhase(prev => (prev + 1) % 100);
     }, 80);
 
-    return () => clearInterval(breathInterval);
+    return () => {
+      clearInterval(timeInterval);
+      clearInterval(breathInterval);
+    };
   }, []);
 
   const isDark = timeOfDay === 'evening' || timeOfDay === 'night';
@@ -52,8 +65,8 @@ export default function VeraHome() {
     { id: 'pulse', name: 'Pulse', essence: 'CONNECT WITH OTHERS', href: '/pulse', iconType: 'heart' },
     { id: 'professionals', name: 'Professionals', essence: 'EXPERTS & THERAPISTS', href: '/professionals', iconType: 'users' },
     { id: 'assessment', name: 'Assessment', essence: 'KNOW YOURSELF', href: '/assessment', iconType: 'compass' },
-    { id: 'vds', name: 'VDS Studio', essence: 'CREATE BEAUTY', href: 'https://vds.veraneural.com', iconType: 'design' },
-    { id: 'sit', name: 'Signal Integrity Trust', essence: 'COMING SOON', href: '#', iconType: 'shield' },
+    { id: 'vds', name: 'VDS Studio', essence: 'CREATE BEAUTY', href: '/vds', iconType: 'design' },
+    { id: 'sim', name: 'Signal Integrity Mode', essence: 'COMING SOON', href: '/signal-integrity-mode', iconType: 'shield' },
   ];
 
   // Icon components matching Sanctuary style
@@ -642,7 +655,7 @@ export default function VeraHome() {
           {/* Hero */}
           <section className="hero">
             <h1 className="greeting">{getGreeting()}</h1>
-            <p className="tagline">AI that helps you do anything — while keeping you grounded</p>
+            <p className="tagline">AI that helps you do anything, while keeping you grounded</p>
           </section>
 
           {/* Orb */}

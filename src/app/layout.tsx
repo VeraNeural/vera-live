@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "VERA",
-  description: "AI that helps you do anything — your way, your pace",
+  description: "AI that helps you do anything, your way, your pace",
 };
 
 export default function RootLayout({

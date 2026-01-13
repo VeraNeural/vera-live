@@ -6,15 +6,14 @@ import { useRouter } from 'next/navigation';
 type Question = {
   id: string;
   text: string;
-  subtext?: string;
   options: {
     value: string;
     label: string;
     scores: {
-      fight: number;
-      flight: number;
-      freeze: number;
-      fawn: number;
+      noiseResistance: number;
+      attentionBoundary: number;
+      recoverySpeed: number;
+      signalClarity: number;
     };
   }[];
 };
@@ -22,242 +21,224 @@ type Question = {
 const QUESTIONS: Question[] = [
   {
     id: 'q1',
-    text: 'When something unexpected disrupts your day, your first internal response is usually:',
+    text: 'After scrolling through social media for 20 minutes, you typically feel:',
     options: [
-      { value: 'a', label: 'A surge of energy, ready to handle it', scores: { fight: 2, flight: 0, freeze: 0, fawn: 0 } },
-      { value: 'b', label: 'An urge to step away or leave the situation', scores: { fight: 0, flight: 2, freeze: 0, fawn: 0 } },
-      { value: 'c', label: 'A sense of blankness, hard to think clearly', scores: { fight: 0, flight: 0, freeze: 2, fawn: 0 } },
-      { value: 'd', label: 'Immediately thinking about how others are affected', scores: { fight: 0, flight: 0, freeze: 0, fawn: 2 } },
+      { value: 'a', label: 'About the same as before', scores: { noiseResistance: 3, attentionBoundary: 2, recoverySpeed: 2, signalClarity: 2 } },
+      { value: 'b', label: 'Slightly scattered but fine', scores: { noiseResistance: 2, attentionBoundary: 1, recoverySpeed: 2, signalClarity: 1 } },
+      { value: 'c', label: 'Noticeably drained or agitated', scores: { noiseResistance: 1, attentionBoundary: 0, recoverySpeed: 1, signalClarity: 0 } },
+      { value: 'd', label: 'I avoid it because I know how it affects me', scores: { noiseResistance: 2, attentionBoundary: 3, recoverySpeed: 2, signalClarity: 3 } },
     ]
   },
   {
     id: 'q2',
-    text: 'In a disagreement, you tend to:',
+    text: 'When multiple people need your attention at once:',
     options: [
-      { value: 'a', label: 'State your position firmly, even if it creates tension', scores: { fight: 2, flight: 0, freeze: 0, fawn: 0 } },
-      { value: 'b', label: 'Find a reason to exit or delay the conversation', scores: { fight: 0, flight: 2, freeze: 0, fawn: 0 } },
-      { value: 'c', label: 'Go quiet and wait for it to pass', scores: { fight: 0, flight: 0, freeze: 2, fawn: 0 } },
-      { value: 'd', label: 'Adjust your stance to keep the peace', scores: { fight: 0, flight: 0, freeze: 0, fawn: 2 } },
+      { value: 'a', label: 'I can hold all threads without losing track', scores: { noiseResistance: 3, attentionBoundary: 2, recoverySpeed: 2, signalClarity: 2 } },
+      { value: 'b', label: 'I manage but feel stretched thin', scores: { noiseResistance: 2, attentionBoundary: 1, recoverySpeed: 1, signalClarity: 1 } },
+      { value: 'c', label: 'I start making mistakes or forgetting things', scores: { noiseResistance: 0, attentionBoundary: 0, recoverySpeed: 1, signalClarity: 0 } },
+      { value: 'd', label: 'I immediately prioritize and defer the rest', scores: { noiseResistance: 2, attentionBoundary: 3, recoverySpeed: 2, signalClarity: 3 } },
     ]
   },
   {
     id: 'q3',
-    text: 'After a stressful event, your body usually:',
+    text: 'Your relationship with notifications is:',
     options: [
-      { value: 'a', label: 'Stays activated, hard to wind down', scores: { fight: 2, flight: 1, freeze: 0, fawn: 0 } },
-      { value: 'b', label: 'Feels restless, needs movement or distraction', scores: { fight: 0, flight: 2, freeze: 0, fawn: 0 } },
-      { value: 'c', label: 'Feels heavy, tired, or disconnected', scores: { fight: 0, flight: 0, freeze: 2, fawn: 0 } },
-      { value: 'd', label: 'Feels unsettled until you check on others', scores: { fight: 0, flight: 0, freeze: 0, fawn: 2 } },
+      { value: 'a', label: 'They don\'t affect my focus much', scores: { noiseResistance: 3, attentionBoundary: 2, recoverySpeed: 2, signalClarity: 2 } },
+      { value: 'b', label: 'I check them but can return to what I was doing', scores: { noiseResistance: 2, attentionBoundary: 1, recoverySpeed: 2, signalClarity: 1 } },
+      { value: 'c', label: 'Each one pulls me away and I lose my thread', scores: { noiseResistance: 0, attentionBoundary: 0, recoverySpeed: 0, signalClarity: 0 } },
+      { value: 'd', label: 'I keep most of them off intentionally', scores: { noiseResistance: 2, attentionBoundary: 3, recoverySpeed: 3, signalClarity: 3 } },
     ]
   },
   {
     id: 'q4',
-    text: 'When you sense someone is upset with you:',
+    text: 'When you need to make a decision, too many options makes you:',
     options: [
-      { value: 'a', label: 'You feel defensive and ready to explain yourself', scores: { fight: 2, flight: 0, freeze: 0, fawn: 0 } },
-      { value: 'b', label: 'You want to create distance until it blows over', scores: { fight: 0, flight: 2, freeze: 0, fawn: 0 } },
-      { value: 'c', label: 'You feel paralyzed, unsure what to do', scores: { fight: 0, flight: 0, freeze: 2, fawn: 0 } },
-      { value: 'd', label: 'You immediately try to fix it or apologize', scores: { fight: 0, flight: 0, freeze: 0, fawn: 2 } },
+      { value: 'a', label: 'More confident, I like having choices', scores: { noiseResistance: 3, attentionBoundary: 2, recoverySpeed: 2, signalClarity: 2 } },
+      { value: 'b', label: 'Slightly overwhelmed but I manage', scores: { noiseResistance: 2, attentionBoundary: 1, recoverySpeed: 1, signalClarity: 1 } },
+      { value: 'c', label: 'Paralyzed, I often avoid deciding', scores: { noiseResistance: 0, attentionBoundary: 0, recoverySpeed: 0, signalClarity: 0 } },
+      { value: 'd', label: 'I narrow options quickly before evaluating', scores: { noiseResistance: 2, attentionBoundary: 3, recoverySpeed: 2, signalClarity: 3 } },
     ]
   },
   {
     id: 'q5',
-    text: 'Your relationship with rest is:',
+    text: 'After a day of meetings or calls, your mind:',
     options: [
-      { value: 'a', label: 'Difficult, stillness feels unproductive', scores: { fight: 2, flight: 1, freeze: 0, fawn: 0 } },
-      { value: 'b', label: 'Rest happens, but your mind keeps moving', scores: { fight: 0, flight: 2, freeze: 0, fawn: 0 } },
-      { value: 'c', label: 'You rest but don\'t always feel restored', scores: { fight: 0, flight: 0, freeze: 2, fawn: 0 } },
-      { value: 'd', label: 'Rest feels selfish when others need you', scores: { fight: 0, flight: 0, freeze: 0, fawn: 2 } },
+      { value: 'a', label: 'Feels clear and ready for more', scores: { noiseResistance: 3, attentionBoundary: 2, recoverySpeed: 3, signalClarity: 2 } },
+      { value: 'b', label: 'Needs a brief reset then I\'m fine', scores: { noiseResistance: 2, attentionBoundary: 2, recoverySpeed: 2, signalClarity: 2 } },
+      { value: 'c', label: 'Feels foggy and hard to use', scores: { noiseResistance: 0, attentionBoundary: 0, recoverySpeed: 0, signalClarity: 0 } },
+      { value: 'd', label: 'I schedule recovery time in advance', scores: { noiseResistance: 1, attentionBoundary: 3, recoverySpeed: 2, signalClarity: 3 } },
     ]
   },
   {
     id: 'q6',
-    text: 'When overwhelmed, you\'re most likely to:',
+    text: 'When exposed to others\' strong emotions (online or in person):',
     options: [
-      { value: 'a', label: 'Push harder to regain control', scores: { fight: 2, flight: 0, freeze: 0, fawn: 0 } },
-      { value: 'b', label: 'Escape into something: screens, tasks, plans', scores: { fight: 0, flight: 2, freeze: 0, fawn: 0 } },
-      { value: 'c', label: 'Shut down and do nothing', scores: { fight: 0, flight: 0, freeze: 2, fawn: 0 } },
-      { value: 'd', label: 'Focus on someone else\'s needs instead', scores: { fight: 0, flight: 0, freeze: 0, fawn: 2 } },
+      { value: 'a', label: 'I can observe without absorbing', scores: { noiseResistance: 3, attentionBoundary: 3, recoverySpeed: 2, signalClarity: 2 } },
+      { value: 'b', label: 'I feel some of it but shake it off', scores: { noiseResistance: 2, attentionBoundary: 2, recoverySpeed: 2, signalClarity: 1 } },
+      { value: 'c', label: 'It stays with me for hours or longer', scores: { noiseResistance: 0, attentionBoundary: 0, recoverySpeed: 0, signalClarity: 0 } },
+      { value: 'd', label: 'I limit exposure because I know the cost', scores: { noiseResistance: 1, attentionBoundary: 3, recoverySpeed: 1, signalClarity: 3 } },
     ]
   },
   {
     id: 'q7',
-    text: 'In your body, stress often shows up as:',
+    text: 'Your ability to hear your own thoughts clearly is:',
     options: [
-      { value: 'a', label: 'Tension in jaw, shoulders, or chest', scores: { fight: 2, flight: 0, freeze: 0, fawn: 0 } },
-      { value: 'b', label: 'Restless legs, racing heart, shallow breathing', scores: { fight: 0, flight: 2, freeze: 0, fawn: 0 } },
-      { value: 'c', label: 'Fatigue, heaviness, or numbness', scores: { fight: 0, flight: 0, freeze: 2, fawn: 0 } },
-      { value: 'd', label: 'Stomach tension or holding your breath around others', scores: { fight: 0, flight: 0, freeze: 0, fawn: 2 } },
+      { value: 'a', label: 'Consistent, I know what I think and feel', scores: { noiseResistance: 2, attentionBoundary: 2, recoverySpeed: 2, signalClarity: 3 } },
+      { value: 'b', label: 'Variable, depends on the day', scores: { noiseResistance: 1, attentionBoundary: 1, recoverySpeed: 2, signalClarity: 2 } },
+      { value: 'c', label: 'Often clouded by noise or others\' input', scores: { noiseResistance: 0, attentionBoundary: 0, recoverySpeed: 1, signalClarity: 0 } },
+      { value: 'd', label: 'Clear when I protect my space', scores: { noiseResistance: 1, attentionBoundary: 3, recoverySpeed: 2, signalClarity: 2 } },
     ]
   },
   {
     id: 'q8',
-    text: 'When making a difficult decision, you:',
+    text: 'When you set aside time for focused work:',
     options: [
-      { value: 'a', label: 'Decide quickly and deal with consequences later', scores: { fight: 2, flight: 0, freeze: 0, fawn: 0 } },
-      { value: 'b', label: 'Keep researching or delaying the choice', scores: { fight: 0, flight: 2, freeze: 0, fawn: 0 } },
-      { value: 'c', label: 'Feel stuck and unable to move forward', scores: { fight: 0, flight: 0, freeze: 2, fawn: 0 } },
-      { value: 'd', label: 'Ask others what they think you should do', scores: { fight: 0, flight: 0, freeze: 0, fawn: 2 } },
+      { value: 'a', label: 'I can sustain attention for long stretches', scores: { noiseResistance: 3, attentionBoundary: 2, recoverySpeed: 2, signalClarity: 3 } },
+      { value: 'b', label: 'I manage 30-60 minutes before needing a break', scores: { noiseResistance: 2, attentionBoundary: 2, recoverySpeed: 2, signalClarity: 2 } },
+      { value: 'c', label: 'I struggle to get started or stay on track', scores: { noiseResistance: 0, attentionBoundary: 0, recoverySpeed: 1, signalClarity: 0 } },
+      { value: 'd', label: 'I can focus deeply if the environment is right', scores: { noiseResistance: 1, attentionBoundary: 3, recoverySpeed: 2, signalClarity: 2 } },
     ]
   },
   {
     id: 'q9',
-    text: 'Your energy throughout the day is typically:',
+    text: 'Comparison to others on social platforms makes you:',
     options: [
-      { value: 'a', label: 'High and sustained, until you crash', scores: { fight: 2, flight: 0, freeze: 0, fawn: 0 } },
-      { value: 'b', label: 'Inconsistent, peaks and dips unpredictably', scores: { fight: 0, flight: 2, freeze: 0, fawn: 0 } },
-      { value: 'c', label: 'Low baseline, hard to access motivation', scores: { fight: 0, flight: 0, freeze: 2, fawn: 0 } },
-      { value: 'd', label: 'Depends on who you\'re around', scores: { fight: 0, flight: 0, freeze: 0, fawn: 2 } },
+      { value: 'a', label: 'Unaffected, I know it\'s curated', scores: { noiseResistance: 3, attentionBoundary: 3, recoverySpeed: 2, signalClarity: 3 } },
+      { value: 'b', label: 'Occasionally doubt myself, then move on', scores: { noiseResistance: 2, attentionBoundary: 1, recoverySpeed: 2, signalClarity: 1 } },
+      { value: 'c', label: 'Often feel worse about myself or my life', scores: { noiseResistance: 0, attentionBoundary: 0, recoverySpeed: 0, signalClarity: 0 } },
+      { value: 'd', label: 'I curate my feed to avoid this', scores: { noiseResistance: 2, attentionBoundary: 3, recoverySpeed: 2, signalClarity: 2 } },
     ]
   },
   {
     id: 'q10',
-    text: 'The last time you felt truly safe, your body felt:',
+    text: 'At the end of a high-input day, you need:',
     options: [
-      { value: 'a', label: 'Strong and capable', scores: { fight: 2, flight: 0, freeze: 0, fawn: 0 } },
-      { value: 'b', label: 'Free and unburdened', scores: { fight: 0, flight: 2, freeze: 0, fawn: 0 } },
-      { value: 'c', label: 'Still and quiet inside', scores: { fight: 0, flight: 0, freeze: 2, fawn: 0 } },
-      { value: 'd', label: 'Connected and accepted', scores: { fight: 0, flight: 0, freeze: 0, fawn: 2 } },
+      { value: 'a', label: 'Normal wind-down, sleep resets me', scores: { noiseResistance: 3, attentionBoundary: 2, recoverySpeed: 3, signalClarity: 2 } },
+      { value: 'b', label: 'Some quiet time but not too much', scores: { noiseResistance: 2, attentionBoundary: 2, recoverySpeed: 2, signalClarity: 2 } },
+      { value: 'c', label: 'Extended silence and solitude to recover', scores: { noiseResistance: 0, attentionBoundary: 1, recoverySpeed: 0, signalClarity: 1 } },
+      { value: 'd', label: 'I rarely let days get that full', scores: { noiseResistance: 2, attentionBoundary: 3, recoverySpeed: 2, signalClarity: 3 } },
     ]
   },
 ];
 
-type ProfileType = 'Guardian' | 'Navigator' | 'Observer' | 'Harmonizer' | 'Adaptive';
+type ProfileType = 'Fortress' | 'Filter' | 'Sponge' | 'Architect';
 
 type Profile = {
   type: ProfileType;
   title: string;
   description: string;
+  capacity: string;
   strengths: string[];
-  watchFor: string[];
-  regulation: string[];
+  vulnerabilities: string[];
+  protection: string[];
 };
 
 const PROFILES: Record<ProfileType, Profile> = {
-  Guardian: {
-    type: 'Guardian',
-    title: 'The Guardian',
-    description: 'Your nervous system is wired for protection and action. You meet challenges head-on and have strong capacity for mobilization. Your system prioritizes control and decisive response.',
+  Fortress: {
+    type: 'Fortress',
+    title: 'The Fortress',
+    description: 'Your signal integrity is naturally strong. External noise has difficulty penetrating your cognitive space. You maintain clarity in high-input environments.',
+    capacity: 'High signal tolerance, strong natural boundaries',
     strengths: [
-      'Quick decision-making under pressure',
-      'Strong boundaries when needed',
-      'Natural leadership in crisis',
-      'High energy reserves for important tasks'
+      'Maintain clarity in chaotic environments',
+      'Resistant to social contagion',
+      'Quick cognitive recovery',
+      'Decision-making stays consistent under load'
     ],
-    watchFor: [
-      'Difficulty downshifting after stress',
-      'Tension accumulation in the body',
-      'Rest feeling like weakness',
-      'Over-functioning when slowing down would help'
+    vulnerabilities: [
+      'May miss subtle signals that matter',
+      'Can appear unaffected when others need acknowledgment',
+      'May underestimate others\' sensitivity',
+      'Delay noticing when you do hit limits'
     ],
-    regulation: [
-      'Physical release before mental processing',
-      'Environments that honor your need for agency',
-      'Permission to rest as strategic, not lazy',
-      'Grounding practices that feel active, not passive'
+    protection: [
+      'Trust your natural filtering',
+      'Check in occasionally on what you might be missing',
+      'Your boundaries serve you, maintain them',
+      'Model signal protection for others'
     ]
   },
-  Navigator: {
-    type: 'Navigator',
-    title: 'The Navigator',
-    description: 'Your system is attuned to movement and possibility. You process through action, planning, and forward motion. Your nervous system prefers options and escape routes.',
+  Filter: {
+    type: 'Filter',
+    title: 'The Filter',
+    description: 'You have good signal management with intentional effort. You\'ve learned to create boundaries and protect your attention. Your clarity depends on maintained practices.',
+    capacity: 'Moderate tolerance, learned boundaries',
     strengths: [
-      'Excellent at seeing alternatives',
-      'Adaptable in changing circumstances',
-      'Quick mental processing',
-      'Natural ability to pivot and adjust'
+      'Conscious awareness of signal impact',
+      'Can adapt boundaries to context',
+      'Good at teaching others to protect signal',
+      'Balance between openness and protection'
     ],
-    watchFor: [
-      'Restlessness mistaken for anxiety',
-      'Difficulty being present when still',
-      'Over-planning as avoidance',
-      'Running from rather than toward'
+    vulnerabilities: [
+      'Boundaries require ongoing energy',
+      'Can slip when stressed or tired',
+      'May over-control in reaction to past overwhelm',
+      'Recovery practices feel non-negotiable'
     ],
-    regulation: [
-      'Movement-based settling practices',
-      'Environments with multiple exits and flow',
-      'Processing through walking or motion',
-      'Channeling flight energy into exploration'
+    protection: [
+      'Your systems work, protect them',
+      'Build recovery into your schedule, not after',
+      'Name your limits before you hit them',
+      'Environmental design matters for you'
     ]
   },
-  Observer: {
-    type: 'Observer',
-    title: 'The Observer',
-    description: 'Your nervous system has learned to conserve and protect through stillness. You have deep capacity for reflection and observation. Your system prioritizes safety through withdrawal.',
+  Sponge: {
+    type: 'Sponge',
+    title: 'The Sponge',
+    description: 'You absorb signal easily, both useful information and noise. Your system processes deeply but has difficulty filtering. Protection is essential, not optional.',
+    capacity: 'Low noise tolerance, deep processing',
     strengths: [
-      'Deep thinking and analysis',
-      'Ability to wait and observe before acting',
-      'Conservation of energy for what matters',
-      'Rich inner world and reflection'
+      'Notice subtleties others miss',
+      'Deep processing leads to insight',
+      'High empathy and attunement',
+      'Rich inner experience'
     ],
-    watchFor: [
-      'Shutdown mistaken for peace',
-      'Disconnection from body signals',
-      'Isolation extending beyond restoration',
-      'Energy depletion before recognizing it'
+    vulnerabilities: [
+      'Overwhelm comes faster than you expect',
+      'Others\' emotions enter your system',
+      'Recovery takes longer than seems fair',
+      'Digital environments are particularly costly'
     ],
-    regulation: [
-      'Gentle reactivation practices',
-      'Environments that feel safe for emergence',
-      'Small movements that rebuild connection',
-      'Warmth, weight, and sensory anchoring'
+    protection: [
+      'Aggressive boundary-setting is self-care',
+      'Limit exposure windows, not just content',
+      'Recovery is not laziness, it\'s necessity',
+      'Your sensitivity is valuable in protected doses'
     ]
   },
-  Harmonizer: {
-    type: 'Harmonizer',
-    title: 'The Harmonizer',
-    description: 'Your nervous system is highly attuned to others. You regulate through connection and have strong relational intelligence. Your system prioritizes belonging and social safety.',
+  Architect: {
+    type: 'Architect',
+    title: 'The Architect',
+    description: 'You have strong signal awareness and actively design your information environment. You know your limits and build systems to protect clarity.',
+    capacity: 'Variable tolerance, high design intelligence',
     strengths: [
-      'Deep empathy and attunement',
-      'Skilled at reading social dynamics',
-      'Natural peacemaking abilities',
-      'Strong relational bonds'
+      'Proactive environment design',
+      'Strong meta-awareness of signal impact',
+      'Can teach others to protect attention',
+      'Balance depth and protection'
     ],
-    watchFor: [
-      'Others\' needs overshadowing your own',
-      'Difficulty knowing your own preferences',
-      'Over-giving leading to depletion',
-      'Self-abandonment for connection'
+    vulnerabilities: [
+      'May over-engineer protection',
+      'Control can become rigidity',
+      'New environments require adjustment period',
+      'May struggle when systems are disrupted'
     ],
-    regulation: [
-      'Practices that start with self-attunement',
-      'Environments where you can take up space',
-      'Permission to have needs and preferences',
-      'Connection that doesn\'t require performance'
-    ]
-  },
-  Adaptive: {
-    type: 'Adaptive',
-    title: 'The Adaptive',
-    description: 'Your nervous system draws from multiple response patterns depending on context. You have range and flexibility, with no single dominant survival strategy.',
-    strengths: [
-      'Contextual intelligence',
-      'Flexible response capacity',
-      'Balance across situations',
-      'Integrated survival strategies'
-    ],
-    watchFor: [
-      'Uncertainty about your true baseline',
-      'Context-switching fatigue',
-      'Difficulty predicting your own responses',
-      'Others not knowing what to expect'
-    ],
-    regulation: [
-      'Practices that help you find center',
-      'Environments that allow full expression',
-      'Regular check-ins with your own state',
-      'Integration rather than optimization'
+    protection: [
+      'Your design instinct is correct, trust it',
+      'Build flexibility into your systems',
+      'Allow some unstructured input for serendipity',
+      'Share your architecture with others who need it'
     ]
   }
 };
 
-export default function NervousSystemMap() {
+export default function SignalIntegrityMap() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [timeOfDay, setTimeOfDay] = useState<'morning' | 'afternoon' | 'evening' | 'night'>('morning');
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [scores, setScores] = useState({ fight: 0, flight: 0, freeze: 0, fawn: 0 });
+  const [scores, setScores] = useState({ noiseResistance: 0, attentionBoundary: 0, recoverySpeed: 0, signalClarity: 0 });
   const [showResults, setShowResults] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
 
@@ -275,10 +256,10 @@ export default function NervousSystemMap() {
   const handleAnswer = (questionId: string, optionValue: string, optionScores: typeof scores) => {
     setAnswers(prev => ({ ...prev, [questionId]: optionValue }));
     setScores(prev => ({
-      fight: prev.fight + optionScores.fight,
-      flight: prev.flight + optionScores.flight,
-      freeze: prev.freeze + optionScores.freeze,
-      fawn: prev.fawn + optionScores.fawn,
+      noiseResistance: prev.noiseResistance + optionScores.noiseResistance,
+      attentionBoundary: prev.attentionBoundary + optionScores.attentionBoundary,
+      recoverySpeed: prev.recoverySpeed + optionScores.recoverySpeed,
+      signalClarity: prev.signalClarity + optionScores.signalClarity,
     }));
 
     if (currentQuestion < QUESTIONS.length - 1) {
@@ -289,32 +270,23 @@ export default function NervousSystemMap() {
   };
 
   const calculateResults = () => {
-    const finalScores = { ...scores };
-    const max = Math.max(finalScores.fight, finalScores.flight, finalScores.freeze, finalScores.fawn);
-    const total = finalScores.fight + finalScores.flight + finalScores.freeze + finalScores.fawn;
-    
-    // Check if adaptive (no clear dominant)
-    const dominantCount = Object.values(finalScores).filter(s => s >= max - 2).length;
+    const total = scores.noiseResistance + scores.attentionBoundary + scores.recoverySpeed + scores.signalClarity;
+    const boundaryRatio = scores.attentionBoundary / (total || 1);
     
     let profileType: ProfileType;
-    if (dominantCount >= 3 || (max / total) < 0.35) {
-      profileType = 'Adaptive';
-    } else if (finalScores.fight === max) {
-      profileType = 'Guardian';
-    } else if (finalScores.flight === max) {
-      profileType = 'Navigator';
-    } else if (finalScores.freeze === max) {
-      profileType = 'Observer';
+    
+    if (total >= 80) {
+      profileType = 'Fortress';
+    } else if (boundaryRatio > 0.35) {
+      profileType = 'Architect';
+    } else if (total >= 50) {
+      profileType = 'Filter';
     } else {
-      profileType = 'Harmonizer';
+      profileType = 'Sponge';
     }
 
     setProfile(PROFILES[profileType]);
     setShowResults(true);
-  };
-
-  const getProgressWidth = () => {
-    return ((currentQuestion + 1) / QUESTIONS.length) * 100;
   };
 
   if (!mounted) {
@@ -333,19 +305,16 @@ export default function NervousSystemMap() {
             padding: 20px;
             font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
           }
-
           .results-container {
             max-width: 600px;
             margin: 0 auto;
             padding-top: 40px;
             padding-bottom: 60px;
           }
-
           .results-header {
             text-align: center;
             margin-bottom: 40px;
           }
-
           .results-label {
             font-size: 0.6rem;
             text-transform: uppercase;
@@ -353,7 +322,6 @@ export default function NervousSystemMap() {
             color: ${isDark ? 'rgba(255,255,255,0.4)' : 'rgba(42,42,42,0.4)'};
             margin-bottom: 16px;
           }
-
           .profile-type {
             font-family: 'Cormorant Garamond', Georgia, serif;
             font-size: clamp(2rem, 6vw, 3rem);
@@ -361,51 +329,55 @@ export default function NervousSystemMap() {
             color: ${isDark ? 'rgba(255,255,255,0.95)' : 'rgba(42,42,42,0.9)'};
             margin-bottom: 20px;
           }
-
           .profile-description {
             font-size: 1rem;
             color: ${isDark ? 'rgba(255,255,255,0.6)' : 'rgba(42,42,42,0.6)'};
             line-height: 1.7;
           }
-
+          .capacity-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background: ${isDark ? 'rgba(139,92,246,0.1)' : 'rgba(139,92,246,0.08)'};
+            border: 1px solid ${isDark ? 'rgba(139,92,246,0.2)' : 'rgba(139,92,246,0.15)'};
+            border-radius: 50px;
+            color: ${isDark ? 'rgba(139,92,246,0.9)' : 'rgba(139,92,246,0.8)'};
+            font-size: 0.75rem;
+            margin-top: 20px;
+          }
           .scores-visual {
             display: flex;
             justify-content: center;
-            gap: 24px;
+            gap: 20px;
             margin: 40px 0;
             flex-wrap: wrap;
           }
-
           .score-item {
             text-align: center;
           }
-
           .score-bar-container {
-            width: 60px;
-            height: 100px;
+            width: 50px;
+            height: 80px;
             background: ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'};
-            border-radius: 30px;
+            border-radius: 25px;
             position: relative;
             overflow: hidden;
             margin-bottom: 8px;
           }
-
           .score-bar {
             position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
-            border-radius: 30px;
+            border-radius: 25px;
+            background: linear-gradient(180deg, rgba(139,92,246,0.4) 0%, rgba(139,92,246,0.8) 100%);
             transition: height 1s ease;
           }
-
           .score-label {
-            font-size: 0.7rem;
+            font-size: 0.6rem;
             color: ${isDark ? 'rgba(255,255,255,0.5)' : 'rgba(42,42,42,0.5)'};
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.03em;
           }
-
           .section {
             background: ${isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.7)'};
             border: 1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'};
@@ -413,7 +385,6 @@ export default function NervousSystemMap() {
             padding: 24px;
             margin-bottom: 16px;
           }
-
           .section-title {
             font-size: 0.65rem;
             text-transform: uppercase;
@@ -421,13 +392,11 @@ export default function NervousSystemMap() {
             color: ${isDark ? 'rgba(255,255,255,0.4)' : 'rgba(42,42,42,0.4)'};
             margin-bottom: 16px;
           }
-
           .section-list {
             list-style: none;
             padding: 0;
             margin: 0;
           }
-
           .section-list li {
             font-size: 0.9rem;
             color: ${isDark ? 'rgba(255,255,255,0.75)' : 'rgba(42,42,42,0.75)'};
@@ -435,18 +404,15 @@ export default function NervousSystemMap() {
             border-bottom: 1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'};
             line-height: 1.5;
           }
-
           .section-list li:last-child {
             border-bottom: none;
           }
-
           .actions {
             display: flex;
             flex-direction: column;
             gap: 12px;
             margin-top: 40px;
           }
-
           .primary-btn {
             padding: 16px 32px;
             background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
@@ -459,12 +425,10 @@ export default function NervousSystemMap() {
             transition: all 0.2s ease;
             box-shadow: 0 6px 20px rgba(139,92,246,0.25);
           }
-
           .primary-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(139,92,246,0.35);
           }
-
           .secondary-btn {
             padding: 14px 28px;
             background: ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.8)'};
@@ -475,24 +439,20 @@ export default function NervousSystemMap() {
             cursor: pointer;
             transition: all 0.2s ease;
           }
-
           .secondary-btn:hover {
             background: ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,1)'};
           }
-
           .next-assessment {
             text-align: center;
             margin-top: 40px;
             padding-top: 30px;
             border-top: 1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'};
           }
-
           .next-label {
             font-size: 0.75rem;
             color: ${isDark ? 'rgba(255,255,255,0.4)' : 'rgba(42,42,42,0.4)'};
             margin-bottom: 12px;
           }
-
           .next-link {
             color: ${isDark ? 'rgba(139,92,246,0.9)' : 'rgba(139,92,246,0.8)'};
             text-decoration: none;
@@ -504,26 +464,24 @@ export default function NervousSystemMap() {
         <div className="results-page">
           <div className="results-container">
             <div className="results-header">
-              <p className="results-label">Your Nervous System Profile</p>
+              <p className="results-label">Your Signal Integrity Profile</p>
               <h1 className="profile-type">{profile.title}</h1>
               <p className="profile-description">{profile.description}</p>
+              <span className="capacity-badge">{profile.capacity}</span>
             </div>
 
             <div className="scores-visual">
               {[
-                { key: 'fight', label: 'Fight', color: '#ef4444' },
-                { key: 'flight', label: 'Flight', color: '#f59e0b' },
-                { key: 'freeze', label: 'Freeze', color: '#6366f1' },
-                { key: 'fawn', label: 'Fawn', color: '#ec4899' },
-              ].map(({ key, label, color }) => (
+                { key: 'noiseResistance', label: 'Noise' },
+                { key: 'attentionBoundary', label: 'Boundary' },
+                { key: 'recoverySpeed', label: 'Recovery' },
+                { key: 'signalClarity', label: 'Clarity' },
+              ].map(({ key, label }) => (
                 <div key={key} className="score-item">
                   <div className="score-bar-container">
                     <div 
                       className="score-bar" 
-                      style={{ 
-                        height: `${(scores[key as keyof typeof scores] / 20) * 100}%`,
-                        background: `linear-gradient(180deg, ${color}40 0%, ${color}80 100%)`
-                      }} 
+                      style={{ height: `${(scores[key as keyof typeof scores] / 30) * 100}%` }} 
                     />
                   </div>
                   <span className="score-label">{label}</span>
@@ -539,16 +497,16 @@ export default function NervousSystemMap() {
             </div>
 
             <div className="section">
-              <h3 className="section-title">Watch For</h3>
+              <h3 className="section-title">Vulnerabilities</h3>
               <ul className="section-list">
-                {profile.watchFor.map((s, i) => <li key={i}>{s}</li>)}
+                {profile.vulnerabilities.map((s, i) => <li key={i}>{s}</li>)}
               </ul>
             </div>
 
             <div className="section">
-              <h3 className="section-title">What Supports Your Regulation</h3>
+              <h3 className="section-title">How to Protect Your Signal</h3>
               <ul className="section-list">
-                {profile.regulation.map((s, i) => <li key={i}>{s}</li>)}
+                {profile.protection.map((s, i) => <li key={i}>{s}</li>)}
               </ul>
             </div>
 
@@ -563,8 +521,8 @@ export default function NervousSystemMap() {
 
             <div className="next-assessment">
               <p className="next-label">Continue mapping</p>
-              <a className="next-link" onClick={() => router.push('/assessment/signal-integrity')}>
-                Signal Integrity Map →
+              <a className="next-link" onClick={() => router.push('/assessment/lifestyle')}>
+                Lifestyle Decode →
               </a>
             </div>
           </div>
@@ -589,14 +547,12 @@ export default function NervousSystemMap() {
           display: flex;
           flex-direction: column;
         }
-
         .header {
           display: flex;
           justify-content: space-between;
           align-items: center;
           margin-bottom: 20px;
         }
-
         .back-btn {
           display: flex;
           align-items: center;
@@ -611,16 +567,13 @@ export default function NervousSystemMap() {
           cursor: pointer;
           transition: all 0.2s ease;
         }
-
         .back-btn:hover {
           background: ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.9)'};
         }
-
         .progress-text {
           font-size: 0.8rem;
           color: ${isDark ? 'rgba(255,255,255,0.4)' : 'rgba(42,42,42,0.4)'};
         }
-
         .progress-bar {
           height: 3px;
           background: ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'};
@@ -628,14 +581,12 @@ export default function NervousSystemMap() {
           margin-bottom: 40px;
           overflow: hidden;
         }
-
         .progress-fill {
           height: 100%;
           background: linear-gradient(90deg, #8b5cf6 0%, #a855f7 100%);
           border-radius: 2px;
           transition: width 0.3s ease;
         }
-
         .content {
           flex: 1;
           display: flex;
@@ -645,7 +596,6 @@ export default function NervousSystemMap() {
           margin: 0 auto;
           width: 100%;
         }
-
         .assessment-title {
           font-size: 0.6rem;
           text-transform: uppercase;
@@ -654,7 +604,6 @@ export default function NervousSystemMap() {
           margin-bottom: 24px;
           text-align: center;
         }
-
         .question-text {
           font-family: 'Cormorant Garamond', Georgia, serif;
           font-size: clamp(1.3rem, 4vw, 1.6rem);
@@ -664,13 +613,11 @@ export default function NervousSystemMap() {
           text-align: center;
           margin-bottom: 40px;
         }
-
         .options {
           display: flex;
           flex-direction: column;
           gap: 12px;
         }
-
         .option {
           padding: 18px 24px;
           background: ${isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.7)'};
@@ -683,27 +630,10 @@ export default function NervousSystemMap() {
           transition: all 0.3s ease;
           text-align: left;
         }
-
         .option:hover {
           background: ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.9)'};
           border-color: ${isDark ? 'rgba(139,92,246,0.3)' : 'rgba(139,92,246,0.2)'};
           transform: translateY(-2px);
-        }
-
-        .option.selected {
-          background: ${isDark ? 'rgba(139,92,246,0.15)' : 'rgba(139,92,246,0.1)'};
-          border-color: rgba(139,92,246,0.4);
-        }
-
-        @media (max-width: 600px) {
-          .question-text {
-            font-size: 1.2rem;
-          }
-
-          .option {
-            padding: 16px 20px;
-            font-size: 0.9rem;
-          }
         }
       `}</style>
 
@@ -712,21 +642,17 @@ export default function NervousSystemMap() {
           <a href="/assessment" className="back-btn">← Exit</a>
           <span className="progress-text">{currentQuestion + 1} of {QUESTIONS.length}</span>
         </div>
-
         <div className="progress-bar">
-          <div className="progress-fill" style={{ width: `${getProgressWidth()}%` }} />
+          <div className="progress-fill" style={{ width: `${((currentQuestion + 1) / QUESTIONS.length) * 100}%` }} />
         </div>
-
         <div className="content">
-          <p className="assessment-title">Nervous System Map</p>
-          
+          <p className="assessment-title">Signal Integrity Map</p>
           <h2 className="question-text">{question.text}</h2>
-
           <div className="options">
             {question.options.map((option) => (
               <button
                 key={option.value}
-                className={`option ${answers[question.id] === option.value ? 'selected' : ''}`}
+                className="option"
                 onClick={() => handleAnswer(question.id, option.value, option.scores)}
               >
                 {option.label}

@@ -501,13 +501,12 @@ export default function AssessmentLanding() {
 
           <div className="ecosystem-note">
             <p className="ecosystem-text">
-              Your map personalizes your entire VERA experience — 
-              from Sanctuary rooms to professional matching to space design.
+              Your map personalizes your entire VERA experience, from Sanctuary rooms to professional matching to space design.
             </p>
             <div className="ecosystem-links">
               <a className="eco-link" onClick={() => router.push('/sanctuary')}>Your Space</a>
               <a className="eco-link" onClick={() => router.push('/professionals')}>Professionals</a>
-              <a className="eco-link" href="https://vds.veraneural.com" target="_blank">VDS Studio</a>
+              <a className="eco-link" onClick={() => router.push('/vds')}>VDS Studio</a>
             </div>
           </div>
         </div>
