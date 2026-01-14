@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useHumeVoice, VoiceStatus } from "@/lib/hume/useHumeVoice";
 
+export const dynamic = "force-dynamic";
+
 // Hume Config
 const HUME_API_KEY = process.env.NEXT_PUBLIC_HUMEAI_API_KEY || "";
 const HUME_CONFIG_ID = "92c3f2c0-b1e8-4a91-9025-af585b921212";

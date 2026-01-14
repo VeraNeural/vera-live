@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
           user_id: user.id,
         },
       },
-      success_url: `${origin}/sanctuary/space?success=true`,
+      success_url: `${origin}/sanctuarysuccess=true`,
       cancel_url: `${origin}/sanctuary?canceled=true`,
       metadata: {
         user_id: user.id,

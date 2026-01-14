@@ -8,7 +8,7 @@ export default function ZenRoomPage() {
   const router = useRouter();
 
   const onBack = useCallback(() => {
-    router.push('/sanctuary/space');
+    router.push('/sanctuary');
   }, [router]);
 
   return <ZenRoom onBack={onBack} />;
