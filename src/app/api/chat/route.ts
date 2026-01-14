@@ -3,6 +3,8 @@ import Anthropic from '@anthropic-ai/sdk';
 import { cookies } from 'next/headers';
 import { createHash, randomUUID } from 'crypto';
 import { createClient } from '@/lib/supabase/server';
+import { buildMemoryPrompt, getUserMemory, saveConversation, updateConversation, updateUserMemory } from '@/lib/memory';
+import { extractMemoryFromConversation } from '@/lib/memoryExtractor';
 import { routeTurn } from '@/lib/vera/router';
 import { composeSystemPrompt } from '@/lib/vera/promptComposer';
 import { selectModel } from '@/lib/vera/modelSelection';
@@ -60,6 +62,8 @@ type IncomingMessageWithImage = IncomingMessage & {
 };
 
 type RoutingTier = 'free' | 'sanctuary' | 'build';
+
+type MemoryMessage = { role: 'user' | 'assistant'; content: string };
 
 const SIM_ACTIVE = process.env.SIM_ACTIVE === 'true';
 
@@ -264,6 +268,7 @@ export async function POST(req: Request) {
 
     const body = (await req.json()) as {
       messages?: IncomingMessageWithImage[];
+      conversationId?: string;
       tier?: Tier;
       project_state?: BuildProjectState;
       sanctuary_state?: SanctuaryState;
@@ -283,7 +288,7 @@ export async function POST(req: Request) {
       };
     };
 
-    const { messages, tier, project_state, sanctuary_state } = body;
+    const { messages, conversationId: conversationIdFromBody, tier, project_state, sanctuary_state } = body;
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return jsonContent(UNAVAILABLE_CONTENT, { status: 500 });
@@ -294,6 +299,10 @@ export async function POST(req: Request) {
     }
 
     let entitlementTier: AuthTier = 'free';
+
+    // Memory is Sanctuary-only (persistent). Loaded only for authenticated Sanctuary users.
+    let memoryContext: Awaited<ReturnType<typeof getUserMemory>> | null = null;
+    let memoryPrompt = '';
 
     let userIdForMetering: string | null = null;
     try {
@@ -322,6 +331,11 @@ export async function POST(req: Request) {
         }
       } else {
         entitlementTier = await getUserTier(userIdForMetering);
+
+        if (entitlementTier === 'sanctuary') {
+          memoryContext = await getUserMemory(userIdForMetering);
+          memoryPrompt = buildMemoryPrompt(memoryContext);
+        }
 
         // Sanctuary users: no gates ever, no counters, no prompts.
         if (entitlementTier === 'free') {
@@ -415,7 +429,7 @@ export async function POST(req: Request) {
     }
 
     const { sessionId, shouldSetCookie } = await ensureSessionId();
-    const conversationId = req.headers.get('x-vera-conversation-id') || sessionId;
+    const conversationId = conversationIdFromBody || req.headers.get('x-vera-conversation-id') || sessionId;
     const turnId = messages.filter((m) => m.role === 'user').length;
 
     const cookieStore = await cookies();
@@ -801,7 +815,8 @@ export async function POST(req: Request) {
       sanctuaryState: sanctuary_state ?? null,
       sim: SIM_ACTIVE ? simPromptFlags : undefined,
       // Fourth-message escalation is a backend-first rule; apply even when SIM_ACTIVE=false.
-      extraSystem: fourthOverlay?.extraSystem,
+      // Memory prompt is Sanctuary-only.
+      extraSystem: [memoryPrompt, fourthOverlay?.extraSystem].filter(Boolean).join('\n\n'),
     });
 
     // User escalation (crisis intent) is handled without model generation.
@@ -1265,6 +1280,20 @@ export async function POST(req: Request) {
     const responseMode = consentGrantedThisTurn ? 'challenge' : 'conversation';
     const finalContent = modelCallFailed ? UNAVAILABLE_CONTENT : (noDrift.vera || "I'm here. What would you like to explore?");
 
+    // Fire-and-forget memory update (Sanctuary only). Never blocks the response.
+    if (userIdForMetering && entitlementTier === 'sanctuary') {
+      const transcript: MemoryMessage[] = messages
+        .filter((m) => m.role === 'user' || m.role === 'assistant')
+        .map((m) => ({ role: m.role, content: m.content }));
+
+      void updateMemoryInBackground({
+        userId: userIdForMetering,
+        conversationId,
+        messages: [...transcript, { role: 'assistant', content: finalContent }],
+        existingMemory: memoryContext?.memory,
+      });
+    }
+
     if (userIdForMetering && entitlementTier === 'free') {
       await recordMessage(userIdForMetering);
     }
@@ -1290,5 +1319,45 @@ export async function POST(req: Request) {
   } catch (err) {
     console.error('Chat route error:', err);
     return jsonContent(UNAVAILABLE_CONTENT, { status: 500 });
+  }
+}
+
+async function updateMemoryInBackground(input: {
+  userId: string;
+  conversationId?: string;
+  messages: MemoryMessage[];
+  existingMemory: { name?: string; key_facts?: string[] } | undefined;
+}) {
+  try {
+    // Extract memory conservatively every 5 messages early on, then periodically.
+    if (input.messages.length % 5 !== 0 && input.messages.length < 10) {
+      return;
+    }
+
+    const extracted = await extractMemoryFromConversation(input.messages, input.existingMemory);
+    if (!extracted) return;
+
+    const memoryUpdates: Record<string, unknown> = {};
+    if (extracted.name) {
+      memoryUpdates.name = extracted.name;
+    }
+
+    if (extracted.key_facts && extracted.key_facts.length > 0) {
+      const existingFacts = input.existingMemory?.key_facts || [];
+      const allFacts = [...new Set([...existingFacts, ...extracted.key_facts])];
+      memoryUpdates.key_facts = allFacts.slice(-20);
+    }
+
+    if (Object.keys(memoryUpdates).length > 0) {
+      await updateUserMemory(input.userId, memoryUpdates as any);
+    }
+
+    if (input.conversationId) {
+      await updateConversation(input.conversationId, input.messages, extracted.summary);
+    } else if (input.messages.length >= 4) {
+      await saveConversation(input.userId, input.messages, undefined, extracted.summary);
+    }
+  } catch (err) {
+    console.error('[Memory Background Update] Error:', err);
   }
 }
