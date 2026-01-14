@@ -9,10 +9,8 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
+        getAll: () => request.cookies.getAll(),
+        setAll: (cookiesToSet) => {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
@@ -26,26 +24,25 @@ export async function middleware(request: NextRequest) {
   );
 
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
 
   const path = request.nextUrl.pathname;
 
-  // 🔒 Protect Sanctuary (only)
-  if (!user && path.startsWith("/sanctuary")) {
+  // 🔒 Protect Sanctuary only
+  if (!session && path.startsWith("/sanctuary")) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  // 🚫 Never show login to authenticated users
-  if (user && path === "/login") {
+  // 🚫 Never show login if authenticated
+  if (session && path === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     return NextResponse.redirect(url);
   }
 
-  // ✅ "/" and chat always accessible
   return response;
 }
 
