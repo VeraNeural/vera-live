@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { AttachmentButton } from '@/components/AttachmentButton';
+import { ImagePreview } from '@/components/ImagePreview';
+import { VoiceButton } from '@/components/VoiceButton';
 
 interface TherapyRoomProps {
   onBack: () => void;
@@ -19,6 +22,7 @@ export default function TherapyRoom({
 }: TherapyRoomProps) {
   const [inputValue, setInputValue] = useState('');
   const [mounted, setMounted] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -34,6 +38,7 @@ export default function TherapyRoom({
     if (!inputValue.trim() || isGenerating) return;
     onSendMessage(inputValue.trim());
     setInputValue('');
+    setSelectedImage(null);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -41,6 +46,14 @@ export default function TherapyRoom({
       e.preventDefault();
       handleSubmit();
     }
+  };
+
+  const handleImageSelect = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setSelectedImage(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const starterPrompts = [
@@ -247,11 +260,70 @@ export default function TherapyRoom({
           padding: '16px 0',
           borderTop: '1px solid rgba(0,0,0,0.05)',
         }}>
+          {selectedImage && (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{
+                position: 'relative',
+                maxWidth: '100%',
+                display: 'inline-block',
+              }}>
+                <img
+                  src={selectedImage}
+                  alt="Selected"
+                  style={{
+                    maxHeight: 120,
+                    borderRadius: 12,
+                    border: '1px solid rgba(0,0,0,0.1)',
+                    objectFit: 'cover',
+                  }}
+                />
+                <button
+                  onClick={() => setSelectedImage(null)}
+                  style={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    width: 28,
+                    height: 28,
+                    borderRadius: 6,
+                    background: 'rgba(0,0,0,0.6)',
+                    border: 'none',
+                    color: 'white',
+                    cursor: 'pointer',
+                    fontSize: '18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(0,0,0,0.8)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(0,0,0,0.6)';
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          )}
           <form onSubmit={handleSubmit} style={{
             display: 'flex',
-            gap: 12,
+            gap: 10,
             alignItems: 'flex-end',
           }}>
+            <div style={{
+              display: 'flex',
+              gap: 8,
+              alignItems: 'flex-end',
+            }}>
+              <AttachmentButton
+                onSelect={handleImageSelect}
+                disabled={isGenerating}
+              />
+              <VoiceButton />
+            </div>
             <textarea
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
