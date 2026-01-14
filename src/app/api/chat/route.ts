@@ -329,12 +329,7 @@ export async function POST(req: Request) {
           console.log('[chat] metering', { userId: userIdForMetering, limitCheck });
 
           if (limitCheck.gate === 'limit_reached') {
-            return NextResponse.json({
-              gate: 'limit_reached',
-              tier: 'free',
-              content:
-                'I can stay with you here. Sanctuary unlocks deeper space, voice, and unlimited time together.',
-            });
+            return NextResponse.json({ gate: 'limit_reached', tier: 'free' });
           }
         }
       }
