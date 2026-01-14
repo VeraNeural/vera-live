@@ -9,7 +9,7 @@ import {
 } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
-import type { Tier } from "./tiers";
+import { normalizeTier, type Tier } from "./tiers";
 
 interface AuthContextType {
   user: User | null;
@@ -43,7 +43,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return "free"; // Default for authenticated users
       }
 
-      return (data.tier as Tier) || "free";
+      const normalized = normalizeTier((data as any)?.tier);
+      if (normalized) return normalized;
+
+      console.warn("Unknown tier value in users.tier; defaulting to free", {
+        userId,
+        tier: (data as any)?.tier,
+      });
+      return "free";
     } catch (err) {
       console.error("Exception fetching tier:", err);
       return "free";

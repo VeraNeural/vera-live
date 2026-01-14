@@ -2,6 +2,15 @@
 
 export type Tier = "anonymous" | "free" | "sanctuary";
 
+export function normalizeTier(raw: unknown): Tier | null {
+  if (typeof raw !== "string") return null;
+  const value = raw.trim().toLowerCase();
+  if (value === "anonymous" || value === "free" || value === "sanctuary") {
+    return value as Tier;
+  }
+  return null;
+}
+
 export const TIER_LIMITS = {
   anonymous: {
     messages_per_day: 0, // Soft gate on first send

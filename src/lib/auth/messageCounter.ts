@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { type Tier, TIER_LIMITS } from "./tiers";
+import { normalizeTier, type Tier, TIER_LIMITS } from "./tiers";
 
 const FREE_MESSAGE_LIMIT = TIER_LIMITS.free.messages_per_day;
 
@@ -47,7 +47,7 @@ export async function checkMessageLimit(
         error: error.message,
       });
     } else {
-      tier = (userData?.tier as Tier) || "free";
+      tier = normalizeTier((userData as any)?.tier) ?? "free";
     }
   } catch (err) {
     console.error("[messageCounter] users.tier lookup threw", { userId, err });
@@ -172,7 +172,7 @@ export async function getUserTier(userId: string): Promise<Tier> {
     }
 
     if (!data) return "free";
-    return (data.tier as Tier) || "free";
+    return normalizeTier((data as any)?.tier) ?? "free";
   } catch (err) {
     console.error("[messageCounter] getUserTier lookup threw", { userId, err });
     return "free";
