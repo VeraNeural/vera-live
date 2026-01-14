@@ -1,33 +1,44 @@
-import { createClient } from "@/lib/supabase/server";
-import { NextResponse, type NextRequest } from "next/server";
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server'
 
-export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get("code");
-  const nextParam = searchParams.get("next") ?? "/";
+export async function GET(request: Request) {
+  const { searchParams, origin } = new URL(request.url)
+  const code = searchParams.get('code')
+  const next = searchParams.get('next') ?? '/'
 
-  const next = nextParam.startsWith("/") ? nextParam : "/";
+  if (code) {
+    const cookieStore = await cookies()
 
-  if (!code) {
-    return NextResponse.redirect(`${origin}/login?error=no_code`);
-  }
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              )
+            } catch {
+              // Ignore
+            }
+          },
+        },
+      }
+    )
 
-  try {
-    // Create redirect response first so Supabase can attach Set-Cookie headers.
-    const response = NextResponse.redirect(`${origin}${next}`);
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
 
-    // Exchange the code and persist the session via cookies on the response.
-    const supabase = await createClient({ request, response });
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-    if (error) {
-      console.error("[Auth Callback] Exchange error:", error.message);
-      return NextResponse.redirect(`${origin}/login?error=exchange_failed`);
+    if (!error) {
+      return NextResponse.redirect(`${origin}${next}`)
     }
 
-    return response;
-  } catch (err) {
-    console.error("[Auth Callback] Unexpected error:", err);
-    return NextResponse.redirect(`${origin}/login?error=unexpected`);
+    console.error('[Auth Callback] Error:', error.message)
   }
+
+  return NextResponse.redirect(`${origin}/login?error=auth_failed`)
 }

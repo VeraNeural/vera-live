@@ -23,14 +23,9 @@ type GateState = {
 };
 
 const QUICK_STARTS = [
-  "Job search support",
-  "Build a project",
-  "Write together",
-  "Research & understand",
-  "Learn something new",
-  "Design & structure ideas",
-  "Think through a business",
-  "Just talk",
+  "Help me process something",
+  "Build something with me",
+  "I just need to vent",
 ];
 
 function getGreeting(): string {
@@ -47,7 +42,7 @@ function getGreeting(): string {
 }
 
 export default function Page() {
-  const { user, isLoggedIn, loading: authLoading } = useAuth();
+  const { user, isLoggedIn } = useAuth();
 
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -55,7 +50,6 @@ export default function Page() {
   const [greeting] = useState(getGreeting());
   const endRef = useRef<HTMLDivElement>(null);
   const [gate, setGate] = useState<GateState>({ active: false, type: null });
-  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const [attachedImage, setAttachedImage] = useState<{
     base64: string;
     mediaType: string;
@@ -68,57 +62,6 @@ export default function Page() {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  const PENDING_AUTH_MESSAGE_KEY = "vera_pending_message";
-
-  useEffect(() => {
-    if (authLoading) return;
-    if (!isLoggedIn) return;
-
-    const pending = sessionStorage.getItem(PENDING_AUTH_MESSAGE_KEY);
-    if (!pending) return;
-
-    sessionStorage.removeItem(PENDING_AUTH_MESSAGE_KEY);
-    setPendingMessage(null);
-    // Defer to avoid re-entrancy during auth state changes.
-    setTimeout(() => {
-      void sendMessage(pending);
-    }, 0);
-  }, [authLoading, isLoggedIn]);
-
-  // Don't render auth-dependent UI until loaded.
-  // NOTE: This must come after hooks to avoid hook-order mismatches.
-  if (authLoading) {
-    return (
-      <main
-        style={{
-          minHeight: "100vh",
-          background: "#0b0b0f",
-          color: "white",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 24,
-        }}
-      >
-        <div
-          style={{
-            width: 96,
-            height: 96,
-            borderRadius: "50%",
-            background:
-              "radial-gradient(circle at 30% 30%, #c4b5fd, #7c3aed)",
-            marginBottom: 18,
-            boxShadow: "0 0 60px 20px rgba(139, 92, 246, 0.18)",
-          }}
-        />
-        <p style={{ color: "#a1a1aa", margin: 0, fontSize: 14 }}>
-          Loading…
-        </p>
-      </main>
-    );
-  }
 
   async function handleSelectImage(file: File) {
     setAttachmentError("");
@@ -147,20 +90,15 @@ export default function Page() {
 
     setGate({ active: false, type: null });
 
-    // Anonymous gate (soft prompt): allow first user message, gate on second+.
-    // Keep input enabled, but do not send when gated.
     if (!isLoggedIn) {
       const priorUserCount = messages.filter((m) => m.role === "user").length;
       if (priorUserCount >= 1) {
-        sessionStorage.setItem(PENDING_AUTH_MESSAGE_KEY, content);
-        setPendingMessage(content);
         setInput(content);
         setGate({ active: true, type: "auth_required" });
         return;
       }
     }
 
-    // Snapshot state for safe revert in gate flows.
     const messagesSnapshot = messages;
     const attachedSnapshot = attachedImage;
 
@@ -192,9 +130,6 @@ export default function Page() {
         | "limit_reached"
         | null;
       if (gateType === "auth_required") {
-        // Do NOT append the user's message. Preserve it for after auth.
-        sessionStorage.setItem(PENDING_AUTH_MESSAGE_KEY, content);
-        setPendingMessage(content);
         setMessages(messagesSnapshot);
         setInput(content);
         setAttachedImage(attachedSnapshot);
@@ -203,7 +138,6 @@ export default function Page() {
       }
 
       if (gateType === "limit_reached") {
-        // Do NOT append the user's message. Keep it in the input.
         setMessages([
           ...messagesSnapshot,
           {
@@ -258,95 +192,104 @@ export default function Page() {
           justifyContent: "space-between",
         }}
       >
-        <strong style={{ fontSize: 18, letterSpacing: "0.5px" }}>VERA</strong>
-        {!authLoading && (
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-            {isLoggedIn ? (
-              <div
-                title={user?.email ?? "Signed in"}
+        {/* Left side - Orb only */}
+<div
+  style={{
+    width: 36,
+    height: 36,
+    borderRadius: "50%",
+    background: "radial-gradient(circle at 30% 30%, #c4b5fd, #7c3aed)",
+    boxShadow: "0 0 20px 5px rgba(139, 92, 246, 0.2)",
+  }}
+/>
+
+        {/* Right side - Auth buttons or avatar */}
+        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+          {isLoggedIn ? (
+            <div
+              title={user?.email ?? "Signed in"}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: "50%",
+                background: "rgba(139, 92, 246, 0.14)",
+                border: "1px solid rgba(139, 92, 246, 0.35)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 14,
+                fontWeight: 700,
+                color: "#c4b5fd",
+              }}
+            >
+              {(user?.email?.[0] ?? "U").toUpperCase()}
+            </div>
+          ) : (
+            <>
+              <Link
+                href="/login"
                 style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: "50%",
-                  background: "rgba(139, 92, 246, 0.14)",
-                  border: "1px solid rgba(139, 92, 246, 0.35)",
-                  display: "flex",
+                  padding: "10px 20px",
+                  borderRadius: 12,
+                  background: "transparent",
+                  color: "#a1a1aa",
+                  border: "1px solid #27272a",
+                  fontSize: 14,
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                  textDecoration: "none",
+                  display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: "#c4b5fd",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "#8b5cf6";
+                  e.currentTarget.style.color = "#ffffff";
+                  e.currentTarget.style.background = "rgba(139, 92, 246, 0.06)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "#27272a";
+                  e.currentTarget.style.color = "#a1a1aa";
+                  e.currentTarget.style.background = "transparent";
                 }}
               >
-                {(user?.email?.[0] ?? "U").toUpperCase()}
-              </div>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  style={{
-                    padding: "10px 20px",
-                    borderRadius: 12,
-                    background: "transparent",
-                    color: "#a1a1aa",
-                    border: "1px solid #27272a",
-                    fontSize: 14,
-                    fontWeight: 500,
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                    textDecoration: "none",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "#8b5cf6";
-                    e.currentTarget.style.color = "#ffffff";
-                    e.currentTarget.style.background = "rgba(139, 92, 246, 0.06)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = "#27272a";
-                    e.currentTarget.style.color = "#a1a1aa";
-                    e.currentTarget.style.background = "transparent";
-                  }}
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/signup"
-                  style={{
-                    padding: "10px 20px",
-                    borderRadius: 12,
-                    background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
-                    color: "white",
-                    border: "none",
-                    fontSize: 14,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                    boxShadow: "0 4px 14px 0 rgba(139, 92, 246, 0.3)",
-                    textDecoration: "none",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-1px)";
-                    e.currentTarget.style.boxShadow =
-                      "0 6px 20px 0 rgba(139, 92, 246, 0.4)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow =
-                      "0 4px 14px 0 rgba(139, 92, 246, 0.3)";
-                  }}
-                >
-                  Start Free
-                </Link>
-              </>
-            )}
-          </div>
-        )}
+                Sign In
+              </Link>
+              <Link
+                href="/signup"
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: 12,
+                  background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
+                  color: "white",
+                  border: "none",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                  boxShadow: "0 4px 14px 0 rgba(139, 92, 246, 0.3)",
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                  e.currentTarget.style.boxShadow =
+                    "0 6px 20px 0 rgba(139, 92, 246, 0.4)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow =
+                    "0 4px 14px 0 rgba(139, 92, 246, 0.3)";
+                }}
+              >
+                Start Free
+              </Link>
+            </>
+          )}
+        </div>
       </header>
 
       {/* HERO / INTRO */}
@@ -361,7 +304,7 @@ export default function Page() {
             paddingBottom: 120,
           }}
         >
-          {/* ORB */}
+          {/* ORB - Only shows when chat hasn't started */}
           <div
             style={{
               width: 120,
@@ -413,47 +356,47 @@ export default function Page() {
                 border: "1px solid #27272a",
               }}
             >
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-              placeholder="What's on your mind?"
-              style={{
-                flex: 1,
-                background: "transparent",
-                border: "none",
-                outline: "none",
-                color: "white",
-                fontSize: 16,
-                padding: "8px 12px",
-              }}
-            />
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                placeholder="What's on your mind?"
+                style={{
+                  flex: 1,
+                  background: "transparent",
+                  border: "none",
+                  outline: "none",
+                  color: "white",
+                  fontSize: 16,
+                  padding: "8px 12px",
+                }}
+              />
 
-            <AttachmentButton disabled={loading} onSelect={handleSelectImage} />
-            <VoiceButton />
+              <AttachmentButton disabled={loading} onSelect={handleSelectImage} />
+              <VoiceButton />
 
-            <button
-              onClick={() => sendMessage()}
-              style={{
-                padding: "12px 24px",
-                borderRadius: 999,
-                background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
-                color: "white",
-                border: "none",
-                fontSize: 15,
-                fontWeight: 600,
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "scale(1.02)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "scale(1)";
-              }}
-            >
-              Ask VERA
-            </button>
+              <button
+                onClick={() => sendMessage()}
+                style={{
+                  padding: "12px 24px",
+                  borderRadius: 999,
+                  background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
+                  color: "white",
+                  border: "none",
+                  fontSize: 15,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "scale(1.02)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "scale(1)";
+                }}
+              >
+                Ask VERA
+              </button>
             </div>
           </div>
 
@@ -646,6 +589,7 @@ export default function Page() {
               </div>
             </div>
           )}
+
           {loading && (
             <div style={{ display: "flex", justifyContent: "flex-start" }}>
               <div
@@ -744,7 +688,6 @@ export default function Page() {
             </button>
           </div>
         </div>
-
       )}
     </main>
   );

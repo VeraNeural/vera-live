@@ -16,36 +16,37 @@ export function VoiceButton() {
     <button
       onClick={() => router.push("/voice")}
       style={{
-        width: 36,
-        height: 36,
-        borderRadius: "50%",
-        background: "transparent",
-        border: "none",
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        background: "rgba(139, 92, 246, 0.1)",
+        border: "1px solid rgba(139, 92, 246, 0.2)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         cursor: "pointer",
         transition: "all 0.2s ease",
-        opacity: 0.5,
+        marginRight: 8,
       }}
       title="Voice Mode"
       onMouseEnter={(e) => {
-        e.currentTarget.style.opacity = "1";
-        e.currentTarget.style.background = "rgba(139, 92, 246, 0.1)";
+        e.currentTarget.style.background = "rgba(139, 92, 246, 0.2)";
+        e.currentTarget.style.borderColor = "rgba(139, 92, 246, 0.4)";
+        e.currentTarget.style.transform = "scale(1.05)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.opacity = "0.5";
-        e.currentTarget.style.background = "transparent";
+        e.currentTarget.style.background = "rgba(139, 92, 246, 0.1)";
+        e.currentTarget.style.borderColor = "rgba(139, 92, 246, 0.2)";
+        e.currentTarget.style.transform = "scale(1)";
       }}
     >
-      {/* Minimal Microphone Icon */}
       <svg
-        width="18"
-        height="18"
+        width="22"
+        height="22"
         viewBox="0 0 24 24"
         fill="none"
-        stroke="#8b5cf6"
-        strokeWidth="1.5"
+        stroke="#a78bfa"
+        strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
       >
