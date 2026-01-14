@@ -12,34 +12,36 @@ export default function SanctuaryPage() {
 
   useEffect(() => {
     async function checkAccess() {
-      const supabase = createClient();
-      
-      // Check if logged in
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        // Not logged in → send to login
-        router.push('/login?redirect=/sanctuary');
-        return;
-      }
+  console.log('[Sanctuary] Checking access...');
+  const supabase = createClient();
+  
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  console.log('[Sanctuary] Session:', session, sessionError);
+  
+  if (!session) {
+    console.log('[Sanctuary] No session, redirecting to login');
+    router.push('/login?redirect=/sanctuary');
+    return;
+  }
 
-      // Check tier
-      const { data: user } = await supabase
-        .from('users')
-        .select('tier')
-        .eq('id', session.user.id)
-        .single();
+  const { data: user, error: userError } = await supabase
+    .from('users')
+    .select('tier')
+    .eq('id', session.user.id)
+    .single();
 
-      if (user?.tier !== 'sanctuary' && user?.tier !== 'build') {
-        // Not Sanctuary tier → send to upgrade
-        router.push('/upgrade');
-        return;
-      }
+  console.log('[Sanctuary] User tier:', user, userError);
 
-      // Authorized!
-      setAuthorized(true);
-      setLoading(false);
-    }
+  if (user?.tier !== 'sanctuary' && user?.tier !== 'build') {
+    console.log('[Sanctuary] Not sanctuary tier, redirecting to upgrade');
+    router.push('/upgrade');
+    return;
+  }
+
+  console.log('[Sanctuary] Authorized!');
+  setAuthorized(true);
+  setLoading(false);
+}
 
     checkAccess();
   }, [router]);
