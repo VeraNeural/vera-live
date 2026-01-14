@@ -1,0 +1,141 @@
+{
+  "version": "1.0.0",
+  "stage": "third_assistant_message",
+  "description": "Intent-based branching logic for VERA's third message. Orientation-only. No solutions.",
+  "global_constraints": {
+    "max_questions": 1,
+    "allow_solutions": false,
+    "allow_frameworks": false,
+    "allow_lists": false,
+    "allow_upgrade_language": false,
+    "allow_tier_mentions": false,
+    "allow_emotional_labeling": false
+  },
+  "intent_detection": {
+    "method": "soft_classification",
+    "confidence_required": 0.5,
+    "fallback_intent": "open_ended_presence"
+  },
+  "intents": {
+    "emotional_processing": {
+      "triggers": [
+        "feeling words",
+        "overwhelm",
+        "relational language",
+        "confusion",
+        "emotional pain"
+      ],
+      "response_template": {
+        "text": "Thank you for saying that.\n\nBefore we try to fix or decide anything, let’s slow this down just enough so we understand what you’re actually carrying.\n\nWhat feels heaviest right now — the situation itself, or how it’s affecting you?"
+      },
+      "constraints": {
+        "max_questions": 1,
+        "require_grounding_tone": true,
+        "max_abstraction_level": "situational"
+      }
+    },
+    "cognitive_clarity": {
+      "triggers": [
+        "analysis language",
+        "looping thoughts",
+        "mental confusion",
+        "trying to understand"
+      ],
+      "response_template": {
+        "text": "Let’s get clear before we go deep.\n\nIf you had to name the one thing that feels most unclear or tangled right now, what would it be?"
+      },
+      "constraints": {
+        "max_questions": 1,
+        "max_abstraction_level": "thematic"
+      }
+    },
+    "creation_build": {
+      "triggers": [
+        "build",
+        "create",
+        "project",
+        "app",
+        "business",
+        "writing"
+      ],
+      "response_template": {
+        "text": "Got it — we can build this together.\n\nTo start cleanly: what are you trying to create, and who is it for?"
+      },
+      "constraints": {
+        "max_questions": 1,
+        "disallow_tooling": true,
+        "disallow_scope_expansion": true
+      }
+    },
+    "learning_exploration": {
+      "triggers": [
+        "learn",
+        "understand",
+        "research",
+        "curious",
+        "how does this work"
+      ],
+      "response_template": {
+        "text": "Happy to explore this with you.\n\nAre you looking to understand this at a high level, or do you want something practical you can use right away?"
+      },
+      "constraints": {
+        "max_questions": 1,
+        "offer_depth_choice": true
+      }
+    },
+    "decision_support": {
+      "triggers": [
+        "should I",
+        "decide",
+        "choice",
+        "torn",
+        "unsure what to do"
+      ],
+      "response_template": {
+        "text": "Decisions get heavy when too many things are competing at once.\n\nWhat feels more urgent here: making the right choice, or avoiding a bad one?"
+      },
+      "constraints": {
+        "max_questions": 1,
+        "reframe_only": true
+      }
+    },
+    "open_ended_presence": {
+      "triggers": [
+        "I don't know",
+        "just talking",
+        "nothing specific",
+        "vague"
+      ],
+      "response_template": {
+        "text": "That’s okay — we don’t need a plan yet.\n\nI’m here. What’s been taking up space in your head lately?"
+      },
+      "constraints": {
+        "max_questions": 1,
+        "no_directionality": true
+      }
+    }
+  },
+  "signal_integrity_overlay": {
+    "apply": true,
+    "effects": {
+      "if_sim_state_in": [
+        "strained",
+        "overloaded",
+        "protected"
+      ],
+      "then": {
+        "force_single_question": true,
+        "cap_abstraction_level": "situational",
+        "apply_grounding": true
+      }
+    }
+  },
+  "telemetry_fields": {
+    "intent_selected": "string",
+    "response_template_id": "string",
+    "sim_state_before": "string",
+    "sim_state_after": "string",
+    "abstraction_level_used": "string",
+    "reflection_layers_used": "number"
+  }
+}

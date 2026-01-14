@@ -5,6 +5,9 @@ import { createClient } from '@supabase/supabase-js';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+// Sanctuary Price ID - $12/month
+const SANCTUARY_PRICE_ID = 'price_1SpLiRF8aJ0BDqA3fO5BT4Ca';
+
 function getRequiredEnv(name: string): string {
   const value = process.env[name];
   if (!value) {
@@ -88,12 +91,13 @@ export async function POST(request: NextRequest) {
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           const { currentPeriodStart, currentPeriodEnd } = getBillingPeriodFromSubscription(subscription);
 
+          // Update subscriptions table
           await supabase.from('subscriptions').upsert({
             user_id: userId,
             stripe_subscription_id: subscriptionId,
             stripe_customer_id: session.customer as string,
             status: subscription.status,
-            price_id: process.env.STRIPE_PRICE_ID ?? null,
+            price_id: SANCTUARY_PRICE_ID,
             current_period_start: currentPeriodStart,
             current_period_end: currentPeriodEnd,
             trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
@@ -101,7 +105,16 @@ export async function POST(request: NextRequest) {
             updated_at: new Date().toISOString(),
           });
 
-          console.log(`Subscription created for user ${userId}`);
+          // ✅ UPDATE USER TIER TO SANCTUARY
+          await supabase
+            .from('users')
+            .update({ 
+              tier: 'sanctuary', 
+              updated_at: new Date().toISOString() 
+            })
+            .eq('id', userId);
+
+          console.log(`Subscription created for user ${userId} - upgraded to sanctuary`);
         }
         break;
       }
@@ -112,6 +125,7 @@ export async function POST(request: NextRequest) {
 
         if (userId) {
           const { currentPeriodStart, currentPeriodEnd } = getBillingPeriodFromSubscription(subscription);
+          
           await supabase
             .from('subscriptions')
             .update({
@@ -123,7 +137,20 @@ export async function POST(request: NextRequest) {
             })
             .eq('stripe_subscription_id', subscription.id);
 
-          console.log(`Subscription updated for user ${userId}`);
+          // ✅ UPDATE TIER BASED ON SUBSCRIPTION STATUS
+          if (subscription.status === 'active') {
+            await supabase
+              .from('users')
+              .update({ tier: 'sanctuary', updated_at: new Date().toISOString() })
+              .eq('id', userId);
+          } else if (subscription.status === 'canceled' || subscription.status === 'unpaid') {
+            await supabase
+              .from('users')
+              .update({ tier: 'free', updated_at: new Date().toISOString() })
+              .eq('id', userId);
+          }
+
+          console.log(`Subscription updated for user ${userId} - status: ${subscription.status}`);
         }
         break;
       }
@@ -131,6 +158,7 @@ export async function POST(request: NextRequest) {
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
 
+        // Update subscription status
         await supabase
           .from('subscriptions')
           .update({
@@ -139,7 +167,26 @@ export async function POST(request: NextRequest) {
           })
           .eq('stripe_subscription_id', subscription.id);
 
-        console.log(`Subscription canceled: ${subscription.id}`);
+        // ✅ GET USER ID AND DOWNGRADE TO FREE
+        const { data: sub } = await supabase
+          .from('subscriptions')
+          .select('user_id')
+          .eq('stripe_subscription_id', subscription.id)
+          .single();
+
+        if (sub?.user_id) {
+          await supabase
+            .from('users')
+            .update({ 
+              tier: 'free', 
+              updated_at: new Date().toISOString() 
+            })
+            .eq('id', sub.user_id);
+
+          console.log(`Subscription canceled - user ${sub.user_id} downgraded to free`);
+        } else {
+          console.log(`Subscription canceled: ${subscription.id} (no user found)`);
+        }
         break;
       }
 
@@ -159,6 +206,20 @@ export async function POST(request: NextRequest) {
               updated_at: new Date().toISOString(),
             })
             .eq('stripe_subscription_id', subscriptionId);
+
+          // ✅ ENSURE USER IS SANCTUARY ON SUCCESSFUL PAYMENT
+          const { data: sub } = await supabase
+            .from('subscriptions')
+            .select('user_id')
+            .eq('stripe_subscription_id', subscriptionId)
+            .single();
+
+          if (sub?.user_id) {
+            await supabase
+              .from('users')
+              .update({ tier: 'sanctuary', updated_at: new Date().toISOString() })
+              .eq('id', sub.user_id);
+          }
 
           console.log(`Invoice paid for subscription: ${subscriptionId}`);
         }
@@ -182,6 +243,8 @@ export async function POST(request: NextRequest) {
             })
             .eq('stripe_subscription_id', subscriptionId);
 
+          // Note: We don't immediately downgrade on payment failure
+          // Stripe will retry and eventually delete the subscription if all retries fail
           console.log(`Payment failed for subscription: ${subscriptionId}`);
         }
         break;

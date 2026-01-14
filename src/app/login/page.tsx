@@ -1,357 +1,503 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
+import type { FormEvent } from "react";
+import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const { signIn, signInWithGoogle } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [timeOfDay, setTimeOfDay] = useState<'morning' | 'afternoon' | 'evening' | 'night'>('morning');
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
-  useEffect(() => {
-    const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) setTimeOfDay('morning');
-    else if (hour >= 12 && hour < 17) setTimeOfDay('afternoon');
-    else if (hour >= 17 && hour < 21) setTimeOfDay('evening');
-    else setTimeOfDay('night');
-  }, []);
+  const supabase = createClient();
+  const router = useRouter();
 
-  const isDark = timeOfDay === 'evening' || timeOfDay === 'night';
-
-  const handleSignIn = async (e: React.FormEvent) => {
+  // Magic link sign in
+  async function handleMagicLink(e: FormEvent) {
     e.preventDefault();
-    setError('');
+    if (!email || loading) return;
+
     setLoading(true);
+    setError("");
 
     try {
-      await signIn(email, password);
-      router.push('/sanctuary/space');
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign in');
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=/`,
+        },
+      });
+
+      if (error) {
+        setError(error.message);
+      } else {
+        setSent(true);
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const handleGoogleSignIn = async () => {
-    setError('');
+  // Password sign in
+  async function handlePasswordLogin(e: FormEvent) {
+    e.preventDefault();
+    if (!email || !password || loading) return;
+
     setLoading(true);
-    
+    setError("");
+
     try {
-      await signInWithGoogle();
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign in with Google');
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setError(error.message);
+      } else {
+        router.push("/");
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
-    <>
-      <style jsx>{`
-        .login-page {
-          min-height: 100vh;
-          min-height: 100dvh;
-          background: ${isDark
-            ? 'linear-gradient(180deg, #0a0a12 0%, #12121f 50%, #0d0d18 100%)'
-            : 'linear-gradient(180deg, #f8f6f2 0%, #f0ebe3 50%, #e8e2d8 100%)'};
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
-          font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
+    <main
+      style={{
+        minHeight: "100vh",
+        background: "#0b0b0f",
+        color: "white",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* HEADER */}
+      <header
+        style={{
+          height: 64,
+          padding: "0 24px",
+          display: "flex",
+          alignItems: "center",
+        }}
+      >
+        <Link
+          href="/"
+          style={{
+            fontSize: 18,
+            fontWeight: 600,
+            letterSpacing: "0.5px",
+            color: "white",
+            textDecoration: "none",
+          }}
+        >
+          VERA
+        </Link>
+      </header>
 
-        .login-container {
-          width: 100%;
-          max-width: 400px;
-        }
+      {/* MAIN CONTENT */}
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "0 24px",
+          paddingBottom: 80,
+        }}
+      >
+        {/* ORB - smaller, subtle */}
+        <div
+          style={{
+            width: 64,
+            height: 64,
+            borderRadius: "50%",
+            background: "radial-gradient(circle at 30% 30%, #c4b5fd, #7c3aed)",
+            marginBottom: 40,
+            boxShadow: "0 0 40px 10px rgba(139, 92, 246, 0.15)",
+          }}
+        />
 
-        .logo {
-          text-align: center;
-          margin-bottom: 40px;
-        }
-
-        .logo-text {
-          font-family: 'Cormorant Garamond', Georgia, serif;
-          font-size: 2.5rem;
-          font-weight: 400;
-          letter-spacing: 0.1em;
-          color: ${isDark ? 'rgba(255,255,255,0.9)' : 'rgba(42,42,42,0.9)'};
-        }
-
-        .logo-tagline {
-          font-size: 0.9rem;
-          color: ${isDark ? 'rgba(255,255,255,0.5)' : 'rgba(42,42,42,0.5)'};
-          margin-top: 8px;
-        }
-
-        .form-card {
-          background: ${isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.7)'};
-          border: 1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'};
-          border-radius: 24px;
-          padding: 36px 32px;
-          margin-bottom: 24px;
-          backdrop-filter: blur(20px);
-        }
-
-        .form-title {
-          font-family: 'Cormorant Garamond', Georgia, serif;
-          font-size: 1.5rem;
-          font-weight: 400;
-          color: ${isDark ? 'rgba(255,255,255,0.9)' : 'rgba(42,42,42,0.9)'};
-          margin-bottom: 28px;
-          text-align: center;
-        }
-
-        .input-group {
-          margin-bottom: 18px;
-        }
-
-        .input-label {
-          display: block;
-          font-size: 0.8rem;
-          color: ${isDark ? 'rgba(255,255,255,0.6)' : 'rgba(42,42,42,0.6)'};
-          margin-bottom: 8px;
-        }
-
-        .input {
-          width: 100%;
-          padding: 14px 18px;
-          background: ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.8)'};
-          border: 1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'};
-          border-radius: 14px;
-          color: ${isDark ? 'rgba(255,255,255,0.95)' : 'rgba(42,42,42,0.95)'};
-          font-size: 1rem;
-          font-family: inherit;
-          transition: all 0.2s ease;
-        }
-
-        .input:focus {
-          outline: none;
-          border-color: rgba(139, 92, 246, 0.5);
-          box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
-        }
-
-        .input::placeholder {
-          color: ${isDark ? 'rgba(255,255,255,0.3)' : 'rgba(42,42,42,0.35)'};
-        }
-
-        .error-message {
-          background: rgba(239, 68, 68, 0.1);
-          border: 1px solid rgba(239, 68, 68, 0.2);
-          border-radius: 12px;
-          padding: 12px 16px;
-          margin-bottom: 18px;
-          font-size: 0.85rem;
-          color: #ef4444;
-          text-align: center;
-        }
-
-        .submit-btn {
-          width: 100%;
-          padding: 16px;
-          background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
-          border: none;
-          border-radius: 14px;
-          color: white;
-          font-size: 1rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          margin-top: 8px;
-        }
-
-        .submit-btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(139, 92, 246, 0.35);
-        }
-
-        .submit-btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-          transform: none;
-        }
-
-        .divider {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          margin: 24px 0;
-        }
-
-        .divider-line {
-          flex: 1;
-          height: 1px;
-          background: ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'};
-        }
-
-        .divider-text {
-          font-size: 0.75rem;
-          color: ${isDark ? 'rgba(255,255,255,0.4)' : 'rgba(42,42,42,0.4)'};
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
-        }
-
-        .google-btn {
-          width: 100%;
-          padding: 14px;
-          background: ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.9)'};
-          border: 1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'};
-          border-radius: 14px;
-          color: ${isDark ? 'rgba(255,255,255,0.9)' : 'rgba(42,42,42,0.9)'};
-          font-size: 0.95rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-        }
-
-        .google-btn:hover {
-          background: ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,1)'};
-          box-shadow: 0 4px 15px ${isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.06)'};
-        }
-
-        .google-btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .footer-text {
-          text-align: center;
-          font-size: 0.9rem;
-          color: ${isDark ? 'rgba(255,255,255,0.5)' : 'rgba(42,42,42,0.5)'};
-        }
-
-        .footer-link {
-          color: #8b5cf6;
-          text-decoration: none;
-          font-weight: 500;
-          cursor: pointer;
-        }
-
-        .footer-link:hover {
-          text-decoration: underline;
-        }
-
-        .back-link {
-          position: absolute;
-          top: 24px;
-          left: 24px;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 10px 18px;
-          background: ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.7)'};
-          border: 1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'};
-          border-radius: 50px;
-          color: ${isDark ? 'rgba(255,255,255,0.7)' : 'rgba(42,42,42,0.7)'};
-          font-size: 0.85rem;
-          text-decoration: none;
-          transition: all 0.2s ease;
-        }
-
-        .back-link:hover {
-          background: ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.9)'};
-        }
-
-        .loading-spinner {
-          display: inline-block;
-          width: 18px;
-          height: 18px;
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          border-top-color: white;
-          border-radius: 50%;
-          animation: spin 0.6s linear infinite;
-        }
-
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
-
-      <div className="login-page">
-        <a href="/" className="back-link">← Back</a>
-
-        <div className="login-container">
-          <div className="logo">
-            <div className="logo-text">VERA</div>
-            <div className="logo-tagline">Welcome back</div>
-          </div>
-
-          <form className="form-card" onSubmit={handleSignIn}>
-            <h1 className="form-title">Sign In</h1>
-
-            {error && <div className="error-message">{error}</div>}
-
-            <div className="input-group">
-              <label className="input-label">Email</label>
-              <input
-                type="email"
-                className="input"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={loading}
-              />
-            </div>
-
-            <div className="input-group">
-              <label className="input-label">Password</label>
-              <input
-                type="password"
-                className="input"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={loading}
-              />
-            </div>
-
-            <button type="submit" className="submit-btn" disabled={loading}>
-              {loading ? <span className="loading-spinner" /> : 'Sign In'}
-            </button>
-
-            <div className="divider">
-              <div className="divider-line" />
-              <span className="divider-text">or</span>
-              <div className="divider-line" />
-            </div>
-
-            <button
-              type="button"
-              className="google-btn"
-              onClick={handleGoogleSignIn}
-              disabled={loading}
+        {!sent ? (
+          /* LOGIN FORM */
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 400,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            <h1
+              style={{
+                fontSize: 32,
+                fontWeight: 600,
+                marginBottom: 32,
+                textAlign: "center",
+              }}
             >
-              <svg width="18" height="18" viewBox="0 0 18 18">
-                <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
-                <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
-                <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707 0-.593.102-1.17.282-1.709V4.958H.957C.347 6.173 0 7.548 0 9c0 1.452.348 2.827.957 4.042l3.007-2.335z"/>
-                <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
-              </svg>
-              Continue with Google
-            </button>
-          </form>
+              Welcome back
+            </h1>
 
-          <div className="footer-text">
-            Don't have an account?{' '}
-            <a className="footer-link" onClick={() => router.push('/signup')}>
-              Create Account
-            </a>
+            {!showPassword ? (
+              /* MAGIC LINK FORM */
+              <form
+                onSubmit={handleMagicLink}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 16,
+                }}
+              >
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@domain.com"
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "16px 20px",
+                    borderRadius: 12,
+                    border: "1px solid #27272a",
+                    background: "#14141a",
+                    color: "white",
+                    fontSize: 16,
+                    outline: "none",
+                    transition: "border-color 0.2s ease",
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#8b5cf6";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "#27272a";
+                  }}
+                />
+
+                {error && (
+                  <p
+                    style={{
+                      color: "#f87171",
+                      fontSize: 14,
+                      textAlign: "center",
+                    }}
+                  >
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  style={{
+                    width: "100%",
+                    padding: "16px 24px",
+                    borderRadius: 12,
+                    background: loading
+                      ? "#4c1d95"
+                      : "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
+                    color: "white",
+                    border: "none",
+                    fontSize: 16,
+                    fontWeight: 600,
+                    cursor: loading ? "not-allowed" : "pointer",
+                    transition: "all 0.2s ease",
+                    boxShadow: loading
+                      ? "none"
+                      : "0 4px 14px 0 rgba(139, 92, 246, 0.3)",
+                  }}
+                >
+                  {loading ? "Sending..." : "Send sign-in link"}
+                </button>
+
+                {/* Password option */}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(true)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "#71717a",
+                    fontSize: 14,
+                    cursor: "pointer",
+                    padding: "8px",
+                    marginTop: 4,
+                  }}
+                >
+                  Or sign in with password
+                </button>
+              </form>
+            ) : (
+              /* PASSWORD FORM */
+              <form
+                onSubmit={handlePasswordLogin}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 16,
+                }}
+              >
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@domain.com"
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "16px 20px",
+                    borderRadius: 12,
+                    border: "1px solid #27272a",
+                    background: "#14141a",
+                    color: "white",
+                    fontSize: 16,
+                    outline: "none",
+                    transition: "border-color 0.2s ease",
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#8b5cf6";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "#27272a";
+                  }}
+                />
+
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "16px 20px",
+                    borderRadius: 12,
+                    border: "1px solid #27272a",
+                    background: "#14141a",
+                    color: "white",
+                    fontSize: 16,
+                    outline: "none",
+                    transition: "border-color 0.2s ease",
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#8b5cf6";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "#27272a";
+                  }}
+                />
+
+                {error && (
+                  <p
+                    style={{
+                      color: "#f87171",
+                      fontSize: 14,
+                      textAlign: "center",
+                    }}
+                  >
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  style={{
+                    width: "100%",
+                    padding: "16px 24px",
+                    borderRadius: 12,
+                    background: loading
+                      ? "#4c1d95"
+                      : "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
+                    color: "white",
+                    border: "none",
+                    fontSize: 16,
+                    fontWeight: 600,
+                    cursor: loading ? "not-allowed" : "pointer",
+                    transition: "all 0.2s ease",
+                    boxShadow: loading
+                      ? "none"
+                      : "0 4px 14px 0 rgba(139, 92, 246, 0.3)",
+                  }}
+                >
+                  {loading ? "Signing in..." : "Sign in"}
+                </button>
+
+                {/* Back to magic link */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPassword(false);
+                    setError("");
+                  }}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "#71717a",
+                    fontSize: 14,
+                    cursor: "pointer",
+                    padding: "8px",
+                    marginTop: 4,
+                  }}
+                >
+                  Use email link instead
+                </button>
+
+                {/* Forgot password */}
+                <Link
+                  href="/forgot-password"
+                  style={{
+                    color: "#71717a",
+                    fontSize: 13,
+                    textAlign: "center",
+                    textDecoration: "none",
+                  }}
+                >
+                  Forgot password?
+                </Link>
+              </form>
+            )}
+
+            {/* Sign up link */}
+            <p
+              style={{
+                fontSize: 14,
+                color: "#71717a",
+                marginTop: 32,
+                textAlign: "center",
+              }}
+            >
+              New to VERA?{" "}
+              <Link
+                href="/signup"
+                style={{
+                  color: "#8b5cf6",
+                  textDecoration: "none",
+                  fontWeight: 500,
+                }}
+              >
+                Start free
+              </Link>
+            </p>
           </div>
-        </div>
+        ) : (
+          /* SUCCESS STATE - Email sent */
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 400,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              textAlign: "center",
+            }}
+          >
+            {/* Checkmark */}
+            <div
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: "50%",
+                background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 24,
+                boxShadow: "0 4px 20px 0 rgba(139, 92, 246, 0.3)",
+              }}
+            >
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="white"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+
+            <h1
+              style={{
+                fontSize: 28,
+                fontWeight: 600,
+                marginBottom: 12,
+              }}
+            >
+              Check your email
+            </h1>
+            <p
+              style={{
+                fontSize: 16,
+                color: "#a1a1aa",
+                lineHeight: 1.6,
+                marginBottom: 8,
+              }}
+            >
+              We sent a sign-in link to
+            </p>
+            <p
+              style={{
+                fontSize: 16,
+                color: "#ffffff",
+                fontWeight: 500,
+                marginBottom: 24,
+              }}
+            >
+              {email}
+            </p>
+            <p
+              style={{
+                fontSize: 14,
+                color: "#71717a",
+                lineHeight: 1.6,
+              }}
+            >
+              Click the link in your email to sign in.
+              <br />
+              It may take a moment to arrive.
+            </p>
+
+            {/* Back option */}
+            <button
+              onClick={() => {
+                setSent(false);
+                setEmail("");
+              }}
+              style={{
+                marginTop: 32,
+                padding: "12px 24px",
+                borderRadius: 10,
+                background: "transparent",
+                color: "#8b5cf6",
+                border: "1px solid #27272a",
+                fontSize: 14,
+                fontWeight: 500,
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+              }}
+            >
+              Use a different email
+            </button>
+          </div>
+        )}
       </div>
-    </>
+    </main>
   );
 }

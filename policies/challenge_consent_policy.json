@@ -1,0 +1,80 @@
+{
+  "policy_id": "VERA-UI-CHALLENGE-CONSENT-001",
+  "version": "1.0.0",
+  "description": "User-facing consent flow for direct/challenging responses. Requires SIM stable and explicit user consent prior to IBA directness.",
+  "eligibility": {
+    "sim_required_state": ["stable"],
+    "disallow_if": {
+      "crisis_markers": true,
+      "dependency_markers": true,
+      "upgrade_pressure": true
+    },
+    "min_turns_before_repeat": 12,
+    "max_prompts_per_session": 2
+  },
+  "ui": {
+    "component": "ChallengeConsentChip",
+    "placement": "inline_after_assistant",
+    "label": "OPTIONAL",
+    "prompt": "Want a more direct take?",
+    "subtext": "Direct and grounded, never harsh.",
+    "buttons": [
+      {
+        "id": "challenge_on",
+        "label": "Challenge me",
+        "sets": { "challenge_consent": "granted", "challenge_scope": "single_turn" }
+      },
+      {
+        "id": "challenge_off",
+        "label": "Keep it supportive",
+        "sets": { "challenge_consent": "declined", "challenge_scope": "none" }
+      }
+    ],
+    "why_link": {
+      "label": "Why am I seeing this?",
+      "expanded_text": "You’ve been circling this. If you want, I can challenge the pattern constructively."
+    }
+  },
+  "response_rules": {
+    "on_granted": {
+      "required_preface": "I’ll be direct and grounded — not harsh. If it’s too much, tell me.",
+      "max_questions": 1,
+      "max_sentences_per_paragraph": 3,
+      "no_pressure_language": true
+    },
+    "on_declined": {
+      "assistant_ack": "Got it. We’ll keep this steady and supportive.",
+      "suppress_reprompt_for_turns": 12
+    }
+  },
+  "telemetry": {
+    "require_consent_before_challenge": true,
+    "consent_scope": "single_turn",
+    "required_fields": [
+      "challenge_prompt_shown",
+      "challenge_user_choice",
+      "challenge_consent_ts",
+      "challenge_applied_ts",
+      "challenge_scope",
+      "iba_active",
+      "sim_state"
+    ]
+  },
+  "ci_assertions": [
+    {
+      "rule_id": "CI-CHALLENGE-001",
+      "description": "If iba_active=true then challenge_user_choice must be 'challenge_on' within the same session and challenge_consent_ts must be <= challenge_applied_ts.",
+      "severity": "block"
+    },
+    {
+      "rule_id": "CI-CHALLENGE-002",
+      "description": "If sim_state != 'stable' then iba_active must be false.",
+      "severity": "block"
+    },
+    {
+      "rule_id": "CI-CHALLENGE-003",
+      "description": "challenge_prompt_shown must not exceed max_prompts_per_session.",
+      "severity": "warn"
+    }
+  ]
+}

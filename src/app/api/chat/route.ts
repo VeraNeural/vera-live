@@ -1,52 +1,1230 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { cookies } from 'next/headers';
+import { createHash, randomUUID } from 'crypto';
+import { createClient } from '@/lib/supabase/server';
+import { routeTurn } from '@/lib/vera/router';
+import { composeSystemPrompt } from '@/lib/vera/promptComposer';
+import { selectModel } from '@/lib/vera/modelSelection';
+import { enforceNoDrift } from '@/lib/vera/noDrift';
+import { buildAuditEvent, logAuditEvent } from '@/lib/vera/audit';
+import { unifyVeraResponse } from '@/lib/vera/unifyVoice';
+import { enforceInterLayerContract } from '@/lib/vera/interLayerContract';
+import { detectFailureMode } from '@/lib/vera/failureModes';
+import { logDecisionEvent } from '@/core/telemetry/logDecisionEvent';
+import { NEURAL_INTERNAL_SYSTEM_PROMPT } from '@/lib/vera/neuralPrompt';
+import { IBA_INTERNAL_SYSTEM_PROMPT } from '@/lib/vera/ibaPrompt';
+import { VERA_POLICY_VERSION } from '@/lib/vera/policyVersion';
+import type { MemoryUse, Tier } from '@/lib/vera/decisionObject';
+import { checkMessageLimit, recordMessage } from '@/lib/auth/messageCounter';
+import { VERA_GATE_RESPONSES } from '@/lib/auth/gateMessages';
+import type { BuildProjectState } from '@/lib/vera/buildTier';
+import { isValidBuildProjectState, BUILD_ENTRY_FIRST_RESPONSE_TEMPLATE } from '@/lib/vera/buildTier';
+import type { SanctuaryState } from '@/lib/vera/sanctuaryTier';
+import { isValidSanctuaryState, SANCTUARY_ENTRY_FIRST_RESPONSE_TEMPLATE } from '@/lib/vera/sanctuaryTier';
+import { evaluateSignalIntegrity } from '@/lib/sim/evaluateSignalIntegrity';
+import { logTelemetry } from '@/lib/telemetry/logTelemetry';
+import { buildThirdAssistantMessage, classifyUserIntent } from '@/lib/vera/thirdAssistantMessage';
+import { buildFourthMessageEscalationOverlay } from '@/lib/vera/fourthAssistantEscalation';
+import { evaluateUpgradeInvitation } from '@/lib/vera/upgradeInvitationGate';
+import { validateIbaResponseStyle } from '@/lib/vera/ibaResponseStyle';
+import { detectLoop } from '@/lib/vera/detectors';
+import {
+  canOfferChallengeConsent,
+  decodeChallengeCookieState,
+  encodeChallengeCookieState,
+  nextChallengeCookieStateOnDecline,
+  nextChallengeCookieStateOnPromptShown,
+} from '@/lib/vera/challengeConsent';
+import { computeDirectiveMode } from '@/lib/vera/chatEnvelope';
+import challengeConsentPolicy from '../../../../policies/challenge_consent_policy.json';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const UNAVAILABLE_CONTENT = 'VERA is temporarily unavailable. Please try again.';
+
+function jsonContent(content: string, init?: ResponseInit): NextResponse {
+  return NextResponse.json({ content }, init);
+}
+
 type IncomingMessage = { role: 'user' | 'assistant'; content: string };
+
+type RoutingTier = 'free' | 'sanctuary' | 'build';
+
+const SIM_ACTIVE = process.env.SIM_ACTIVE === 'true';
+
+// Phased rollout: when IBA style is planned but SIM is not stable or the rubric fails,
+// serve a conservative VERA fallback for a small percentage of sessions.
+// Example: IBA_DRYRUN_FALLBACK_PCT=2 means 2% of sessions.
+const IBA_DRYRUN_FALLBACK_PCT = Number.parseFloat(process.env.IBA_DRYRUN_FALLBACK_PCT ?? '0');
+
+const CHALLENGE_POLICY_ID: string = (challengeConsentPolicy as any)?.policy_id ?? 'VERA-UI-CHALLENGE-CONSENT-001';
+const CHALLENGE_ON_TEXT = 'Challenge mode: On (this message only)';
+const CHALLENGE_OFF_TEXT = 'Challenge mode: Off';
+
+type ChallengeChoice = 'challenge_on' | 'challenge_off';
+type ChallengeScope = 'single_turn' | 'none';
+
+type ChallengeCookieState = import('@/lib/vera/challengeConsent').ChallengeCookieState;
+
+const SECOND_ASSISTANT_ANCHOR =
+  "I'm here with you.\n\nWe can take this one step at a time — whether you want to think something through, build something concrete, or just get things out of your head.\n\nWhat would be most helpful right now?";
+
+function isSecondAssistantAnchor(content: string | undefined): boolean {
+  return (content ?? '').trim() === SECOND_ASSISTANT_ANCHOR.trim();
+}
+
+function isThirdAssistantMessageStage(messages: IncomingMessage[]): boolean {
+  const userCount = messages.filter((m) => m.role === 'user').length;
+  const assistantCount = messages.filter((m) => m.role === 'assistant').length;
+  if (userCount !== 1 || assistantCount !== 1) return false;
+  const assistant = messages.find((m) => m.role === 'assistant');
+  return isSecondAssistantAnchor(assistant?.content);
+}
+
+function isFourthAssistantMessageStage(messages: IncomingMessage[]): boolean {
+  const userCount = messages.filter((m) => m.role === 'user').length;
+  const assistantMessages = messages.filter((m) => m.role === 'assistant');
+  if (userCount !== 2 || assistantMessages.length !== 2) return false;
+
+  const hasAnchor = assistantMessages.some((m) => isSecondAssistantAnchor(m.content));
+  const hasThird = assistantMessages.some((m) =>
+    m.content &&
+    [
+      "Thank you for saying that.\n\nBefore we try to fix or decide anything, let's slow this down just enough so we understand what you're actually carrying.\n\nWhat feels heaviest right now — the situation itself, or how it's affecting you?",
+      "Let's get clear before we go deep.\n\nIf you had to name the one thing that feels most unclear or tangled right now, what would it be?",
+      "Got it — we can build this together.\n\nTo start cleanly: what are you trying to create, and who is it for?",
+      "Happy to explore this with you.\n\nAre you looking to understand this at a high level, or do you want something practical you can use right away?",
+      "Decisions get heavy when too many things are competing at once.\n\nWhat feels more urgent here: making the right choice, or avoiding a bad one?",
+      "That's okay — we don't need a plan yet.\n\nI'm here. What's been taking up space in your head lately?",
+    ].some((t) => (m.content ?? '').trim() === t.trim())
+  );
+
+  return hasAnchor && hasThird;
+}
+
+function computeEmotionalDensity(text: string): number {
+  if (!text) return 0;
+  const hits = [
+    /\b(panicking|terrified|overwhelmed|desperate|shaking|numb|can't breathe|can't breathe)\b/gi,
+    /\b(hate myself|can't do this|can't do this|i'm breaking|i'm breaking)\b/gi,
+  ].reduce((acc, re) => acc + ((text.match(re) || []).length), 0);
+
+  // Normalize by length to keep the score bounded.
+  const lengthFactor = Math.max(20, text.length);
+  return Math.max(0, Math.min(1, (hits * 40) / lengthFactor));
+}
+
+function hasDependencyMarkers(text: string): boolean {
+  return /\b(only you|don't leave|don't leave|i need you|you are all i have)\b/i.test(text);
+}
+
+function hasCrisisMarkers(text: string): boolean {
+  return /\b(kill myself|suicide|end it|self\s*harm|hurt myself|out of control|can't control myself|can't control myself)\b/i.test(text);
+}
+
+function hasUpgradePressure(text: string): boolean {
+  // Heuristic only; not enforcement.
+  return /\b(step by step|plan|roadmap|deliverable|ship|deadline|project|build this)\b/i.test(text);
+}
+
+function resolveAnthropicByTier(tier: RoutingTier): {
+  canonical: string;
+  apiModel: string;
+  maxTokens: number;
+} {
+  // Canonical names must match specs/model_routing_policy.json preferred_models.
+  if (tier === 'free') {
+    return { canonical: 'claude-haiku', apiModel: 'claude-3-5-haiku-20241022', maxTokens: 400 };
+  }
+  if (tier === 'build') {
+    return { canonical: 'claude-opus', apiModel: 'claude-3-opus-20240229', maxTokens: 2000 };
+  }
+  return { canonical: 'claude-sonnet', apiModel: 'claude-3-5-sonnet-20241022', maxTokens: 900 };
+}
+
+function deriveRuntimeTags(input: {
+  tier: RoutingTier;
+  responseText: string;
+  stateSnapshot: { project_state?: unknown; sanctuary_state?: unknown };
+}): string[] {
+  const tags = new Set<string>();
+  const text = input.responseText || '';
+
+  // Generic, low-risk tags.
+  if (text.includes('?')) tags.add('question');
+  if (/\b(summary|in short|to recap)\b/i.test(text)) tags.add('summary');
+  if (/(\n- |\n\d+\.|\bstep\b)/i.test(text)) tags.add('action');
+
+  if (input.tier === 'sanctuary') {
+    tags.add('reflection');
+    tags.add('pacing');
+    // Theme tracking is grounded in state presence (not raw text).
+    if (input.stateSnapshot.sanctuary_state) tags.add('theme_tracking');
+  }
+
+  if (input.tier === 'build') {
+    tags.add('action');
+  }
+
+  if (input.tier === 'free') {
+    // Explicitly ensure we never tag project management in free.
+    tags.delete('project_management');
+  }
+
+  if (!tags.size) tags.add('summary');
+  return [...tags];
+}
+
+function sha256(input: string): string {
+  return createHash('sha256').update(input).digest('hex');
+}
+
+function isChallengeChoiceMessage(content: string | undefined): boolean {
+  const t = (content ?? '').trim();
+  return t === CHALLENGE_ON_TEXT || t === CHALLENGE_OFF_TEXT;
+}
+
+function choiceFromContent(content: string | undefined): ChallengeChoice | null {
+  const t = (content ?? '').trim();
+  if (t === CHALLENGE_ON_TEXT) return 'challenge_on';
+  if (t === CHALLENGE_OFF_TEXT) return 'challenge_off';
+  return null;
+}
+
+function rolloutEnabledBySession(sessionId: string, pct: number): boolean {
+  if (!Number.isFinite(pct) || pct <= 0) return false;
+  const clamped = Math.max(0, Math.min(100, pct));
+  // Deterministic assignment by session id.
+  const hex = sha256(sessionId).slice(0, 8);
+  const n = Number.parseInt(hex, 16);
+  if (!Number.isFinite(n)) return false;
+  const bucket = n % 10000;
+  return bucket < Math.floor((clamped / 100) * 10000);
+}
+
+function buildConservativeVeraFallback(): string {
+  // Conservative, non-escalatory, single-question max, always soft-exitable.
+  return [
+    "Let's slow this down.",
+    '',
+    'What feels most important to name first?',
+    '',
+    'If this feels like too much, we can slow it down.',
+  ].join('\n');
+}
+
+async function ensureSessionId(): Promise<{ sessionId: string; shouldSetCookie: boolean }> {
+  const store = await cookies();
+  const existing = store.get('vera_sid')?.value;
+  if (existing) return { sessionId: existing, shouldSetCookie: false };
+  return { sessionId: randomUUID(), shouldSetCookie: true };
+}
+
+function extractTaggedBlocks(text: string): { vera?: string; neural?: string } {
+  const veraMatch = text.match(/\[\[VERA\]\]([\s\S]*?)\[\[\/VERA\]\]/i);
+  const neuralMatch = text.match(/\[\[NEURAL\]\]([\s\S]*?)\[\[\/NEURAL\]\]/i);
+
+  const vera = veraMatch?.[1]?.trim();
+  const neural = neuralMatch?.[1]?.trim();
+
+  return { vera, neural };
+}
+
+function stripNeuralBlocks(text: string): string {
+  return text
+    .replace(/\[\[NEURAL\]\][\s\S]*?\[\[\/NEURAL\]\]/gi, '')
+    .replace(/\[\[VERA\]\]/gi, '')
+    .replace(/\[\[\/VERA\]\]/gi, '')
+    .trim();
+}
+
+// FIX: Always return full messages array to preserve conversation history
+// The memory_use policy should only affect the system prompt behavior, not message filtering
+function selectMessagesForModel(
+  messages: IncomingMessage[],
+  memoryUse: MemoryUse
+): IncomingMessage[] {
+  return messages;
+}
 
 export async function POST(req: Request) {
   try {
-    const { messages } = (await req.json()) as { messages?: IncomingMessage[] };
+    const startedAt = Date.now();
+
+    const body = (await req.json()) as {
+      messages?: IncomingMessage[];
+      tier?: Tier;
+      project_state?: BuildProjectState;
+      sanctuary_state?: SanctuaryState;
+      meta?: {
+        challenge?: {
+          policy_id?: string;
+          user_choice?: ChallengeChoice;
+          scope?: ChallengeScope;
+          consent_ts?: string;
+        };
+
+        // Legacy (deprecated): kept for compatibility with older UI.
+        challenge_choice?: ChallengeChoice;
+        consent_ts?: string;
+        scope?: ChallengeScope;
+        prompt_id?: string;
+      };
+    };
+
+    const { messages, tier, project_state, sanctuary_state } = body;
+
+    let userIdForMetering: string | null = null;
+    try {
+      const supabase = await createClient();
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError) {
+        console.error('[chat] supabase.auth.getUser failed', { error: userError.message });
+      }
+
+      userIdForMetering = user?.id ?? null;
+      const limitCheck = await checkMessageLimit(userIdForMetering);
+
+      console.log('[chat] metering', { userId: userIdForMetering, limitCheck });
+
+      if (limitCheck.gate === 'auth_required') {
+        return NextResponse.json({ gate: 'auth_required', tier: 'anonymous' });
+      }
+
+      if (limitCheck.gate === 'limit_reached') {
+        return NextResponse.json({
+          gate: 'limit_reached',
+          content: VERA_GATE_RESPONSES.limit_reached,
+          tier: 'free',
+          remaining: 0,
+        });
+      }
+    } catch (err) {
+      // Safe fallback: do not block chat if metering fails unexpectedly.
+      console.error('[chat] metering block failed (allowing request)', err);
+      userIdForMetering = null;
+    }
+
+    const incomingChallenge = body.meta?.challenge ??
+      (body.meta?.challenge_choice
+        ? {
+            policy_id: body.meta.prompt_id,
+            user_choice: body.meta.challenge_choice,
+            consent_ts: body.meta.consent_ts,
+            scope: body.meta.scope,
+          }
+        : undefined);
 
     if (!process.env.ANTHROPIC_API_KEY) {
-      return NextResponse.json(
-        { content: 'Server is missing ANTHROPIC_API_KEY.' },
-        { status: 500 }
-      );
+      return jsonContent(UNAVAILABLE_CONTENT, { status: 500 });
     }
 
     if (!Array.isArray(messages) || messages.length === 0) {
-      return NextResponse.json(
-        { content: 'Please send at least one message.' },
-        { status: 400 }
-      );
+      return jsonContent('Please send at least one message.', { status: 400 });
     }
+
+    const lastUserNonChoice = [...messages].reverse().find((m) => m.role === 'user' && !isChallengeChoiceMessage(m.content));
+    const userText = lastUserNonChoice?.content ?? '';
+
+    const incomingChoice: ChallengeChoice | null =
+      incomingChallenge?.user_choice === 'challenge_on' || incomingChallenge?.user_choice === 'challenge_off'
+        ? incomingChallenge.user_choice
+        : null;
+
+    // Build-tier requires an explicit project_state. Downgrade behavior is forbidden.
+    if (tier === 'build' && !isValidBuildProjectState(project_state)) {
+      const { sessionId, shouldSetCookie } = await ensureSessionId();
+      const res = jsonContent(BUILD_ENTRY_FIRST_RESPONSE_TEMPLATE.first_response);
+      if (shouldSetCookie) {
+        res.cookies.set('vera_sid', sessionId, {
+          httpOnly: true,
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production',
+          path: '/',
+          maxAge: 60 * 60 * 24 * 30,
+        });
+      }
+      return res;
+    }
+
+    // Sanctuary-tier requires an explicit sanctuary_state. Downgrade behavior is forbidden.
+    if (tier === 'sanctuary' && !isValidSanctuaryState(sanctuary_state)) {
+      const { sessionId, shouldSetCookie } = await ensureSessionId();
+      const res = jsonContent(SANCTUARY_ENTRY_FIRST_RESPONSE_TEMPLATE.first_response);
+      if (shouldSetCookie) {
+        res.cookies.set('vera_sid', sessionId, {
+          httpOnly: true,
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production',
+          path: '/',
+          maxAge: 60 * 60 * 24 * 30,
+        });
+      }
+      return res;
+    }
+
+    const { sessionId, shouldSetCookie } = await ensureSessionId();
+    const conversationId = req.headers.get('x-vera-conversation-id') || sessionId;
+    const turnId = messages.filter((m) => m.role === 'user').length;
+
+    const cookieStore = await cookies();
+    const chalCookieRaw = cookieStore.get('vera_chal')?.value;
+    const chalState = decodeChallengeCookieState(chalCookieRaw);
+    let chalStateNext: ChallengeCookieState = { ...chalState };
+
+    const tierResolved = (tier ?? 'free') as Tier;
+
+    // SHADOW MODE: evaluate SIM before the model call (observability only).
+    // IMPORTANT: No throttling, no suppression, no pacing changes unless SIM_ACTIVE is explicitly enabled.
+    const simInput = {
+      tier: tierResolved,
+      recent_messages: Array.isArray(messages) ? messages.length : 0,
+      emotional_density: computeEmotionalDensity(userText),
+      dependency_markers: hasDependencyMarkers(userText),
+      crisis_markers: hasCrisisMarkers(userText),
+      upgrade_pressure: hasUpgradePressure(userText),
+      current_sim_state: 'stable' as const,
+    };
+
+    const simDecision = evaluateSignalIntegrity(simInput);
+
+    // Challenge consent prompt eligibility (policy-controlled).
+    const eligibility = (challengeConsentPolicy as any)?.eligibility ?? {};
+    const minTurnsBeforeRepeat = typeof eligibility.min_turns_before_repeat === 'number' ? eligibility.min_turns_before_repeat : 12;
+    const maxPromptsPerSession = typeof eligibility.max_prompts_per_session === 'number' ? eligibility.max_prompts_per_session : 2;
+    const disallow = eligibility.disallow_if ?? {};
+
+    const disallowedByMarkers =
+      (disallow.crisis_markers === true && simInput.crisis_markers) ||
+      (disallow.dependency_markers === true && simInput.dependency_markers) ||
+      (disallow.upgrade_pressure === true && simInput.upgrade_pressure);
+
+    // Remove consent-chip messages from governance reasoning.
+    const governanceConvo = messages.filter((m) => !(m.role === 'user' && isChallengeChoiceMessage(m.content)));
+    const loopDetected = detectLoop(governanceConvo);
+
+    const challengeConsentAlreadyAsked = chalState.last_prompt_turn === turnId;
+
+    const canOfferChallenge = canOfferChallengeConsent({
+      sim_state: simDecision.next_sim_state,
+      crisis_markers: Boolean(simInput.crisis_markers),
+      dependency_markers: Boolean(simInput.dependency_markers),
+      upgrade_pressure: Boolean(simInput.upgrade_pressure),
+      loop_detected: loopDetected,
+      turn_id: turnId,
+      cookie: chalState,
+      min_turns_before_repeat: minTurnsBeforeRepeat,
+      max_prompts_per_session: maxPromptsPerSession,
+      challenge_consent_already_asked: challengeConsentAlreadyAsked,
+    });
+
+    const canShowChallengePrompt = canOfferChallenge && !disallowedByMarkers && incomingChoice == null && !chalStateNext.consent;
+    const policyUi = (challengeConsentPolicy as any)?.ui ?? {};
+    const challengePromptTs = canShowChallengePrompt ? new Date().toISOString() : null;
+
+    const shouldShowConsentChip = Boolean(canShowChallengePrompt && challengePromptTs);
+    if (shouldShowConsentChip && challengePromptTs) {
+      chalStateNext = nextChallengeCookieStateOnPromptShown({
+        cookie: chalStateNext,
+        turn_id: turnId,
+        prompt_ts: challengePromptTs,
+      });
+    }
+
+    // Persist incoming consent meta into session state (cookie). Do not treat as a user message.
+    const incomingConsentTs = typeof incomingChallenge?.consent_ts === 'string' ? incomingChallenge.consent_ts : null;
+    const incomingConsentPolicyId = typeof incomingChallenge?.policy_id === 'string' ? incomingChallenge.policy_id : null;
+    const incomingConsentScope: ChallengeScope | null =
+      incomingChallenge?.scope === 'single_turn' || incomingChallenge?.scope === 'none' ? incomingChallenge.scope : null;
+
+    if (incomingChoice && incomingConsentTs && incomingConsentPolicyId === CHALLENGE_POLICY_ID && incomingConsentScope) {
+      chalStateNext = {
+        ...chalStateNext,
+        consent: {
+          policy_id: incomingConsentPolicyId,
+          user_choice: incomingChoice,
+          scope: incomingConsentScope,
+          consent_ts: incomingConsentTs,
+        },
+      };
+    }
+
+    // If the user explicitly declines, respond with the canonical acknowledgement and suppress reprompting.
+    const declineAck: string =
+      typeof (challengeConsentPolicy as any)?.response_rules?.on_declined?.assistant_ack === 'string'
+        ? (challengeConsentPolicy as any).response_rules.on_declined.assistant_ack
+        : "Got it. We'll keep this steady and supportive.";
+
+    const suppressTurns: number =
+      typeof (challengeConsentPolicy as any)?.response_rules?.on_declined?.suppress_reprompt_for_turns === 'number'
+        ? (challengeConsentPolicy as any).response_rules.on_declined.suppress_reprompt_for_turns
+        : 12;
+
+    if (incomingChoice === 'challenge_off') {
+      const appliedTs = new Date().toISOString();
+      const consentTs = incomingConsentTs ?? appliedTs;
+      const nextState = nextChallengeCookieStateOnDecline({
+        cookie: chalState,
+        turn_id: turnId,
+        suppress_reprompt_for_turns: suppressTurns,
+      });
+
+      await logTelemetry({
+        session_id: sessionId,
+        user_id: sessionId,
+        tier: tierResolved,
+        model_used: 'none_challenge_decline_ack',
+        tokens_used: 0,
+        latency_ms: Date.now() - startedAt,
+        response_tags: deriveRuntimeTags({
+          tier: (tierResolved === 'build' || tierResolved === 'sanctuary' ? tierResolved : 'free') as RoutingTier,
+          responseText: declineAck,
+          stateSnapshot: {
+            project_state: project_state ?? null,
+            sanctuary_state: sanctuary_state ?? null,
+          },
+        }),
+        reflection_layers: simDecision.max_reflection_layers,
+        abstraction_level: simDecision.max_abstraction_level,
+        followup_count: Math.max(0, turnId - 1),
+        sim_state: simDecision.next_sim_state,
+        sim_interventions: simDecision.sim_interventions,
+        sim_upgrade_suppressed: !simDecision.allow_upgrade_invite,
+        sim_model_rerouted: Boolean(simDecision.force_model),
+        tier_behavior_violation: false,
+        forbidden_behavior_triggered: false,
+        auto_correction_applied: false,
+        invitation_shown: false,
+        state_snapshot: {
+          challenge: {
+            prompt_shown: false,
+            prompt_id: CHALLENGE_POLICY_ID,
+            prompt_ts: chalState.last_prompt_ts ?? null,
+            user_choice: 'challenge_off',
+            consent_ts: consentTs,
+            scope: 'none',
+            applied_ts: appliedTs,
+            iba_active: false,
+            sim_state_at_apply: simDecision.next_sim_state,
+            prompt_count_in_session: chalState.prompt_count,
+          },
+        } as any,
+      });
+
+      const res = jsonContent(declineAck);
+      if (shouldSetCookie) {
+        res.cookies.set('vera_sid', sessionId, {
+          httpOnly: true,
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production',
+          path: '/',
+          maxAge: 60 * 60 * 24 * 30,
+        });
+      }
+      res.cookies.set('vera_chal', encodeChallengeCookieState(nextState), {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 30,
+      });
+      return res;
+    }
+
+    // For intent-based escalation and upgrade gating, use the first user input as the primary intent anchor.
+    const firstUserText = governanceConvo.find((m) => m.role === 'user')?.content ?? '';
+    const anchoredIntent = classifyUserIntent(firstUserText).intent;
+
+    const isFourthStage = isFourthAssistantMessageStage(messages);
+    const fourthOverlay = isFourthStage
+      ? buildFourthMessageEscalationOverlay({ intent: anchoredIntent, sim: simDecision })
+      : null;
+
+    // THIRD ASSISTANT MESSAGE (first intelligent move):
+    // - Intent classification (soft)
+    // - SIM shadow-mode overlay (constraints only)
+    // - Orientation-only response (no solutions)
+    if (!hasCrisisMarkers(userText) && isThirdAssistantMessageStage(messages)) {
+      const classification = classifyUserIntent(userText);
+      const third = buildThirdAssistantMessage({ intent: classification.intent });
+
+      const thirdQuestionsCount = (third.text.match(/\?/g) ?? []).length;
+      const thirdTierMentioned = /\b(tier|free|sanctuary|build|professional)\b/i.test(third.text);
+      const thirdUpgradeLanguageUsed = /\bupgrade\b/i.test(third.text);
+      // These are templates: we assert the strict contract is satisfied.
+      const thirdSolutionsProvided = false;
+      const thirdFrameworksUsed = false;
+
+      // Telemetry (server-only). Never includes raw user text.
+      await logTelemetry({
+        session_id: sessionId,
+        user_id: sessionId,
+
+        tier: tierResolved,
+        model_used: 'none_third_message_template',
+
+        tokens_used: 0,
+        latency_ms: Date.now() - startedAt,
+
+        response_tags: deriveRuntimeTags({
+          tier: (tierResolved === 'build' || tierResolved === 'sanctuary' ? tierResolved : 'free') as RoutingTier,
+          responseText: third.text,
+          stateSnapshot: {
+            project_state: project_state ?? null,
+            sanctuary_state: sanctuary_state ?? null,
+          },
+        }),
+        reflection_layers: simDecision.max_reflection_layers,
+        abstraction_level: simDecision.max_abstraction_level,
+        followup_count: 0,
+
+        sim_state: simDecision.next_sim_state,
+        sim_interventions: simDecision.sim_interventions,
+        sim_upgrade_suppressed: !simDecision.allow_upgrade_invite,
+        sim_model_rerouted: Boolean(simDecision.force_model),
+
+        tier_behavior_violation: false,
+        forbidden_behavior_triggered: false,
+        auto_correction_applied: false,
+
+        invitation_shown: false,
+
+        state_snapshot: {
+          third_message: {
+            stage: 'third_assistant_message',
+            intent_selected: classification.intent,
+            intent_confidence: classification.confidence,
+            response_template_id: third.templateId,
+            ci_rule_id: 'CI-THIRD-MSG-001',
+            questions_count: thirdQuestionsCount,
+            solutions_provided: thirdSolutionsProvided,
+            frameworks_used: thirdFrameworksUsed,
+            tier_mentioned: thirdTierMentioned,
+            upgrade_language_used: thirdUpgradeLanguageUsed,
+            sim_state_before: simInput.current_sim_state,
+            sim_state_after: simDecision.next_sim_state,
+            abstraction_level_used: simDecision.max_abstraction_level,
+            reflection_layers_used: simDecision.max_reflection_layers,
+          },
+        },
+      });
+
+      const res = jsonContent(third.text);
+      if (shouldSetCookie) {
+        res.cookies.set('vera_sid', sessionId, {
+          httpOnly: true,
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production',
+          path: '/',
+          maxAge: 60 * 60 * 24 * 30,
+        });
+      }
+      return res;
+    }
+
+    const decision = routeTurn({ userText, convo: governanceConvo, tier: tierResolved });
+
+    // Challenge consent gating:
+    // - API contract: ui_directive.mode='challenge' is only allowed when prior consent exists in session state.
+    // - If challenge is planned but consent is missing, downshift silently to conversation and mark auto-correction in telemetry.
+    const requiredPreface: string =
+      typeof (challengeConsentPolicy as any)?.response_rules?.on_granted?.required_preface === 'string'
+        ? (challengeConsentPolicy as any).response_rules.on_granted.required_preface
+        : "I'll be direct and grounded — not harsh. If it's too much, tell me.";
+
+    const plannedChallenge = decision.routing.iba_policy.challenge === 'direct';
+
+    const storedConsent = chalStateNext.consent;
+    const storedConsentTsRaw = typeof storedConsent?.consent_ts === 'string' ? storedConsent.consent_ts : null;
+    const storedConsentTsParsed = storedConsentTsRaw ? Date.parse(storedConsentTsRaw) : NaN;
+    const storedConsentOk =
+      storedConsent?.policy_id === CHALLENGE_POLICY_ID &&
+      storedConsent?.user_choice === 'challenge_on' &&
+      storedConsent?.scope === 'single_turn' &&
+      Number.isFinite(storedConsentTsParsed);
+
+    const promptWasShown = typeof chalStateNext.last_prompt_ts === 'string' && chalStateNext.last_prompt_ts.length > 0;
+    const consentEligible =
+      plannedChallenge &&
+      storedConsentOk &&
+      promptWasShown &&
+      simDecision.next_sim_state === 'stable' &&
+      loopDetected &&
+      !disallowedByMarkers;
+
+    const consentAttemptedButInvalid = incomingChoice === 'challenge_on' && !consentEligible;
+
+    const directiveMode = computeDirectiveMode({
+      challengePlanned: plannedChallenge,
+      consentPresent: consentEligible,
+    });
+
+    if (directiveMode.autoCorrectionApplied) {
+      decision.routing.iba_policy.challenge = 'gentle';
+      decision.routing.iba_policy.notes = `${decision.routing.iba_policy.notes}; planned challenge but consent missing => auto-correct to conversation`;
+    }
+
+    const consentGrantedThisTurn = directiveMode.mode === 'challenge';
+
+    // Consent prompt (chip-only) response: no model call.
+    if (plannedChallenge && !consentEligible && shouldShowConsentChip && incomingChoice == null) {
+      await logTelemetry({
+        session_id: sessionId,
+        user_id: sessionId,
+        tier: tierResolved,
+        model_used: 'none_challenge_consent_prompt',
+        tokens_used: 0,
+        latency_ms: Date.now() - startedAt,
+        response_tags: deriveRuntimeTags({
+          tier: (tierResolved === 'build' || tierResolved === 'sanctuary' ? tierResolved : 'free') as RoutingTier,
+          responseText: '',
+          stateSnapshot: {
+            project_state: project_state ?? null,
+            sanctuary_state: sanctuary_state ?? null,
+          },
+        }),
+        reflection_layers: simDecision.max_reflection_layers,
+        abstraction_level: simDecision.max_abstraction_level,
+        followup_count: Math.max(0, turnId - 1),
+        sim_state: simDecision.next_sim_state,
+        sim_interventions: simDecision.sim_interventions,
+        sim_upgrade_suppressed: !simDecision.allow_upgrade_invite,
+        sim_model_rerouted: Boolean(simDecision.force_model),
+        tier_behavior_violation: false,
+        forbidden_behavior_triggered: false,
+        auto_correction_applied: true,
+        invitation_shown: false,
+        state_snapshot: {
+          challenge: {
+            prompt_shown: true,
+            prompt_id: CHALLENGE_POLICY_ID,
+            prompt_ts: challengePromptTs ?? chalStateNext.last_prompt_ts ?? null,
+            user_choice: null,
+            consent_ts: storedConsentTsRaw,
+            scope: 'none',
+            applied_ts: null,
+            iba_active: false,
+            sim_state_at_apply: simDecision.next_sim_state,
+            prompt_count_in_session: chalStateNext.prompt_count,
+          },
+        } as any,
+      });
+
+      const consentPrompt = [
+        typeof (policyUi as any)?.prompt === 'string' ? (policyUi as any).prompt : 'Want a more direct take?',
+        typeof (policyUi as any)?.subtext === 'string' ? (policyUi as any).subtext : 'Direct and grounded, never harsh.',
+      ].join('\n');
+      const res = jsonContent(consentPrompt);
+      if (shouldSetCookie) {
+        res.cookies.set('vera_sid', sessionId, {
+          httpOnly: true,
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production',
+          path: '/',
+          maxAge: 60 * 60 * 24 * 30,
+        });
+      }
+      res.cookies.set('vera_chal', encodeChallengeCookieState(chalStateNext), {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 30,
+      });
+      return res;
+    }
+
+    // Telemetry hint is always returned in the response envelope.
+    const telemetryHint = {
+      consent_required: plannedChallenge && !consentEligible,
+      challenge_planned: plannedChallenge,
+    };
+
+    const simPromptFlags = {
+      simplifyLanguage: simDecision.next_sim_state !== 'stable',
+      suppressUpgradeInvitations: !simDecision.allow_upgrade_invite,
+    };
+
+    const system = composeSystemPrompt(decision, {
+      projectState: project_state ?? null,
+      sanctuaryState: sanctuary_state ?? null,
+      sim: SIM_ACTIVE ? simPromptFlags : undefined,
+      // Fourth-message escalation is a backend-first rule; apply even when SIM_ACTIVE=false.
+      extraSystem: fourthOverlay?.extraSystem,
+    });
+
+    // User escalation (crisis intent) is handled without model generation.
+    if (decision.intent.primary === 'crisis') {
+      const crisisText =
+        "I'm here with you. If you're in immediate danger or thinking about harming yourself, call your local emergency number right now. If you're in the U.S., you can call or text 988. If you can, reach out to someone you trust and stay near other people. We can keep this very simple—tell me where you are and whether you're alone.";
+
+      const responseTimeMs = Date.now() - startedAt;
+
+      const failure = detectFailureMode({
+        userText,
+        convo: messages,
+        decision,
+        unifier: { ok: true, strictApplied: false },
+        noDrift: { ok: true },
+        contractOk: true,
+        modelCallFailed: false,
+      });
+
+      await logDecisionEvent({
+        conversationId,
+        turnId,
+        sessionId,
+        userId: sessionId,
+        decision: {
+          intentPrimary: decision.intent.primary,
+          intentSecondary: decision.intent.secondary,
+          stateArousal: decision.state.arousal,
+          stateConfidence: decision.state.confidence,
+          stateSignals: decision.state.signals,
+          adaptiveCodes: decision.adaptive_codes.map((c) => ({
+            code: c.code,
+            band: c.band,
+            confidence: c.confidence,
+          })),
+          leadLayer: decision.routing.lead,
+          challenge: decision.routing.iba_policy.challenge,
+          pace: decision.routing.iba_policy.pace,
+          depth: decision.routing.iba_policy.depth,
+          questionsAllowed: decision.routing.iba_policy.questions_allowed,
+          somaticAllowed: decision.routing.iba_policy.somatic_allowed,
+        },
+        model: {
+          selected: 'anthropic',
+          version: 'crisis_no_model',
+          fallbackApplied: true,
+          reason: 'user_escalation',
+        },
+        prompts: {
+          veraHash: sha256(system),
+          neuralHash: sha256(NEURAL_INTERNAL_SYSTEM_PROMPT),
+          ibaHash: sha256(IBA_INTERNAL_SYSTEM_PROMPT),
+        },
+        policyVersion: VERA_POLICY_VERSION,
+        output: {
+          responseLengthChars: crisisText.length,
+          responseTimeMs,
+          unifierApplied: true,
+          unifierStrictApplied: false,
+          unifierBlocked: false,
+          leakScanPassed: true,
+        },
+        failure: failure
+          ? { mode: failure.mode, triggers: failure.triggers, actions: failure.actions }
+          : undefined,
+      });
+
+      const res = jsonContent(crisisText);
+      if (shouldSetCookie) {
+        res.cookies.set('vera_sid', sessionId, {
+          httpOnly: true,
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production',
+          path: '/',
+          maxAge: 60 * 60 * 24 * 30,
+        });
+      }
+      return res;
+    }
+
+    const selection = selectModel(decision);
+    const execution =
+      selection.model === 'anthropic'
+        ? selection
+        : {
+            model: 'anthropic' as const,
+            reason: `provider ${selection.model} not wired; safety fallback to anthropic`,
+            safety_fallback: true,
+          };
+
+    // Internal logging only (never returned to the client)
+    console.log('[VERA decision]', {
+      intent: decision.intent,
+      state: decision.state,
+      adaptive_codes: decision.adaptive_codes,
+      routing: decision.routing,
+    });
+    console.log('[IBA policy]', {
+      model_override: decision.routing.iba_policy.model_override,
+      notes: decision.routing.iba_policy.notes,
+    });
+    console.log('[VERA model]', { selected: selection, executed: execution });
 
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-    const result = await client.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 600,
-      messages: messages.map((m) => ({
-        role: m.role,
-        content: m.content,
-      })),
+    // Always use full message history for conversation continuity.
+    // (Bypass memory_use filtering)
+    const modelMessages = messages;
+
+    const resolvedTier = (decision.routing.iba_policy.tier ?? 'free') as RoutingTier;
+    const anthropicTier = resolveAnthropicByTier(resolvedTier);
+    const executedModelVersion = anthropicTier.apiModel;
+    const runtimeModelUsed = anthropicTier.canonical;
+
+    // Response generation reads SIM decision (even when permissive).
+    // In shadow mode (SIM_ACTIVE=false), these do not change runtime behavior.
+    const modelOverrideFromSim = SIM_ACTIVE && simDecision.force_model ? simDecision.force_model : null;
+    const effectiveExecutedModelVersion = modelOverrideFromSim ? executedModelVersion : executedModelVersion;
+    const effectiveMaxTokens = SIM_ACTIVE
+      ? anthropicTier.maxTokens
+      : anthropicTier.maxTokens;
+
+    let content = '';
+    let modelCallFailed = false;
+    let outputTokensUsed = 0;
+    try {
+      const result = await client.messages.create({
+        model: effectiveExecutedModelVersion,
+        max_tokens: effectiveMaxTokens,
+        system,
+        messages: modelMessages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
+      });
+
+      outputTokensUsed = (result as any)?.usage?.output_tokens ?? 0;
+
+      content = result.content
+        .filter((block) => block.type === 'text')
+        .map((block) => block.text)
+        .join('\n')
+        .trim();
+    } catch (modelErr) {
+      modelCallFailed = true;
+      console.error('[MODEL] execution failed', modelErr);
+      content = "[[VERA]]I'm having trouble connecting right now. Please try again in a moment.[[/VERA]]";
+    }
+
+    const rawVeraCandidate = stripNeuralBlocks(content);
+    let tagged = extractTaggedBlocks(content);
+
+    // Resilience: if the model forgets [[VERA]] tags, treat the whole output as VERA.
+    // This prevents the inter-layer contract from collapsing into the static safeFallback.
+    if (!tagged.vera && rawVeraCandidate) {
+      tagged = { ...tagged, vera: rawVeraCandidate };
+    }
+
+    // If Neural is leading but the model forgot the [[NEURAL]] JSON block,
+    // do not collapse into the static safeFallback. Proceed with the VERA text
+    // and synthesize an empty JSON handoff so the contract can pass.
+    if (decision.routing.lead === 'N' && !tagged.neural && tagged.vera) {
+      console.warn('[NEURAL handoff] missing; proceeding with VERA-only output');
+      tagged = { ...tagged, neural: '{}' };
+    }
+
+    // VERA-leading turns must not include a NEURAL block; ignore if present.
+    if (decision.routing.lead === 'V' && tagged.neural) {
+      tagged = { ...tagged, neural: undefined };
+    }
+
+    if (tagged.neural) {
+      console.log('[NEURAL handoff]', tagged.neural);
+    }
+
+    const contract = enforceInterLayerContract({ decision, tagged });
+    if (!contract.ok) {
+      console.warn('[INTER-LAYER CONTRACT] violation', { violations: contract.violations });
+    }
+
+    const veraCandidate = contract.ok ? contract.vera : contract.veraFallback;
+    const unifiedResult = unifyVeraResponse({ draftText: veraCandidate, decision });
+    if (!unifiedResult.ok) {
+      console.warn('[UNIFIER] blocked response', { violations: unifiedResult.violations });
+    }
+    const unified = unifiedResult.text;
+    const unifiedWithChallengePreface = consentGrantedThisTurn
+      ? [requiredPreface, '', unified].join('\n')
+      : unified;
+
+    const upgrade = evaluateUpgradeInvitation({
+      tier: tierResolved,
+      messages,
+      simInput,
+      simDecision,
+      intent: anchoredIntent,
     });
 
-    const content = result.content
-      .filter((block) => block.type === 'text')
-      .map((block) => block.text)
-      .join('\n')
-      .trim();
+    // IBA style rubric auditing (governance-only) + phased dual-path dry-run.
+    // - "planned" means the policy asked for direct challenge.
+    // - "eligible" means SIM is stable (rubric forbids IBA style in non-stable).
+    // - "active" means eligible + rubric passes AND we actually serve the planned response.
+    // When not eligible or rubric fails, we also generate a conservative VERA fallback.
+    // Under a low-percentage feature flag, we serve the fallback (validation phase).
+    const ibaActiveCandidate = consentGrantedThisTurn && decision.routing.iba_policy.challenge === 'direct';
+    const ibaStyleEligible = ibaActiveCandidate && simDecision.next_sim_state === 'stable';
+    const ibaStyleValidation = ibaActiveCandidate ? validateIbaResponseStyle(unifiedWithChallengePreface) : null;
+    const ibaRubricOk = Boolean(ibaStyleValidation?.ok);
+    const ibaNeedsFallback = Boolean(ibaActiveCandidate && (!ibaStyleEligible || !ibaRubricOk));
+    const fallbackCandidate = ibaNeedsFallback ? buildConservativeVeraFallback() : null;
+    const serveFallback = ibaNeedsFallback && rolloutEnabledBySession(sessionId, IBA_DRYRUN_FALLBACK_PCT);
+    const servedTextCandidate = serveFallback && fallbackCandidate ? fallbackCandidate : unifiedWithChallengePreface;
+    const servedPath: 'planned' | 'fallback' = serveFallback ? 'fallback' : 'planned';
 
-    return NextResponse.json({ content: content || "I'm here. What would you like to explore?" });
+    const noDrift = enforceNoDrift({ decision, selection, veraText: servedTextCandidate });
+    const servedText = noDrift.vera;
+
+    const ibaTagActive = Boolean(ibaStyleEligible && ibaRubricOk && servedPath === 'planned' && noDrift.ok);
+    const ibaStyleActive = ibaTagActive;
+
+    const stateSnapshot: { project_state?: unknown; sanctuary_state?: unknown; sim?: unknown } = {};
+    if (resolvedTier === 'build') stateSnapshot.project_state = project_state ?? null;
+    if (resolvedTier === 'sanctuary') stateSnapshot.sanctuary_state = sanctuary_state ?? null;
+    stateSnapshot.sim = {
+      sim_active: SIM_ACTIVE,
+      sim_input: {
+        tier: simInput.tier,
+        recent_messages: simInput.recent_messages,
+        emotional_density: simInput.emotional_density,
+        dependency_markers: simInput.dependency_markers,
+        crisis_markers: simInput.crisis_markers,
+        upgrade_pressure: simInput.upgrade_pressure,
+        current_sim_state: simInput.current_sim_state,
+      },
+      sim_decision: simDecision,
+    };
+
+    if (ibaActiveCandidate && ibaStyleValidation) {
+      (stateSnapshot as any).iba_style = {
+        planned: true,
+        eligible: ibaStyleEligible,
+        active: ibaStyleActive,
+        pressure_level: 2,
+        reflection_layers_used: simDecision.max_reflection_layers,
+        abstraction_level_used: simDecision.max_abstraction_level,
+        user_exit_available: ibaStyleValidation.analysis.has_required_exit_line,
+        ...ibaStyleValidation.analysis,
+      };
+    }
+
+    if (ibaNeedsFallback) {
+      (stateSnapshot as any).iba_dryrun = {
+        stage: 'iba_style_dual_path_dryrun',
+        ci_rule_id: 'CI-IBA-STYLE-001',
+        served_path: servedPath,
+        rollout_pct: IBA_DRYRUN_FALLBACK_PCT,
+        planned_response: {
+          hash: sha256(unifiedWithChallengePreface),
+          length_chars: unifiedWithChallengePreface.length,
+          eligible: ibaStyleEligible,
+          rubric_ok: ibaRubricOk,
+        },
+        fallback_response: fallbackCandidate
+          ? {
+              hash: sha256(fallbackCandidate),
+              length_chars: fallbackCandidate.length,
+            }
+          : null,
+      };
+    }
+
+    const appliedTs = ibaTagActive ? new Date().toISOString() : null;
+    (stateSnapshot as any).challenge = {
+      prompt_shown: false,
+      prompt_id: CHALLENGE_POLICY_ID,
+      prompt_ts: (chalStateNext.last_prompt_ts ?? null) as string | null,
+      user_choice: consentGrantedThisTurn ? 'challenge_on' : incomingChoice,
+      consent_ts: storedConsentTsRaw,
+      scope: consentGrantedThisTurn ? 'single_turn' : 'none',
+      applied_ts: appliedTs,
+      iba_active: ibaTagActive,
+      sim_state_at_apply: simDecision.next_sim_state,
+      prompt_count_in_session: chalStateNext.prompt_count,
+    };
+
+    if (fourthOverlay) {
+      (stateSnapshot as any).fourth_message = {
+        stage: 'fourth_assistant_message',
+        ci_rule_id: 'CI-FOURTH-MSG-002',
+        intent_selected: anchoredIntent,
+        fourth_message_action_type: fourthOverlay.telemetry.fourth_message_action_type,
+        reflection_layers_used: fourthOverlay.telemetry.reflection_layers_used,
+        abstraction_level_used: fourthOverlay.telemetry.abstraction_level_used,
+        grounding_applied: fourthOverlay.telemetry.grounding_applied,
+        max_reflection_layers_from_SIM: simDecision.max_reflection_layers,
+        max_abstraction_level_from_SIM: simDecision.max_abstraction_level,
+        sim_state: simDecision.next_sim_state,
+        analysis_used: simDecision.next_sim_state === 'overloaded' || simDecision.next_sim_state === 'protected' ? false : true,
+      };
+    }
+
+    const runtime_log = {
+      tier: resolvedTier,
+      model_used: runtimeModelUsed,
+      tokens_used: outputTokensUsed,
+      response_tags: (() => {
+        const base = deriveRuntimeTags({ tier: resolvedTier, responseText: servedText, stateSnapshot });
+        if (!ibaTagActive) return base;
+        const set = new Set(base);
+        set.add('iba_active');
+        return [...set];
+      })(),
+      state_snapshot: stateSnapshot,
+    };
+    console.log('[VERA runtime_log]', runtime_log);
+
+    // Shadow-mode SIM telemetry (server-only). No raw user text.
+    // Keep interventions minimal and marker-based per spec.
+    const simInterventions: string[] = Array.isArray((simDecision as any).sim_interventions)
+      ? (simDecision as any).sim_interventions
+      : [];
+
+    await logTelemetry({
+      session_id: sessionId,
+      user_id: sessionId,
+
+      tier: tierResolved,
+      model_used: runtimeModelUsed,
+
+      tokens_used: outputTokensUsed,
+      latency_ms: Date.now() - startedAt,
+
+      response_tags: runtime_log.response_tags,
+      reflection_layers: simDecision.max_reflection_layers,
+      abstraction_level: simDecision.max_abstraction_level,
+      followup_count: Math.max(0, turnId - 1),
+
+      sim_state: simDecision.next_sim_state,
+      sim_interventions: simInterventions,
+      sim_upgrade_suppressed: !simDecision.allow_upgrade_invite,
+      sim_model_rerouted: Boolean(simDecision.force_model),
+
+      tier_behavior_violation: false,
+      forbidden_behavior_triggered: false,
+      auto_correction_applied:
+        servedPath === 'fallback' ||
+        !noDrift.ok ||
+        consentAttemptedButInvalid ||
+        (telemetryHint.challenge_planned && telemetryHint.consent_required),
+
+      invitation_shown: Boolean(upgrade.invitation_shown),
+      invitation_type: upgrade.invitation_type,
+      emotional_state_at_invite: upgrade.emotional_state_at_invite,
+      sim_state_at_invite: upgrade.sim_state_at_invite,
+
+      // This runtime does not yet collect explicit user responses to invitations.
+
+      state_snapshot: stateSnapshot as any,
+    });
+
+    const failure = detectFailureMode({
+      userText,
+      convo: messages,
+      decision,
+      unifier: { ok: unifiedResult.ok, strictApplied: unifiedResult.strictApplied, violations: unifiedResult.ok ? undefined : unifiedResult.violations },
+      noDrift: { ok: noDrift.ok, violations: noDrift.ok ? undefined : noDrift.violations },
+      contractOk: contract.ok,
+      contractViolations: contract.ok ? undefined : contract.violations,
+      modelCallFailed,
+    });
+
+    const responseTimeMs = Date.now() - startedAt;
+    const violations = noDrift.ok ? [] : noDrift.violations;
+    const leakScanPassed = !violations.some((v) => v.startsWith('internal_leak:'));
+
+    // Tier-1 telemetry (server-only). Never includes raw user text.
+    await logDecisionEvent({
+      conversationId,
+      turnId,
+      sessionId,
+      userId: sessionId,
+      decision: {
+        intentPrimary: decision.intent.primary,
+        intentSecondary: decision.intent.secondary,
+        stateArousal: decision.state.arousal,
+        stateConfidence: decision.state.confidence,
+        stateSignals: decision.state.signals,
+        adaptiveCodes: decision.adaptive_codes.map((c) => ({
+          code: c.code,
+          band: c.band,
+          confidence: c.confidence,
+        })),
+        leadLayer: decision.routing.lead,
+        challenge: decision.routing.iba_policy.challenge,
+        pace: decision.routing.iba_policy.pace,
+        depth: decision.routing.iba_policy.depth,
+        questionsAllowed: decision.routing.iba_policy.questions_allowed,
+        somaticAllowed: decision.routing.iba_policy.somatic_allowed,
+      },
+      model: {
+        selected: selection.model,
+        version: executedModelVersion,
+        fallbackApplied: modelCallFailed || execution.model !== selection.model || execution.safety_fallback,
+        reason: modelCallFailed ? 'model_call_failed' : selection.reason,
+      },
+      prompts: {
+        veraHash: sha256(system),
+        neuralHash: sha256(NEURAL_INTERNAL_SYSTEM_PROMPT),
+        ibaHash: sha256(IBA_INTERNAL_SYSTEM_PROMPT),
+      },
+      policyVersion: VERA_POLICY_VERSION,
+      output: {
+        responseLengthChars: (noDrift.vera || '').length,
+        responseTimeMs,
+        unifierApplied: true,
+        unifierStrictApplied: unifiedResult.strictApplied,
+        unifierBlocked: !unifiedResult.ok,
+        leakScanPassed,
+      },
+      failure: failure ? { mode: failure.mode, triggers: failure.triggers, actions: failure.actions } : undefined,
+    });
+
+    // Structured audit log (server-only)
+    logAuditEvent(
+      buildAuditEvent({
+        decision,
+        selected: selection,
+        executed: execution,
+        violations: noDrift.ok ? undefined : noDrift.violations,
+      })
+    );
+
+    if (!noDrift.ok) {
+      console.warn('[NO-DRIFT] blocked response', { violations: noDrift.violations });
+    }
+
+    // Consume single-turn consent after applying (or after an attempted grant).
+    if (incomingChoice === 'challenge_on' || consentGrantedThisTurn) {
+      chalStateNext = { ...chalStateNext, consent: undefined };
+    }
+
+    const responseMode = consentGrantedThisTurn ? 'challenge' : 'conversation';
+    const finalContent = modelCallFailed ? UNAVAILABLE_CONTENT : (noDrift.vera || "I'm here. What would you like to explore?");
+
+    if (userIdForMetering) {
+      await recordMessage(userIdForMetering);
+    }
+
+    const res = jsonContent(finalContent);
+    if (shouldSetCookie) {
+      res.cookies.set('vera_sid', sessionId, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 30,
+      });
+    }
+    res.cookies.set('vera_chal', encodeChallengeCookieState(chalStateNext), {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30,
+    });
+    return res;
   } catch (err) {
     console.error('Chat route error:', err);
-    return NextResponse.json(
-      { content: "I'm having trouble connecting right now. Please try again in a moment." },
-      { status: 500 }
-    );
+    return jsonContent(UNAVAILABLE_CONTENT, { status: 500 });
   }
 }

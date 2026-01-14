@@ -1,765 +1,589 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
+import { VoiceButton } from "@/components/VoiceButton";
+import {
+  GATE_MESSAGES,
+  SANCTUARY_PREVIEW,
+  type GateType,
+} from "@/lib/auth/gateMessages";
 
-export default function VeraHome() {
-  const router = useRouter();
-  const [mounted, setMounted] = useState(false);
-  const [timeOfDay, setTimeOfDay] = useState<'morning' | 'afternoon' | 'evening' | 'night'>('morning');
-  const [breathPhase, setBreathPhase] = useState(0);
-  const [inputValue, setInputValue] = useState('');
+type Message = {
+  role: "user" | "assistant";
+  content: string;
+};
 
-  // Function to calculate time of day
-  const calculateTimeOfDay = () => {
-    const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) return 'morning';
-    if (hour >= 12 && hour < 17) return 'afternoon';
-    if (hour >= 17 && hour < 21) return 'evening';
-    return 'night';
-  };
+const QUICK_STARTS = [
+  "Job search support",
+  "Build a project",
+  "Write together",
+  "Research & understand",
+  "Learn something new",
+  "Design & structure ideas",
+  "Think through a business",
+  "Just talk",
+];
+
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) {
+    return "Good morning";
+  } else if (hour >= 12 && hour < 17) {
+    return "Good afternoon";
+  } else if (hour >= 17 && hour < 21) {
+    return "Good evening";
+  } else {
+    return "Good evening";
+  }
+}
+
+export default function Page() {
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [greeting] = useState(getGreeting());
+  const endRef = useRef<HTMLDivElement>(null);
+  const [activeGate, setActiveGate] = useState<GateType | null>(null);
+
+  const hasStarted = messages.length > 0;
 
   useEffect(() => {
-    // Set time immediately
-    setTimeOfDay(calculateTimeOfDay());
-    setMounted(true);
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
-    // Update time every minute
-    const timeInterval = setInterval(() => {
-      setTimeOfDay(calculateTimeOfDay());
-    }, 60000);
+  const gateDismissible = activeGate === "limit_reached";
 
-    const breathInterval = setInterval(() => {
-      setBreathPhase(prev => (prev + 1) % 100);
-    }, 80);
+  useEffect(() => {
+    if (!activeGate) return;
+    if (!gateDismissible) return;
 
-    return () => {
-      clearInterval(timeInterval);
-      clearInterval(breathInterval);
-    };
-  }, []);
-
-  const isDark = timeOfDay === 'evening' || timeOfDay === 'night';
-  const breathValue = Math.sin(breathPhase * 0.0628) * 0.5 + 0.5;
-
-  const getGreeting = () => {
-    switch (timeOfDay) {
-      case 'morning': return 'Good morning';
-      case 'afternoon': return 'Good afternoon';
-      case 'evening': return 'Good evening';
-      case 'night': return 'Welcome';
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setActiveGate(null);
     }
-  };
 
-  const quickActions = [
-    { id: 'overwhelmed', label: "I'm feeling overwhelmed" },
-    { id: 'jobs', label: 'Help me find a job' },
-    { id: 'write', label: 'Write something' },
-    { id: 'build', label: 'Build a project' },
-    { id: 'research', label: 'Research a topic' },
-    { id: 'talk', label: 'Just talk' },
-  ];
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [activeGate, gateDismissible]);
 
-  const ecosystem = [
-    { id: 'sanctuary', name: 'Sanctuary', essence: 'YOUR SPACE', href: '/sanctuary', iconType: 'home' },
-    { id: 'pulse', name: 'Pulse', essence: 'CONNECT WITH OTHERS', href: '/pulse', iconType: 'heart' },
-    { id: 'professionals', name: 'Professionals', essence: 'EXPERTS & THERAPISTS', href: '/professionals', iconType: 'users' },
-    { id: 'assessment', name: 'Assessment', essence: 'KNOW YOURSELF', href: '/assessment', iconType: 'compass' },
-    { id: 'vds', name: 'VDS Studio', essence: 'CREATE BEAUTY', href: '/vds', iconType: 'design' },
-    { id: 'sim', name: 'Signal Integrity Mode', essence: 'COMING SOON', href: '/signal-integrity-mode', iconType: 'shield' },
-  ];
+  async function sendMessage(text?: string) {
+    const content = (text ?? input).trim();
+    if (!content || loading) return;
 
-  // Icon components matching Sanctuary style
-  const renderIcon = (type: string, isDark: boolean) => {
-    const color = isDark ? 'rgba(160, 140, 180, 0.7)' : 'rgba(120, 100, 140, 0.6)';
-    
-    switch (type) {
-      case 'home':
-        return (
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-            <polyline points="9,22 9,12 15,12 15,22" />
-          </svg>
-        );
-      case 'heart':
-        return (
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c084a0" strokeWidth="1.5">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-          </svg>
-        );
-      case 'users':
-        return (
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-          </svg>
-        );
-      case 'design':
-        return (
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
-            <rect x="3" y="3" width="18" height="14" rx="2" />
-            <line x1="3" y1="9" x2="21" y2="9" />
-            <line x1="9" y1="21" x2="15" y2="21" />
-            <line x1="12" y1="17" x2="12" y2="21" />
-          </svg>
-        );
-      case 'book':
-        return (
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
-            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-          </svg>
-        );
-      case 'handshake':
-        return (
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            <polyline points="9,12 11,14 15,10" />
-          </svg>
-        );
-      case 'shield':
-        return (
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            <circle cx="12" cy="11" r="3" />
-          </svg>
-        );
-      case 'compass':
-        return (
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
-            <circle cx="12" cy="12" r="10" />
-            <polygon points="16.24,7.76 14.12,14.12 7.76,16.24 9.88,9.88" fill={color} opacity="0.3" />
-          </svg>
-        );
-      default:
-        return (
-          <div style={{
-            width: 28,
-            height: 28,
-            borderRadius: '50%',
-            border: `2px solid ${color}`,
-          }} />
-        );
+    // Snapshot state for safe revert in gate flows.
+    const messagesSnapshot = messages;
+
+    const userMessage: Message = { role: "user", content };
+    setMessages((m) => [...m, userMessage]);
+    setInput("");
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [...messages, userMessage],
+        }),
+      });
+
+      const data = await res.json();
+
+      const gate = (data?.gate ?? null) as GateType | null;
+      if (gate === "auth_required") {
+        // Do NOT append the user's message. Restore input and show gate UI.
+        setMessages(messagesSnapshot);
+        setInput(content);
+        setActiveGate("auth_required");
+        return;
+      }
+
+      if (gate === "limit_reached") {
+        // Show VERA's in-chat response, then show the gate modal.
+        setMessages((m) => [
+          ...m,
+          {
+            role: "assistant",
+            content:
+              data?.content ??
+              "I can stay with you — Sanctuary unlocks longer conversations, saved sessions, and deeper support.",
+          },
+        ]);
+        setActiveGate("limit_reached");
+        return;
+      }
+
+      setMessages((m) => [
+        ...m,
+        {
+          role: "assistant",
+          content: data?.content ?? "Sorry — no response returned.",
+        },
+      ]);
+    } catch {
+      setMessages((m) => [
+        ...m,
+        {
+          role: "assistant",
+          content: "Sorry — something went wrong. Please try again.",
+        },
+      ]);
+    } finally {
+      setLoading(false);
     }
-  };
-
-  if (!mounted) {
-    return <div style={{ minHeight: '100vh', background: '#f8f6f2' }} />;
   }
 
   return (
-    <>
-      <style jsx global>{`
-        * {
-          box-sizing: border-box;
-          margin: 0;
-          padding: 0;
-        }
-        
-        html, body {
-          font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          -webkit-font-smoothing: antialiased;
-          -moz-osx-font-smoothing: grayscale;
-        }
-
-        .vera-home {
-          min-height: 100vh;
-          min-height: 100dvh;
-          background: ${isDark
-            ? 'linear-gradient(180deg, #0a0a12 0%, #12121f 50%, #0d0d18 100%)'
-            : 'linear-gradient(180deg, #f8f6f2 0%, #f0ebe3 50%, #e8e2d8 100%)'};
-          transition: background 0.8s ease;
-          position: relative;
-          overflow-x: hidden;
-        }
-
-        /* Header */
-        .header {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          z-index: 100;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 16px 24px;
-          background: ${isDark 
-            ? 'linear-gradient(to bottom, rgba(10, 10, 18, 0.95) 0%, rgba(10, 10, 18, 0) 100%)'
-            : 'linear-gradient(to bottom, rgba(248, 246, 242, 0.95) 0%, rgba(248, 246, 242, 0) 100%)'};
-          backdrop-filter: blur(12px);
-        }
-
-        .logo {
-          display: flex;
-          align-items: center;
-        }
-
-        .logo-text {
-          font-size: 1.4rem;
-          font-weight: 500;
-          letter-spacing: 0.12em;
-          color: ${isDark ? 'rgba(255,255,255,0.9)' : 'rgba(42,42,42,0.9)'};
-          font-family: 'Cormorant Garamond', Georgia, serif;
-        }
-
-        .header-actions {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .btn-secondary {
-          padding: 10px 20px;
-          background: transparent;
-          border: none;
-          color: ${isDark ? 'rgba(255,255,255,0.7)' : 'rgba(42,42,42,0.7)'};
-          font-size: 0.9rem;
-          font-weight: 500;
-          cursor: pointer;
-          border-radius: 50px;
-          transition: all 0.2s ease;
-        }
-
-        .btn-secondary:hover {
-          background: ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'};
-        }
-
-        .btn-primary {
-          padding: 10px 24px;
-          background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
-          border: none;
-          border-radius: 50px;
-          color: white;
-          font-size: 0.9rem;
-          font-weight: 500;
-          cursor: pointer;
-          box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
-          transition: all 0.2s ease;
-        }
-
-        .btn-primary:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
-        }
-
-        /* Main Content */
-        .main {
-          padding: 100px 20px 60px;
-          max-width: 800px;
-          margin: 0 auto;
-        }
-
-        /* Hero Section */
-        .hero {
-          text-align: center;
-          margin-bottom: 32px;
-        }
-
-        .greeting {
-          font-family: 'Cormorant Garamond', Georgia, serif;
-          font-size: clamp(2rem, 6vw, 3rem);
-          font-weight: 300;
-          color: ${isDark ? 'rgba(255,255,255,0.9)' : 'rgba(42,42,42,0.85)'};
-          margin-bottom: 8px;
-          line-height: 1.2;
-        }
-
-        .tagline {
-          font-size: clamp(0.95rem, 2.5vw, 1.1rem);
-          color: ${isDark ? 'rgba(255,255,255,0.5)' : 'rgba(42,42,42,0.5)'};
-          font-weight: 300;
-        }
-
-        /* Orb */
-        .orb-container {
-          display: flex;
-          justify-content: center;
-          margin: 32px 0;
-        }
-
-        .orb-wrapper {
-          position: relative;
-          cursor: pointer;
-        }
-
-        .orb {
-          width: 90px;
-          height: 90px;
-          border-radius: 50%;
-          background: radial-gradient(circle at 35% 35%, 
-            rgba(255,255,255,0.3) 0%, 
-            rgba(139,92,246,0.5) 30%, 
-            rgba(139,92,246,0.4) 60%, 
-            rgba(124,58,237,0.3) 100%);
-          box-shadow: 
-            0 0 ${35 + breathValue * 18}px rgba(139,92,246,${0.25 + breathValue * 0.12}),
-            0 0 ${70 + breathValue * 35}px rgba(139,92,246,${0.1 + breathValue * 0.06}),
-            inset 0 0 35px rgba(255,255,255,0.15);
-          transform: scale(${1 + breathValue * 0.03});
-          transition: box-shadow 0.3s ease;
-        }
-
-        .orb-ring {
-          position: absolute;
-          top: -10px;
-          left: -10px;
-          right: -10px;
-          bottom: -10px;
-          border-radius: 50%;
-          border: 1px solid rgba(139, 92, 246, ${0.12 + breathValue * 0.08});
-          transform: scale(${0.95 + breathValue * 0.04});
-          pointer-events: none;
-        }
-
-        .orb-ring-outer {
-          top: -20px;
-          left: -20px;
-          right: -20px;
-          bottom: -20px;
-          border-color: rgba(139, 92, 246, ${0.06 + breathValue * 0.04});
-        }
-
-        .orb-label {
-          position: absolute;
-          bottom: -26px;
-          left: 50%;
-          transform: translateX(-50%);
-          font-size: 0.55rem;
-          letter-spacing: 0.25em;
-          text-transform: uppercase;
-          color: ${isDark ? 'rgba(255,255,255,0.4)' : 'rgba(42,42,42,0.4)'};
-          white-space: nowrap;
-        }
-
-        /* Chat Input */
-        .chat-section {
-          margin-bottom: 36px;
-        }
-
-        .chat-container {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 6px 6px 6px 20px;
-          background: ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.8)'};
-          border: 1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'};
-          border-radius: 60px;
-          box-shadow: 0 4px 20px ${isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.04)'};
-          backdrop-filter: blur(20px);
-        }
-
-        .chat-input {
-          flex: 1;
-          padding: 14px 0;
-          background: transparent;
-          border: none;
-          font-size: 1rem;
-          color: ${isDark ? 'rgba(255,255,255,0.9)' : 'rgba(42,42,42,0.9)'};
-          outline: none;
-          min-width: 0;
-        }
-
-        .chat-input::placeholder {
-          color: ${isDark ? 'rgba(255,255,255,0.4)' : 'rgba(42,42,42,0.4)'};
-        }
-
-        .chat-submit {
-          padding: 14px 28px;
-          background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
-          border: none;
-          border-radius: 50px;
-          color: white;
-          font-size: 0.9rem;
-          font-weight: 500;
-          cursor: pointer;
-          white-space: nowrap;
-          transition: all 0.2s ease;
-          flex-shrink: 0;
-        }
-
-        .chat-submit:hover {
-          transform: scale(1.02);
-          box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
-        }
-
-        /* Quick Actions */
-        .section {
-          margin-bottom: 36px;
-        }
-
-        .section-label {
-          font-size: 0.6rem;
-          text-transform: uppercase;
-          letter-spacing: 0.2em;
-          color: ${isDark ? 'rgba(255,255,255,0.3)' : 'rgba(42,42,42,0.3)'};
-          text-align: center;
-          margin-bottom: 14px;
-        }
-
-        .quick-actions {
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: center;
-          gap: 8px;
-        }
-
-        .quick-action {
-          padding: 10px 16px;
-          background: ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.7)'};
-          border: 1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'};
-          border-radius: 50px;
-          font-size: 0.8rem;
-          color: ${isDark ? 'rgba(255,255,255,0.65)' : 'rgba(42,42,42,0.65)'};
-          cursor: pointer;
-          backdrop-filter: blur(10px);
-          transition: all 0.2s ease;
-        }
-
-        .quick-action:hover {
-          background: ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.9)'};
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px ${isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.06)'};
-        }
-
-        /* Ecosystem - Sanctuary Style Cards */
-        .ecosystem-grid {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 10px;
-        }
-
-        .ecosystem-card {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 24px 16px;
-          min-height: 120px;
-          background: ${isDark 
-            ? 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)'
-            : 'linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.65) 100%)'};
-          border: 1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'};
-          border-radius: 16px;
-          text-align: center;
-          cursor: pointer;
-          text-decoration: none;
-          backdrop-filter: blur(20px);
-          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-          position: relative;
-          overflow: hidden;
-        }
-
-        .ecosystem-card::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(circle at 50% 30%, rgba(255,255,255,0.08) 0%, transparent 60%);
-          pointer-events: none;
-        }
-
-        .ecosystem-card:hover {
-          transform: translateY(-4px);
-          border-color: ${isDark ? 'rgba(140, 120, 200, 0.3)' : 'rgba(160, 140, 120, 0.3)'};
-          box-shadow: 
-            0 12px 35px ${isDark ? 'rgba(0,0,0,0.35)' : 'rgba(0,0,0,0.1)'},
-            0 0 25px ${isDark ? 'rgba(140, 120, 200, 0.1)' : 'rgba(160, 140, 120, 0.1)'};
-        }
-
-        .ecosystem-icon {
-          margin-bottom: 12px;
-          opacity: 0.9;
-        }
-
-        .ecosystem-name {
-          font-size: 0.9rem;
-          font-weight: 500;
-          color: ${isDark ? 'rgba(255,255,255,0.9)' : 'rgba(42,42,42,0.85)'};
-          margin-bottom: 4px;
-        }
-
-        .ecosystem-essence {
-          font-size: 0.55rem;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: ${isDark ? 'rgba(255,255,255,0.35)' : 'rgba(42,42,42,0.4)'};
-        }
-
-        /* Trust Section */
-        .trust {
-          text-align: center;
-          padding-top: 28px;
-          border-top: 1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'};
-        }
-
-        .trust-label {
-          font-size: 0.65rem;
-          color: ${isDark ? 'rgba(255,255,255,0.3)' : 'rgba(42,42,42,0.3)'};
-          margin-bottom: 14px;
-        }
-
-        .trust-stats {
-          display: flex;
-          justify-content: center;
-          gap: 36px;
-        }
-
-        .trust-stat {
-          text-align: center;
-        }
-
-        .trust-value {
-          font-size: 1.3rem;
-          font-weight: 600;
-          color: ${isDark ? 'rgba(255,255,255,0.9)' : 'rgba(42,42,42,0.9)'};
-        }
-
-        .trust-name {
-          font-size: 0.55rem;
-          color: ${isDark ? 'rgba(255,255,255,0.4)' : 'rgba(42,42,42,0.4)'};
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-
-        /* VERA Indicator */
-        .vera-indicator {
-          position: fixed;
-          bottom: 20px;
-          right: 20px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 10px 16px;
-          background: ${isDark ? 'rgba(20, 20, 35, 0.95)' : 'rgba(255,255,255,0.95)'};
-          border: 1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'};
-          border-radius: 50px;
-          box-shadow: 0 4px 20px ${isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.08)'};
-          backdrop-filter: blur(20px);
-          z-index: 100;
-        }
-
-        .vera-dot {
-          width: 8px;
-          height: 8px;
-          background: #34d399;
-          border-radius: 50%;
-          animation: pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-
-        .vera-text {
-          font-size: 0.75rem;
-          color: ${isDark ? 'rgba(255,255,255,0.6)' : 'rgba(42,42,42,0.6)'};
-        }
-
-        /* Responsive */
-        @media (min-width: 600px) {
-          .ecosystem-grid {
-            grid-template-columns: repeat(3, 1fr);
-          }
-        }
-
-        @media (max-width: 600px) {
-          .header {
-            padding: 12px 16px;
-          }
-
-          .logo-text {
-            font-size: 1.1rem;
-          }
-
-          .btn-secondary {
-            padding: 8px 12px;
-            font-size: 0.8rem;
-          }
-
-          .btn-primary {
-            padding: 8px 16px;
-            font-size: 0.8rem;
-          }
-
-          .main {
-            padding: 85px 16px 80px;
-          }
-
-          .orb {
-            width: 75px;
-            height: 75px;
-          }
-
-          .chat-container {
-            padding: 4px 4px 4px 16px;
-          }
-
-          .chat-input {
-            font-size: 0.9rem;
-            padding: 12px 0;
-          }
-
-          .chat-submit {
-            padding: 12px 20px;
-            font-size: 0.85rem;
-          }
-
-          .quick-action {
-            padding: 8px 12px;
-            font-size: 0.75rem;
-          }
-
-          .ecosystem-card {
-            padding: 20px 12px;
-            min-height: 100px;
-          }
-
-          .ecosystem-name {
-            font-size: 0.8rem;
-          }
-
-          .trust-stats {
-            gap: 24px;
-          }
-
-          .vera-indicator {
-            bottom: 16px;
-            right: 16px;
-            padding: 8px 12px;
-          }
-        }
-      `}</style>
-
-      <div className="vera-home">
-        {/* Header */}
-        <header className="header">
-          <div className="logo">
-            <span className="logo-text">VERA</span>
-          </div>
-
-          <div className="header-actions">
-            <button className="btn-secondary" onClick={() => router.push('/login')}>
-              Sign In
-            </button>
-            <button className="btn-primary" onClick={() => router.push('/signup')}>
-              Get Started
+    <main
+      style={{
+        minHeight: "100vh",
+        background: "#0b0b0f",
+        color: "white",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* HEADER */}
+      <header
+        style={{
+          height: 64,
+          padding: "0 24px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <strong style={{ fontSize: 18, letterSpacing: "0.5px" }}>VERA</strong>
+        <div style={{ display: "flex", gap: 12 }}>
+          {/* Sign In Button - Ghost style */}
+          <Link
+            href="/login"
+            style={{
+              padding: "10px 20px",
+              borderRadius: 12,
+              background: "transparent",
+              color: "#a1a1aa",
+              border: "1px solid #27272a",
+              fontSize: 14,
+              fontWeight: 500,
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "#8b5cf6";
+              e.currentTarget.style.color = "#ffffff";
+              e.currentTarget.style.background = "rgba(139, 92, 246, 0.06)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "#27272a";
+              e.currentTarget.style.color = "#a1a1aa";
+              e.currentTarget.style.background = "transparent";
+            }}
+          >
+            Sign In
+          </Link>
+          {/* Start Free Button - Primary style */}
+          <Link
+            href="/signup"
+            style={{
+              padding: "10px 20px",
+              borderRadius: 12,
+              background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
+              color: "white",
+              border: "none",
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              boxShadow: "0 4px 14px 0 rgba(139, 92, 246, 0.3)",
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-1px)";
+              e.currentTarget.style.boxShadow = "0 6px 20px 0 rgba(139, 92, 246, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 4px 14px 0 rgba(139, 92, 246, 0.3)";
+            }}
+          >
+            Start Free
+          </Link>
+        </div>
+      </header>
+
+      {/* HERO / INTRO */}
+      {!hasStarted && (
+        <section
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            paddingBottom: 120,
+          }}
+        >
+          {/* ORB */}
+          <div
+            style={{
+              width: 120,
+              height: 120,
+              borderRadius: "50%",
+              background:
+                "radial-gradient(circle at 30% 30%, #c4b5fd, #7c3aed)",
+              marginBottom: 32,
+              boxShadow: "0 0 60px 20px rgba(139, 92, 246, 0.2)",
+            }}
+          />
+
+          <h1 style={{ fontSize: 48, marginBottom: 8, fontWeight: 600 }}>
+            {greeting}
+          </h1>
+          <p style={{ opacity: 0.6, marginBottom: 40, fontSize: 16 }}>
+            AI that helps you do anything, your way, your pace
+          </p>
+
+          {/* INPUT (INITIAL) */}
+          <div
+            style={{
+              display: "flex",
+              width: "100%",
+              maxWidth: 720,
+              background: "#14141a",
+              borderRadius: 999,
+              padding: "8px 12px",
+              marginBottom: 24,
+              border: "1px solid #27272a",
+            }}
+          >
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              placeholder="What's on your mind?"
+              style={{
+                flex: 1,
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                color: "white",
+                fontSize: 16,
+                padding: "8px 12px",
+              }}
+            />
+
+            <VoiceButton />
+
+            <button
+              onClick={() => sendMessage()}
+              style={{
+                padding: "12px 24px",
+                borderRadius: 999,
+                background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
+                color: "white",
+                border: "none",
+                fontSize: 15,
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "scale(1.02)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "scale(1)";
+              }}
+            >
+              Ask VERA
             </button>
           </div>
-        </header>
 
-        {/* Main Content */}
-        <main className="main">
-          {/* Hero */}
-          <section className="hero">
-            <h1 className="greeting">{getGreeting()}</h1>
-            <p className="tagline">AI that helps you do anything, while keeping you grounded</p>
-          </section>
-
-          {/* Orb */}
-          <div className="orb-container">
-            <div className="orb-wrapper" onClick={() => router.push('/chat')}>
-              <div className="orb-ring" />
-              <div className="orb-ring orb-ring-outer" />
-              <div className="orb" />
-              <span className="orb-label">Talk to VERA</span>
-            </div>
-          </div>
-
-          {/* Chat Input */}
-          <section className="chat-section">
-            <div className="chat-container">
-              <input
-                type="text"
-                className="chat-input"
-                placeholder="Ask VERA anything..."
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && router.push('/chat')}
-              />
-              <button className="chat-submit" onClick={() => router.push('/chat')}>
-                Ask VERA
+          {/* QUICK START */}
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 10,
+              justifyContent: "center",
+              maxWidth: 720,
+            }}
+          >
+            {QUICK_STARTS.map((q) => (
+              <button
+                key={q}
+                onClick={() => sendMessage(q)}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: 999,
+                  background: "#1c1c24",
+                  color: "#a1a1aa",
+                  border: "1px solid #27272a",
+                  fontSize: 14,
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "#8b5cf6";
+                  e.currentTarget.style.color = "#ffffff";
+                  e.currentTarget.style.background = "#252530";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "#27272a";
+                  e.currentTarget.style.color = "#a1a1aa";
+                  e.currentTarget.style.background = "#1c1c24";
+                }}
+              >
+                {q}
               </button>
-            </div>
-          </section>
+            ))}
+          </div>
+        </section>
+      )}
 
-          {/* Quick Actions */}
-          <section className="section">
-            <p className="section-label">Quick start</p>
-            <div className="quick-actions">
-              {quickActions.map((action) => (
+      {/* CHAT VIEW */}
+      {hasStarted && (
+        <section
+          style={{
+            flex: 1,
+            padding: "24px",
+            paddingBottom: 120,
+            maxWidth: 720,
+            margin: "0 auto",
+            width: "100%",
+          }}
+        >
+          {messages.map((m, i) => (
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                justifyContent:
+                  m.role === "user" ? "flex-end" : "flex-start",
+                marginBottom: 12,
+              }}
+            >
+              <div
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: 16,
+                  maxWidth: "85%",
+                  background:
+                    m.role === "user"
+                      ? "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)"
+                      : "#1c1c24",
+                  lineHeight: 1.5,
+                }}
+              >
+                {m.content}
+              </div>
+            </div>
+          ))}
+          {loading && (
+            <div style={{ display: "flex", justifyContent: "flex-start" }}>
+              <div
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: 16,
+                  background: "#1c1c24",
+                  color: "#a1a1aa",
+                }}
+              >
+                Thinking…
+              </div>
+            </div>
+          )}
+          <div ref={endRef} />
+        </section>
+      )}
+
+      {/* INPUT (CHAT MODE) */}
+      {hasStarted && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 24,
+            left: 0,
+            right: 0,
+            display: "flex",
+            justifyContent: "center",
+            padding: "0 16px",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              width: "100%",
+              maxWidth: 720,
+              background: "#14141a",
+              borderRadius: 999,
+              padding: "8px 12px",
+              border: "1px solid #27272a",
+            }}
+          >
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              placeholder="Ask VERA anything…"
+              style={{
+                flex: 1,
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                color: "white",
+                fontSize: 16,
+                padding: "8px 12px",
+              }}
+            />
+
+            <VoiceButton />
+
+            <button
+              onClick={() => sendMessage()}
+              style={{
+                padding: "12px 24px",
+                borderRadius: 999,
+                background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
+                color: "white",
+                border: "none",
+                fontSize: 15,
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "scale(1.02)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "scale(1)";
+              }}
+            >
+              Ask VERA
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* GATE MODAL */}
+      {activeGate && (
+        <div
+          onClick={() => {
+            if (gateDismissible) setActiveGate(null);
+          }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+            zIndex: 50,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: 520,
+              background: "#0f0f14",
+              border: "1px solid #27272a",
+              borderRadius: 18,
+              padding: 20,
+              boxShadow: "0 18px 60px rgba(0,0,0,0.6)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+                gap: 12,
+              }}
+            >
+              <div>
                 <div
-                  key={action.id}
-                  className="quick-action"
-                  onClick={() => router.push('/chat')}
-                >
-                  {action.label}
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Ecosystem - Sanctuary Style */}
-          <section className="section">
-            <p className="section-label">The VERA Ecosystem</p>
-            <div className="ecosystem-grid">
-              {ecosystem.map((item) => (
-                (() => {
-                  const isExternal = item.href.startsWith('http://') || item.href.startsWith('https://');
-                  return (
-                <a
-                  key={item.id}
-                  href={item.href}
-                  className="ecosystem-card"
-                  target={isExternal ? '_blank' : undefined}
-                  rel={isExternal ? 'noreferrer' : undefined}
-                  onClick={(e) => {
-                    if (!isExternal) {
-                      e.preventDefault();
-                      router.push(item.href);
-                    }
+                  style={{
+                    fontSize: 18,
+                    fontWeight: 700,
+                    marginBottom: 6,
                   }}
                 >
-                  <div className="ecosystem-icon">
-                    {renderIcon(item.iconType, isDark)}
-                  </div>
-                  <div className="ecosystem-name">{item.name}</div>
-                  <div className="ecosystem-essence">{item.essence}</div>
-                </a>
-                  );
-                })()
-              ))}
-            </div>
-          </section>
+                  {GATE_MESSAGES[activeGate].title}
+                </div>
+                <div style={{ color: "#a1a1aa", lineHeight: 1.5 }}>
+                  {GATE_MESSAGES[activeGate].message}
+                </div>
+              </div>
 
-          {/* Trust */}
-          <section className="trust">
-            <p className="trust-label">Trusted by people who need more than productivity</p>
-            <div className="trust-stats">
-              <div className="trust-stat">
-                <div className="trust-value">50K+</div>
-                <div className="trust-name">Conversations</div>
-              </div>
-              <div className="trust-stat">
-                <div className="trust-value">4.9</div>
-                <div className="trust-name">Rating</div>
-              </div>
-              <div className="trust-stat">
-                <div className="trust-value">24/7</div>
-                <div className="trust-name">Always here</div>
-              </div>
+              {gateDismissible && (
+                <button
+                  onClick={() => setActiveGate(null)}
+                  aria-label="Close"
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 12,
+                    border: "1px solid #27272a",
+                    background: "transparent",
+                    color: "#a1a1aa",
+                    cursor: "pointer",
+                    fontSize: 18,
+                    lineHeight: "36px",
+                  }}
+                >
+                  ×
+                </button>
+              )}
             </div>
-          </section>
-        </main>
 
-        {/* VERA Indicator */}
-        <div className="vera-indicator">
-          <div className="vera-dot" />
-          <span className="vera-text">VERA is here</span>
+            <div style={{ display: "flex", gap: 12, marginTop: 18 }}>
+              <Link
+                href={GATE_MESSAGES[activeGate].cta_link}
+                style={{
+                  flex: 1,
+                  padding: "12px 14px",
+                  borderRadius: 12,
+                  background:
+                    "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
+                  color: "white",
+                  fontWeight: 700,
+                  textDecoration: "none",
+                  textAlign: "center",
+                }}
+              >
+                {GATE_MESSAGES[activeGate].cta}
+              </Link>
+
+              {gateDismissible && (
+                <button
+                  onClick={() => setActiveGate(null)}
+                  style={{
+                    flex: 1,
+                    padding: "12px 14px",
+                    borderRadius: 12,
+                    border: "1px solid #27272a",
+                    background: "transparent",
+                    color: "#e4e4e7",
+                    fontWeight: 650,
+                    cursor: "pointer",
+                  }}
+                >
+                  {SANCTUARY_PREVIEW.cta_secondary}
+                </button>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
-    </>
+      )}
+    </main>
   );
 }

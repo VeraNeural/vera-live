@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "stage": "upgrade_invitation",
+  "eligibility": {
+    "minimum_messages": 4,
+    "sim_state_must_be": ["stable", "strained"],
+    "disallowed_sim_states": ["overloaded", "protected"],
+    "dependency_markers_required": false,
+    "crisis_markers_required": false
+  },
+  "suppression_rules": {
+    "if_upgrade_pressure_detected": true,
+    "suppress_invite": true
+  },
+  "triggers": {
+    "emotional_continuity_needed": {
+      "intent": "emotional_processing",
+      "message_count": 2
+    },
+    "project_depth_exceeded": {
+      "intent": "creation_build",
+      "scope_complexity": "medium_or_higher"
+    },
+    "returning_user": {
+      "sessions_in_7_days": 2
+    }
+  },
+  "invitation_copy": {
+    "sanctuary": {
+      "when": "emotional_continuity_needed",
+      "text": "If you want a private space where we can keep this thread going without rushing, Sanctuary gives you that continuity. It’s designed for deeper, steadier work — whenever you’re ready."
+    },
+    "build": {
+      "when": "project_depth_exceeded",
+      "text": "If you’d like help carrying this project forward — with memory, structure, and iteration — the Build tier is designed for that kind of work."
+    },
+    "professional": {
+      "when": "returning_user",
+      "text": "If you’re using VERA regularly for client or professional work, the Professional tier unlocks higher limits and dedicated workflows."
+    }
+  },
+  "telemetry_fields": {
+    "invitation_shown": true,
+    "invitation_type": "sanctuary | build | professional",
+    "invitation_user_response": "accepted | dismissed | deferred",
+    "emotional_state_at_invite": "string",
+    "sim_state_at_invite": "string"
+  }
+}

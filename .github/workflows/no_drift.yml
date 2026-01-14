@@ -1,0 +1,38 @@
+name: No Drift Gate
+
+on:
+  pull_request:
+  push:
+    branches: [ "master", "main" ]
+
+jobs:
+  no-drift:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests (policy invariants)
+        run: npm test
+
+      - name: Governance stress tests
+        run: npm test -- tests/governance/runStressTests.test.ts
+
+      - name: No leakage scan
+        run: node scripts/no_leak_scan.mjs
+
+      - name: Prompt/policy change guard
+        run: node scripts/prompt_change_guard.mjs

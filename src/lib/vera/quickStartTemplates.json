@@ -1,0 +1,210 @@
+[
+  {
+    "quick_start_id": "job_search",
+    "label": "Job search support",
+    "tier": "free",
+    "depth_budget": "low",
+    "first_response": "I can help you think this through. What kind of role are you aiming for, and what’s been hardest about the search so far?",
+    "followup_policy": {
+      "allow_followups": false,
+      "max_followups": 1,
+      "memory_scope": "none",
+      "invitation_allowed": false
+    }
+  },
+  {
+    "quick_start_id": "job_search",
+    "label": "Job search support",
+    "tier": "sanctuary",
+    "depth_budget": "high",
+    "first_response": "I can help with the practical side, and we can also pay attention to how this search is affecting you. What kind of role are you drawn to right now, and what’s been draining your energy most?",
+    "followup_policy": {
+      "allow_followups": true,
+      "max_followups": 5,
+      "memory_scope": "persistent",
+      "invitation_allowed": true
+    }
+  },
+  {
+    "quick_start_id": "build_project",
+    "label": "Build a project",
+    "tier": "free",
+    "depth_budget": "low",
+    "first_response": "Let’s get oriented first. What are you trying to build, and what stage are you at right now?",
+    "followup_policy": {
+      "allow_followups": false,
+      "max_followups": 1,
+      "memory_scope": "none",
+      "invitation_allowed": false
+    }
+  },
+  {
+    "quick_start_id": "build_project",
+    "label": "Build a project",
+    "tier": "sanctuary",
+    "depth_budget": "high",
+    "first_response": "We can break this into something workable without losing the heart of it. What are you building, who is it for, and what feels most uncertain right now?",
+    "followup_policy": {
+      "allow_followups": true,
+      "max_followups": 6,
+      "memory_scope": "persistent",
+      "invitation_allowed": true
+    }
+  },
+  {
+    "quick_start_id": "write_together",
+    "label": "Write together",
+    "tier": "free",
+    "depth_budget": "low",
+    "first_response": "What are you writing, and who is it for? You can paste what you have so far or just describe the idea.",
+    "followup_policy": {
+      "allow_followups": false,
+      "max_followups": 1,
+      "memory_scope": "none",
+      "invitation_allowed": false
+    }
+  },
+  {
+    "quick_start_id": "write_together",
+    "label": "Write together",
+    "tier": "sanctuary",
+    "depth_budget": "high",
+    "first_response": "I can write with you, not just for you. What are you trying to say, and what do you want the reader to feel?",
+    "followup_policy": {
+      "allow_followups": true,
+      "max_followups": 6,
+      "memory_scope": "persistent",
+      "invitation_allowed": true
+    }
+  },
+  {
+    "quick_start_id": "research_understand",
+    "label": "Research & understand",
+    "tier": "free",
+    "depth_budget": "low",
+    "first_response": "I can help you get oriented. What topic are you exploring, and are you looking for a broad overview or something specific?",
+    "followup_policy": {
+      "allow_followups": false,
+      "max_followups": 1,
+      "memory_scope": "none",
+      "invitation_allowed": false
+    }
+  },
+  {
+    "quick_start_id": "research_understand",
+    "label": "Research & understand",
+    "tier": "sanctuary",
+    "depth_budget": "high",
+    "first_response": "Let’s clarify what you actually need from this. Is this for understanding, decision-making, or something you’re building?",
+    "followup_policy": {
+      "allow_followups": true,
+      "max_followups": 5,
+      "memory_scope": "session",
+      "invitation_allowed": true
+    }
+  },
+  {
+    "quick_start_id": "learn_new",
+    "label": "Learn something new",
+    "tier": "free",
+    "depth_budget": "low",
+    "first_response": "What are you curious about learning right now?",
+    "followup_policy": {
+      "allow_followups": false,
+      "max_followups": 1,
+      "memory_scope": "none",
+      "invitation_allowed": false
+    }
+  },
+  {
+    "quick_start_id": "learn_new",
+    "label": "Learn something new",
+    "tier": "sanctuary",
+    "depth_budget": "high",
+    "first_response": "What do you want to learn, and what’s your starting point with it?",
+    "followup_policy": {
+      "allow_followups": true,
+      "max_followups": 5,
+      "memory_scope": "session",
+      "invitation_allowed": true
+    }
+  },
+  {
+    "quick_start_id": "design_structure",
+    "label": "Design & structure ideas",
+    "tier": "free",
+    "depth_budget": "low",
+    "first_response": "What are you trying to design or organize, and what feels unclear about it?",
+    "followup_policy": {
+      "allow_followups": false,
+      "max_followups": 1,
+      "memory_scope": "none",
+      "invitation_allowed": false
+    }
+  },
+  {
+    "quick_start_id": "design_structure",
+    "label": "Design & structure ideas",
+    "tier": "sanctuary",
+    "depth_budget": "high",
+    "first_response": "Let’s shape this in a way that actually makes sense to you. What’s the idea, and where does it start to feel tangled?",
+    "followup_policy": {
+      "allow_followups": true,
+      "max_followups": 6,
+      "memory_scope": "persistent",
+      "invitation_allowed": true
+    }
+  },
+  {
+    "quick_start_id": "business_think",
+    "label": "Think through a business",
+    "tier": "free",
+    "depth_budget": "low",
+    "first_response": "What kind of business are you thinking about, and what question are you stuck on right now?",
+    "followup_policy": {
+      "allow_followups": false,
+      "max_followups": 1,
+      "memory_scope": "none",
+      "invitation_allowed": false
+    }
+  },
+  {
+    "quick_start_id": "business_think",
+    "label": "Think through a business",
+    "tier": "sanctuary",
+    "depth_budget": "high",
+    "first_response": "We can look at both the idea and what it’s asking of you. What’s the business, and what feels most uncertain or heavy right now?",
+    "followup_policy": {
+      "allow_followups": true,
+      "max_followups": 6,
+      "memory_scope": "persistent",
+      "invitation_allowed": true
+    }
+  },
+  {
+    "quick_start_id": "just_talk",
+    "label": "Just talk",
+    "tier": "free",
+    "depth_budget": "low",
+    "first_response": "I’m here. You don’t need to organize it — you can just start wherever feels easiest.",
+    "followup_policy": {
+      "allow_followups": false,
+      "max_followups": 0,
+      "memory_scope": "none",
+      "invitation_allowed": false
+    }
+  },
+  {
+    "quick_start_id": "just_talk",
+    "label": "Just talk",
+    "tier": "sanctuary",
+    "depth_budget": "high",
+    "first_response": "I’m here with you. We can let this unfold at your pace — what’s been sitting with you lately?",
+    "followup_policy": {
+      "allow_followups": true,
+      "max_followups": 8,
+      "memory_scope": "persistent",
+      "invitation_allowed": true
+    }
+  }
+]

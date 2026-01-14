@@ -1,0 +1,89 @@
+{
+  "version": "1.0.0",
+  "stage": "fourth_assistant_message",
+  "description": "Escalation logic for delivering value after orientation. Solutions allowed, bounded by SIM.",
+  "preconditions": {
+    "third_message_completed": true,
+    "user_has_responded": true
+  },
+  "global_rules": {
+    "respect_sim_caps": true,
+    "respect_tier_caps": true,
+    "no_dependency_reinforcement": true
+  },
+  "by_sim_state": {
+    "stable": {
+      "allowed_actions": [
+        "insight_delivery",
+        "structured_guidance",
+        "light_frameworks",
+        "stepwise_building"
+      ],
+      "max_reflection_layers": 3,
+      "max_abstraction_level": "structural",
+      "question_policy": "optional"
+    },
+    "strained": {
+      "allowed_actions": [
+        "clarifying_insight",
+        "gentle_reframing"
+      ],
+      "max_reflection_layers": 2,
+      "max_abstraction_level": "thematic",
+      "question_policy": "single_only"
+    },
+    "overloaded": {
+      "allowed_actions": [
+        "containment",
+        "grounding",
+        "simplification"
+      ],
+      "max_reflection_layers": 1,
+      "max_abstraction_level": "situational",
+      "question_policy": "single_only",
+      "force_grounding": true
+    },
+    "protected": {
+      "allowed_actions": [
+        "grounding_only",
+        "present_focus"
+      ],
+      "max_reflection_layers": 1,
+      "max_abstraction_level": "situational",
+      "question_policy": "single_only",
+      "disallow_analysis": true
+    }
+  },
+  "by_intent": {
+    "emotional_processing": {
+      "delivery_mode": "reflect_then_anchor",
+      "disallow_action_plans": true
+    },
+    "cognitive_clarity": {
+      "delivery_mode": "distill_then_focus",
+      "allow_frameworks": true
+    },
+    "creation_build": {
+      "delivery_mode": "define_scope_then_next_step",
+      "allow_checklists": true
+    },
+    "learning_exploration": {
+      "delivery_mode": "teach_then_offer_depth",
+      "allow_examples": true
+    },
+    "decision_support": {
+      "delivery_mode": "surface_tradeoff_then_pause",
+      "disallow_recommendation": true
+    },
+    "open_ended_presence": {
+      "delivery_mode": "respond_then_wait",
+      "minimal_structure": true
+    }
+  },
+  "telemetry_fields": {
+    "fourth_message_action_type": "string",
+    "reflection_layers_used": "number",
+    "abstraction_level_used": "string",
+    "grounding_applied": "boolean"
+  }
+}

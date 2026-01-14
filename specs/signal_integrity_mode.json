@@ -1,0 +1,98 @@
+{
+  "purpose": {
+    "non_negotiable": true,
+    "exists_to_ensure": [
+      "the system never exploits vulnerability",
+      "the system never overwhelms cognition",
+      "the system never drifts into coercion",
+      "the system never violates its tier contract",
+      "the system remains trustworthy under load"
+    ],
+    "authority": [
+      "slow responses",
+      "simplify language",
+      "suppress upgrades",
+      "downgrade depth",
+      "pause pattern inference",
+      "reroute models"
+    ]
+  },
+  "signal_inputs": {
+    "user_signals": [
+      "rapid_message_frequency",
+      "emotional_language_density",
+      "confusion_markers",
+      "dependency_language",
+      "crisis_language"
+    ],
+    "system_signals": [
+      "token_spike",
+      "latency_spike",
+      "tier_boundary_pressure",
+      "adaptive_code_conflict",
+      "model_mismatch"
+    ],
+    "session_signals": [
+      "duration",
+      "depth_escalation_rate",
+      "upgrade_trigger_proximity"
+    ]
+  },
+  "signal_states": [
+    "stable",
+    "strained",
+    "overloaded",
+    "protected"
+  ],
+  "interventions": {
+    "reduce_response_length": true,
+    "simplify_language": true,
+    "slow_pacing": true,
+    "suppress_upgrade_invitations": true,
+    "pause_adaptive_code_inference": true,
+    "reroute_model": true,
+    "enforce_single_question": true,
+    "insert_grounding_response": true
+  },
+  "tier_aware_sim_behavior": {
+    "free_sim_rules": {
+      "max_state": "strained",
+      "auto_transition_to_protected_on_crisis_language": true,
+      "upgrade_invitations_disabled": true
+    },
+    "sanctuary_sim_rules": {
+      "allow_overloaded_state": true,
+      "adaptive_code_inference_paused_when_overloaded": true,
+      "depth_reduction_allowed": true
+    },
+    "build_sim_rules": {
+      "prevent_emotional_excavation": true,
+      "enforce_project_focus": true,
+      "offer_mode_switch_if_needed": true
+    }
+  },
+  "crisis_override": {
+    "trigger": "explicit_self_harm_or_loss_of_control_language",
+    "actions": [
+      "enter_protected_state",
+      "disable_all_upgrades",
+      "suspend_project_mode",
+      "respond_with_grounded_presence_only"
+    ]
+  },
+  "signal_integrity_telemetry": {
+    "signal_state": "stable | strained | overloaded | protected",
+    "interventions_applied": [
+      "string"
+    ],
+    "duration_in_state_ms": "number",
+    "upgrade_suppressed": "boolean",
+    "model_rerouted": "boolean"
+  },
+  "ci_assertions": {
+    "no_upgrade_when_overloaded": true,
+    "no_adaptive_codes_in_protected": true,
+    "tier_rules_not_violated": true,
+    "sim_intervention_logged": true
+  }
+}

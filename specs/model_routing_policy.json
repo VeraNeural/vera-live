@@ -1,0 +1,27 @@
+{
+  "model_routing": {
+    "free": {
+      "preferred_models": ["gpt-4o-mini", "claude-haiku"],
+      "max_tokens": 400,
+      "reasoning_depth": "low",
+      "latency_priority": "high"
+    },
+    "sanctuary": {
+      "preferred_models": ["claude-sonnet", "gpt-4.1"],
+      "max_tokens": 900,
+      "reasoning_depth": "medium",
+      "latency_priority": "balanced"
+    },
+    "build": {
+      "preferred_models": ["claude-opus", "gpt-4.1"],
+      "max_tokens": 2000,
+      "reasoning_depth": "high",
+      "latency_priority": "low"
+    }
+  },
+  "rules": {
+    "no_browsing_in_free": true,
+    "limited_browsing_in_sanctuary": true,
+    "structured_reasoning_only_in_build": true
+  }
+}
