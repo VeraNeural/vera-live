@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { AttachmentButton } from "@/components/AttachmentButton";
 import { ImagePreview } from "@/components/ImagePreview";
 import { VoiceButton } from "@/components/VoiceButton";
+import { useAuth } from "@/lib/auth/AuthContext";
 import {
   GATE_MESSAGES,
   SANCTUARY_PREVIEW,
@@ -46,6 +47,8 @@ function getGreeting(): string {
 }
 
 export default function Page() {
+  const { user, isLoggedIn, loading: authLoading } = useAuth();
+
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -60,6 +63,40 @@ export default function Page() {
   const [attachmentError, setAttachmentError] = useState("");
 
   const hasStarted = messages.length > 0;
+
+  // Don't render auth-dependent UI until loaded.
+  // This prevents server/client mismatches during hydration.
+  if (authLoading) {
+    return (
+      <main
+        style={{
+          minHeight: "100vh",
+          background: "#0b0b0f",
+          color: "white",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 24,
+        }}
+      >
+        <div
+          style={{
+            width: 96,
+            height: 96,
+            borderRadius: "50%",
+            background:
+              "radial-gradient(circle at 30% 30%, #c4b5fd, #7c3aed)",
+            marginBottom: 18,
+            boxShadow: "0 0 60px 20px rgba(139, 92, 246, 0.18)",
+          }}
+        />
+        <p style={{ color: "#a1a1aa", margin: 0, fontSize: 14 }}>
+          Loading…
+        </p>
+      </main>
+    );
+  }
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -197,69 +234,94 @@ export default function Page() {
         }}
       >
         <strong style={{ fontSize: 18, letterSpacing: "0.5px" }}>VERA</strong>
-        <div style={{ display: "flex", gap: 12 }}>
-          {/* Sign In Button - Ghost style */}
-          <Link
-            href="/login"
-            style={{
-              padding: "10px 20px",
-              borderRadius: 12,
-              background: "transparent",
-              color: "#a1a1aa",
-              border: "1px solid #27272a",
-              fontSize: 14,
-              fontWeight: 500,
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-              textDecoration: "none",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "#8b5cf6";
-              e.currentTarget.style.color = "#ffffff";
-              e.currentTarget.style.background = "rgba(139, 92, 246, 0.06)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "#27272a";
-              e.currentTarget.style.color = "#a1a1aa";
-              e.currentTarget.style.background = "transparent";
-            }}
-          >
-            Sign In
-          </Link>
-          {/* Start Free Button - Primary style */}
-          <Link
-            href="/signup"
-            style={{
-              padding: "10px 20px",
-              borderRadius: 12,
-              background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
-              color: "white",
-              border: "none",
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-              boxShadow: "0 4px 14px 0 rgba(139, 92, 246, 0.3)",
-              textDecoration: "none",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-1px)";
-              e.currentTarget.style.boxShadow = "0 6px 20px 0 rgba(139, 92, 246, 0.4)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "0 4px 14px 0 rgba(139, 92, 246, 0.3)";
-            }}
-          >
-            Start Free
-          </Link>
-        </div>
+        {!authLoading && (
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            {isLoggedIn ? (
+              <div
+                title={user?.email ?? "Signed in"}
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: "50%",
+                  background: "rgba(139, 92, 246, 0.14)",
+                  border: "1px solid rgba(139, 92, 246, 0.35)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: "#c4b5fd",
+                }}
+              >
+                {(user?.email?.[0] ?? "U").toUpperCase()}
+              </div>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  style={{
+                    padding: "10px 20px",
+                    borderRadius: 12,
+                    background: "transparent",
+                    color: "#a1a1aa",
+                    border: "1px solid #27272a",
+                    fontSize: 14,
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = "#8b5cf6";
+                    e.currentTarget.style.color = "#ffffff";
+                    e.currentTarget.style.background = "rgba(139, 92, 246, 0.06)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "#27272a";
+                    e.currentTarget.style.color = "#a1a1aa";
+                    e.currentTarget.style.background = "transparent";
+                  }}
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/signup"
+                  style={{
+                    padding: "10px 20px",
+                    borderRadius: 12,
+                    background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
+                    color: "white",
+                    border: "none",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    boxShadow: "0 4px 14px 0 rgba(139, 92, 246, 0.3)",
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-1px)";
+                    e.currentTarget.style.boxShadow =
+                      "0 6px 20px 0 rgba(139, 92, 246, 0.4)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow =
+                      "0 4px 14px 0 rgba(139, 92, 246, 0.3)";
+                  }}
+                >
+                  Start Free
+                </Link>
+              </>
+            )}
+          </div>
+        )}
       </header>
 
       {/* HERO / INTRO */}
