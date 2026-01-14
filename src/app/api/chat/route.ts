@@ -18,6 +18,7 @@ import { VERA_POLICY_VERSION } from '@/lib/vera/policyVersion';
 import type { MemoryUse, Tier } from '@/lib/vera/decisionObject';
 import { checkMessageLimit, recordMessage } from '@/lib/auth/messageCounter';
 import { VERA_GATE_RESPONSES } from '@/lib/auth/gateMessages';
+import type { Tier as AuthTier } from '@/lib/auth/tiers';
 import type { BuildProjectState } from '@/lib/vera/buildTier';
 import { isValidBuildProjectState, BUILD_ENTRY_FIRST_RESPONSE_TEMPLATE } from '@/lib/vera/buildTier';
 import type { SanctuaryState } from '@/lib/vera/sanctuaryTier';
@@ -49,6 +50,15 @@ function jsonContent(content: string, init?: ResponseInit): NextResponse {
 }
 
 type IncomingMessage = { role: 'user' | 'assistant'; content: string };
+
+type IncomingImage = {
+  base64: string;
+  mediaType: string;
+};
+
+type IncomingMessageWithImage = IncomingMessage & {
+  image?: IncomingImage;
+};
 
 type RoutingTier = 'free' | 'sanctuary' | 'build';
 
@@ -254,7 +264,7 @@ export async function POST(req: Request) {
     const startedAt = Date.now();
 
     const body = (await req.json()) as {
-      messages?: IncomingMessage[];
+      messages?: IncomingMessageWithImage[];
       tier?: Tier;
       project_state?: BuildProjectState;
       sanctuary_state?: SanctuaryState;
@@ -276,6 +286,8 @@ export async function POST(req: Request) {
 
     const { messages, tier, project_state, sanctuary_state } = body;
 
+    let entitlementTier: AuthTier = 'free';
+
     let userIdForMetering: string | null = null;
     try {
       const supabase = await createClient();
@@ -290,6 +302,8 @@ export async function POST(req: Request) {
 
       userIdForMetering = user?.id ?? null;
       const limitCheck = await checkMessageLimit(userIdForMetering);
+
+      entitlementTier = limitCheck.tier;
 
       console.log('[chat] metering', { userId: userIdForMetering, limitCheck });
 
@@ -327,6 +341,30 @@ export async function POST(req: Request) {
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return jsonContent('Please send at least one message.', { status: 400 });
+    }
+
+    const allowedVisionMediaTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+    const hasAnyImage = messages.some(
+      (m) =>
+        m.role === 'user' &&
+        Boolean(m.image && typeof m.image.base64 === 'string' && typeof m.image.mediaType === 'string')
+    );
+
+    if (hasAnyImage) {
+      // Server enforcement (UI also hides the button).
+      if (entitlementTier !== 'sanctuary') {
+        return jsonContent('Image attachments are available for Sanctuary members.', { status: 403 });
+      }
+
+      for (const m of messages) {
+        if (m.role !== 'user' || !m.image) continue;
+        if (!allowedVisionMediaTypes.has(m.image.mediaType)) {
+          return jsonContent('Unsupported image type. Please use JPG, PNG, WebP, or GIF.', { status: 400 });
+        }
+        if (!m.image.base64 || m.image.base64.length < 8) {
+          return jsonContent('Invalid image payload.', { status: 400 });
+        }
+      }
     }
 
     const lastUserNonChoice = [...messages].reverse().find((m) => m.role === 'user' && !isChallengeChoiceMessage(m.content));
@@ -887,10 +925,29 @@ export async function POST(req: Request) {
         model: effectiveExecutedModelVersion,
         max_tokens: effectiveMaxTokens,
         system,
-        messages: modelMessages.map((m) => ({
-          role: m.role,
-          content: m.content,
-        })),
+        messages: modelMessages.map((m) => {
+          if (m.role === 'user' && m.image?.base64 && m.image?.mediaType) {
+            return {
+              role: m.role,
+              content: [
+                {
+                  type: 'image',
+                  source: {
+                    type: 'base64',
+                    media_type: m.image.mediaType,
+                    data: m.image.base64,
+                  },
+                },
+                { type: 'text', text: m.content },
+              ],
+            };
+          }
+
+          return {
+            role: m.role,
+            content: m.content,
+          };
+        }) as any,
       });
 
       outputTokensUsed = (result as any)?.usage?.output_tokens ?? 0;

@@ -2,16 +2,23 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { AttachmentButton } from "@/components/AttachmentButton";
+import { ImagePreview } from "@/components/ImagePreview";
 import { VoiceButton } from "@/components/VoiceButton";
 import {
   GATE_MESSAGES,
   SANCTUARY_PREVIEW,
   type GateType,
 } from "@/lib/auth/gateMessages";
+import { fileToBase64, getMediaType, isValidImageType } from "@/lib/fileUtils";
 
 type Message = {
   role: "user" | "assistant";
   content: string;
+  image?: {
+    base64: string;
+    mediaType: string;
+  };
 };
 
 const QUICK_STARTS = [
@@ -45,6 +52,12 @@ export default function Page() {
   const [greeting] = useState(getGreeting());
   const endRef = useRef<HTMLDivElement>(null);
   const [activeGate, setActiveGate] = useState<GateType | null>(null);
+  const [attachedImage, setAttachedImage] = useState<{
+    base64: string;
+    mediaType: string;
+    previewUrl: string;
+  } | null>(null);
+  const [attachmentError, setAttachmentError] = useState("");
 
   const hasStarted = messages.length > 0;
 
@@ -66,16 +79,45 @@ export default function Page() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [activeGate, gateDismissible]);
 
+  async function handleSelectImage(file: File) {
+    setAttachmentError("");
+    if (!isValidImageType(file)) {
+      setAttachmentError("Please select a JPG, PNG, WebP, or GIF image.");
+      return;
+    }
+
+    const mediaType = getMediaType(file);
+    const base64 = await fileToBase64(file);
+    if (!base64) {
+      setAttachmentError("Couldn't read that image. Please try a different file.");
+      return;
+    }
+
+    setAttachedImage({
+      base64,
+      mediaType,
+      previewUrl: `data:${mediaType};base64,${base64}`,
+    });
+  }
+
   async function sendMessage(text?: string) {
     const content = (text ?? input).trim();
     if (!content || loading) return;
 
     // Snapshot state for safe revert in gate flows.
     const messagesSnapshot = messages;
+    const attachedSnapshot = attachedImage;
 
-    const userMessage: Message = { role: "user", content };
+    const userMessage: Message = {
+      role: "user",
+      content,
+      image: attachedImage
+        ? { base64: attachedImage.base64, mediaType: attachedImage.mediaType }
+        : undefined,
+    };
     setMessages((m) => [...m, userMessage]);
     setInput("");
+    setAttachedImage(null);
     setLoading(true);
 
     try {
@@ -94,6 +136,7 @@ export default function Page() {
         // Do NOT append the user's message. Restore input and show gate UI.
         setMessages(messagesSnapshot);
         setInput(content);
+        setAttachedImage(attachedSnapshot);
         setActiveGate("auth_required");
         return;
       }
@@ -252,18 +295,37 @@ export default function Page() {
           </p>
 
           {/* INPUT (INITIAL) */}
-          <div
-            style={{
-              display: "flex",
-              width: "100%",
-              maxWidth: 720,
-              background: "#14141a",
-              borderRadius: 999,
-              padding: "8px 12px",
-              marginBottom: 24,
-              border: "1px solid #27272a",
-            }}
-          >
+          <div style={{ width: "100%", maxWidth: 720, marginBottom: 24 }}>
+            {attachmentError && (
+              <p
+                style={{
+                  color: "#f87171",
+                  fontSize: 13,
+                  margin: "0 0 10px 0",
+                  textAlign: "center",
+                }}
+              >
+                {attachmentError}
+              </p>
+            )}
+            {attachedImage && (
+              <div style={{ marginBottom: 12 }}>
+                <ImagePreview
+                  src={attachedImage.previewUrl}
+                  onRemove={() => setAttachedImage(null)}
+                />
+              </div>
+            )}
+            <div
+              style={{
+                display: "flex",
+                width: "100%",
+                background: "#14141a",
+                borderRadius: 999,
+                padding: "8px 12px",
+                border: "1px solid #27272a",
+              }}
+            >
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -280,6 +342,7 @@ export default function Page() {
               }}
             />
 
+            <AttachmentButton disabled={loading} onSelect={handleSelectImage} />
             <VoiceButton />
 
             <button
@@ -304,6 +367,7 @@ export default function Page() {
             >
               Ask VERA
             </button>
+            </div>
           </div>
 
           {/* QUICK START */}
@@ -382,7 +446,22 @@ export default function Page() {
                   lineHeight: 1.5,
                 }}
               >
-                {m.content}
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {m.image && (
+                    <img
+                      src={`data:${m.image.mediaType};base64,${m.image.base64}`}
+                      alt="Attachment"
+                      style={{
+                        width: "100%",
+                        maxWidth: 420,
+                        borderRadius: 12,
+                        border: "1px solid rgba(0,0,0,0.15)",
+                        objectFit: "cover",
+                      }}
+                    />
+                  )}
+                  <div>{m.content}</div>
+                </div>
               </div>
             </div>
           ))}
@@ -413,10 +492,23 @@ export default function Page() {
             left: 0,
             right: 0,
             display: "flex",
-            justifyContent: "center",
+            flexDirection: "column",
+            alignItems: "center",
             padding: "0 16px",
+            gap: 12,
           }}
         >
+          {attachmentError && (
+            <p style={{ color: "#f87171", fontSize: 13, margin: 0 }}>
+              {attachmentError}
+            </p>
+          )}
+          {attachedImage && (
+            <ImagePreview
+              src={attachedImage.previewUrl}
+              onRemove={() => setAttachedImage(null)}
+            />
+          )}
           <div
             style={{
               display: "flex",
@@ -444,6 +536,7 @@ export default function Page() {
               }}
             />
 
+            <AttachmentButton disabled={loading} onSelect={handleSelectImage} />
             <VoiceButton />
 
             <button
