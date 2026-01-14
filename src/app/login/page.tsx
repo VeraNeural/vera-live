@@ -15,7 +15,7 @@ export default function LoginPage() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) {
-        window.location.href = "/app";
+        window.location.href = "/";
       }
     });
   }, []);
@@ -30,7 +30,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=/app`,
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
 
@@ -50,7 +50,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/app`,
+      redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
 
