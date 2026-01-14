@@ -16,8 +16,7 @@ import { NEURAL_INTERNAL_SYSTEM_PROMPT } from '@/lib/vera/neuralPrompt';
 import { IBA_INTERNAL_SYSTEM_PROMPT } from '@/lib/vera/ibaPrompt';
 import { VERA_POLICY_VERSION } from '@/lib/vera/policyVersion';
 import type { MemoryUse, Tier } from '@/lib/vera/decisionObject';
-import { checkMessageLimit, recordMessage } from '@/lib/auth/messageCounter';
-import { VERA_GATE_RESPONSES } from '@/lib/auth/gateMessages';
+import { checkMessageLimit, getUserTier, recordMessage } from '@/lib/auth/messageCounter';
 import type { Tier as AuthTier } from '@/lib/auth/tiers';
 import type { BuildProjectState } from '@/lib/vera/buildTier';
 import { isValidBuildProjectState, BUILD_ENTRY_FIRST_RESPONSE_TEMPLATE } from '@/lib/vera/buildTier';
@@ -286,6 +285,14 @@ export async function POST(req: Request) {
 
     const { messages, tier, project_state, sanctuary_state } = body;
 
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return jsonContent(UNAVAILABLE_CONTENT, { status: 500 });
+    }
+
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return jsonContent('Please send at least one message.', { status: 400 });
+    }
+
     let entitlementTier: AuthTier = 'free';
 
     let userIdForMetering: string | null = null;
@@ -301,28 +308,41 @@ export async function POST(req: Request) {
       }
 
       userIdForMetering = user?.id ?? null;
-      const limitCheck = await checkMessageLimit(userIdForMetering);
 
-      entitlementTier = limitCheck.tier;
+      // Anonymous users: allow first message, gate on second+.
+      // The UI sends full history including the current user message, so we count prior user turns.
+      if (!userIdForMetering) {
+        const last = Array.isArray(messages) ? messages[messages.length - 1] : null;
+        const prior = last?.role === 'user' ? messages.slice(0, -1) : messages;
+        const priorUserCount = prior.filter((m) => m.role === 'user').length;
+        entitlementTier = 'anonymous';
 
-      console.log('[chat] metering', { userId: userIdForMetering, limitCheck });
+        if (priorUserCount >= 1) {
+          return NextResponse.json({ gate: 'auth_required', tier: 'anonymous' });
+        }
+      } else {
+        entitlementTier = await getUserTier(userIdForMetering);
 
-      if (limitCheck.gate === 'auth_required') {
-        return NextResponse.json({ gate: 'auth_required', tier: 'anonymous' });
-      }
+        // Sanctuary users: no gates ever, no counters, no prompts.
+        if (entitlementTier === 'free') {
+          const limitCheck = await checkMessageLimit(userIdForMetering);
+          console.log('[chat] metering', { userId: userIdForMetering, limitCheck });
 
-      if (limitCheck.gate === 'limit_reached') {
-        return NextResponse.json({
-          gate: 'limit_reached',
-          content: VERA_GATE_RESPONSES.limit_reached,
-          tier: 'free',
-          remaining: 0,
-        });
+          if (limitCheck.gate === 'limit_reached') {
+            return NextResponse.json({
+              gate: 'limit_reached',
+              tier: 'free',
+              content:
+                'I can stay with you here. Sanctuary unlocks deeper space, voice, and unlimited time together.',
+            });
+          }
+        }
       }
     } catch (err) {
       // Safe fallback: do not block chat if metering fails unexpectedly.
       console.error('[chat] metering block failed (allowing request)', err);
       userIdForMetering = null;
+      entitlementTier = 'free';
     }
 
     const incomingChallenge = body.meta?.challenge ??
@@ -334,14 +354,6 @@ export async function POST(req: Request) {
             scope: body.meta.scope,
           }
         : undefined);
-
-    if (!process.env.ANTHROPIC_API_KEY) {
-      return jsonContent(UNAVAILABLE_CONTENT, { status: 500 });
-    }
-
-    if (!Array.isArray(messages) || messages.length === 0) {
-      return jsonContent('Please send at least one message.', { status: 400 });
-    }
 
     const allowedVisionMediaTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
     const hasAnyImage = messages.some(
@@ -1258,7 +1270,7 @@ export async function POST(req: Request) {
     const responseMode = consentGrantedThisTurn ? 'challenge' : 'conversation';
     const finalContent = modelCallFailed ? UNAVAILABLE_CONTENT : (noDrift.vera || "I'm here. What would you like to explore?");
 
-    if (userIdForMetering) {
+    if (userIdForMetering && entitlementTier === 'free') {
       await recordMessage(userIdForMetering);
     }
 

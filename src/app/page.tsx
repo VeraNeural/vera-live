@@ -7,9 +7,7 @@ import { ImagePreview } from "@/components/ImagePreview";
 import { VoiceButton } from "@/components/VoiceButton";
 import { useAuth } from "@/lib/auth/AuthContext";
 import {
-  GATE_MESSAGES,
   SANCTUARY_PREVIEW,
-  type GateType,
 } from "@/lib/auth/gateMessages";
 import { fileToBase64, getMediaType, isValidImageType } from "@/lib/fileUtils";
 
@@ -20,6 +18,9 @@ type Message = {
     base64: string;
     mediaType: string;
   };
+  ui?:
+    | { type: "auth_gate" }
+    | { type: "limit_gate"; dismissed?: boolean };
 };
 
 const QUICK_STARTS = [
@@ -54,7 +55,6 @@ export default function Page() {
   const [loading, setLoading] = useState(false);
   const [greeting] = useState(getGreeting());
   const endRef = useRef<HTMLDivElement>(null);
-  const [activeGate, setActiveGate] = useState<GateType | null>(null);
   const [attachedImage, setAttachedImage] = useState<{
     base64: string;
     mediaType: string;
@@ -68,19 +68,21 @@ export default function Page() {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const gateDismissible = activeGate === "limit_reached";
+  const PENDING_AUTH_MESSAGE_KEY = "vera_pending_message";
 
   useEffect(() => {
-    if (!activeGate) return;
-    if (!gateDismissible) return;
+    if (authLoading) return;
+    if (!isLoggedIn) return;
 
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") setActiveGate(null);
-    }
+    const pending = sessionStorage.getItem(PENDING_AUTH_MESSAGE_KEY);
+    if (!pending) return;
 
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activeGate, gateDismissible]);
+    sessionStorage.removeItem(PENDING_AUTH_MESSAGE_KEY);
+    // Defer to avoid re-entrancy during auth state changes.
+    setTimeout(() => {
+      void sendMessage(pending);
+    }, 0);
+  }, [authLoading, isLoggedIn]);
 
   // Don't render auth-dependent UI until loaded.
   // NOTE: This must come after hooks to avoid hook-order mismatches.
@@ -141,6 +143,29 @@ export default function Page() {
     const content = (text ?? input).trim();
     if (!content || loading) return;
 
+    // Anonymous gate (soft prompt): allow first user message, gate on second+.
+    // Keep input enabled, but do not send when gated.
+    if (!isLoggedIn) {
+      const priorUserCount = messages.filter((m) => m.role === "user").length;
+      if (priorUserCount >= 1) {
+        sessionStorage.setItem(PENDING_AUTH_MESSAGE_KEY, content);
+        setInput(content);
+        setMessages((m) => {
+          const already = m.some((x) => x.ui?.type === "auth_gate");
+          if (already) return m;
+          return [
+            ...m,
+            {
+              role: "assistant",
+              content: "Start free to keep the conversation going.",
+              ui: { type: "auth_gate" },
+            },
+          ];
+        });
+        return;
+      }
+    }
+
     // Snapshot state for safe revert in gate flows.
     const messagesSnapshot = messages;
     const attachedSnapshot = attachedImage;
@@ -168,28 +193,44 @@ export default function Page() {
 
       const data = await res.json();
 
-      const gate = (data?.gate ?? null) as GateType | null;
+      const gate = (data?.gate ?? null) as
+        | "auth_required"
+        | "limit_reached"
+        | null;
       if (gate === "auth_required") {
-        // Do NOT append the user's message. Restore input and show gate UI.
-        setMessages(messagesSnapshot);
+        // Do NOT append the user's message. Preserve it for after auth.
+        sessionStorage.setItem(PENDING_AUTH_MESSAGE_KEY, content);
+        setMessages([
+          ...messagesSnapshot,
+          {
+            role: "assistant",
+            content: "Start free to keep the conversation going.",
+            ui: { type: "auth_gate" },
+          },
+        ]);
         setInput(content);
         setAttachedImage(attachedSnapshot);
-        setActiveGate("auth_required");
         return;
       }
 
       if (gate === "limit_reached") {
-        // Show VERA's in-chat response, then show the gate modal.
-        setMessages((m) => [
-          ...m,
+        // Do NOT append the user's message. Keep it in the input.
+        setMessages([
+          ...messagesSnapshot,
           {
             role: "assistant",
             content:
               data?.content ??
-              "I can stay with you — Sanctuary unlocks longer conversations, saved sessions, and deeper support.",
+              "I can stay with you here. Sanctuary unlocks deeper space, voice, and unlimited time together.",
+          },
+          {
+            role: "assistant",
+            content: "",
+            ui: { type: "limit_gate" },
           },
         ]);
-        setActiveGate("limit_reached");
+        setInput(content);
+        setAttachedImage(attachedSnapshot);
         return;
       }
 
@@ -487,6 +528,7 @@ export default function Page() {
           }}
         >
           {messages.map((m, i) => (
+            (m.ui?.type === "limit_gate" && m.ui.dismissed) ? null :
             <div
               key={i}
               style={{
@@ -508,22 +550,104 @@ export default function Page() {
                   lineHeight: 1.5,
                 }}
               >
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {m.image && (
-                    <img
-                      src={`data:${m.image.mediaType};base64,${m.image.base64}`}
-                      alt="Attachment"
-                      style={{
-                        width: "100%",
-                        maxWidth: 420,
-                        borderRadius: 12,
-                        border: "1px solid rgba(0,0,0,0.15)",
-                        objectFit: "cover",
-                      }}
-                    />
-                  )}
-                  <div>{m.content}</div>
-                </div>
+                {m.ui?.type === "auth_gate" ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div>{m.content}</div>
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      <Link
+                        href="/signup"
+                        style={{
+                          padding: "10px 14px",
+                          borderRadius: 12,
+                          background:
+                            "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
+                          color: "white",
+                          textDecoration: "none",
+                          fontSize: 14,
+                          fontWeight: 600,
+                        }}
+                      >
+                        Start free
+                      </Link>
+                      <Link
+                        href="/login"
+                        style={{
+                          padding: "10px 14px",
+                          borderRadius: 12,
+                          background: "transparent",
+                          border: "1px solid #27272a",
+                          color: "#e4e4e7",
+                          textDecoration: "none",
+                          fontSize: 14,
+                          fontWeight: 600,
+                        }}
+                      >
+                        Sign in
+                      </Link>
+                    </div>
+                  </div>
+                ) : m.ui?.type === "limit_gate" ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      <Link
+                        href="/sanctuary/upgrade"
+                        style={{
+                          padding: "10px 14px",
+                          borderRadius: 12,
+                          background:
+                            "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
+                          color: "white",
+                          textDecoration: "none",
+                          fontSize: 14,
+                          fontWeight: 600,
+                        }}
+                      >
+                        Explore Sanctuary
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMessages((prev) =>
+                            prev.map((x, idx) =>
+                              idx === i && x.ui?.type === "limit_gate"
+                                ? { ...x, ui: { type: "limit_gate", dismissed: true } }
+                                : x
+                            )
+                          );
+                        }}
+                        style={{
+                          padding: "10px 14px",
+                          borderRadius: 12,
+                          background: "transparent",
+                          border: "1px solid #27272a",
+                          color: "#e4e4e7",
+                          fontSize: 14,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Not now
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {m.image && (
+                      <img
+                        src={`data:${m.image.mediaType};base64,${m.image.base64}`}
+                        alt="Attachment"
+                        style={{
+                          width: "100%",
+                          maxWidth: 420,
+                          borderRadius: 12,
+                          border: "1px solid rgba(0,0,0,0.15)",
+                          objectFit: "cover",
+                        }}
+                      />
+                    )}
+                    <div>{m.content}</div>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -625,119 +749,7 @@ export default function Page() {
             </button>
           </div>
         </div>
-      )}
 
-      {/* GATE MODAL */}
-      {activeGate && (
-        <div
-          onClick={() => {
-            if (gateDismissible) setActiveGate(null);
-          }}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0, 0, 0, 0.6)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 16,
-            zIndex: 50,
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: "100%",
-              maxWidth: 520,
-              background: "#0f0f14",
-              border: "1px solid #27272a",
-              borderRadius: 18,
-              padding: 20,
-              boxShadow: "0 18px 60px rgba(0,0,0,0.6)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "space-between",
-                gap: 12,
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    fontSize: 18,
-                    fontWeight: 700,
-                    marginBottom: 6,
-                  }}
-                >
-                  {GATE_MESSAGES[activeGate].title}
-                </div>
-                <div style={{ color: "#a1a1aa", lineHeight: 1.5 }}>
-                  {GATE_MESSAGES[activeGate].message}
-                </div>
-              </div>
-
-              {gateDismissible && (
-                <button
-                  onClick={() => setActiveGate(null)}
-                  aria-label="Close"
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 12,
-                    border: "1px solid #27272a",
-                    background: "transparent",
-                    color: "#a1a1aa",
-                    cursor: "pointer",
-                    fontSize: 18,
-                    lineHeight: "36px",
-                  }}
-                >
-                  ×
-                </button>
-              )}
-            </div>
-
-            <div style={{ display: "flex", gap: 12, marginTop: 18 }}>
-              <Link
-                href={GATE_MESSAGES[activeGate].cta_link}
-                style={{
-                  flex: 1,
-                  padding: "12px 14px",
-                  borderRadius: 12,
-                  background:
-                    "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
-                  color: "white",
-                  fontWeight: 700,
-                  textDecoration: "none",
-                  textAlign: "center",
-                }}
-              >
-                {GATE_MESSAGES[activeGate].cta}
-              </Link>
-
-              {gateDismissible && (
-                <button
-                  onClick={() => setActiveGate(null)}
-                  style={{
-                    flex: 1,
-                    padding: "12px 14px",
-                    borderRadius: 12,
-                    border: "1px solid #27272a",
-                    background: "transparent",
-                    color: "#e4e4e7",
-                    fontWeight: 650,
-                    cursor: "pointer",
-                  }}
-                >
-                  {SANCTUARY_PREVIEW.cta_secondary}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
       )}
     </main>
   );
