@@ -16,7 +16,6 @@ const ROOMS: Room[] = [
   { id: 'rest', name: 'Rest Chamber', essence: 'EMBRACE SLEEP' },
   { id: 'studio', name: 'Design Studio', essence: 'CREATE BEAUTY' },
   { id: 'journal', name: 'Journal Nook', essence: 'REFLECT DEEPLY' },
-  { id: 'pulse', name: 'Pulse', essence: 'CONNECT WITH OTHERS' },
 ];
 
 export default function SanctuaryPage() {
@@ -46,10 +45,6 @@ export default function SanctuaryPage() {
   };
 
   const handleRoomClick = (room: Room) => {
-    if (room.id === 'pulse') {
-      router.push('/pulse');
-      return;
-    }
     router.push(`/sanctuary/${room.id}`);
   };
 
@@ -100,12 +95,6 @@ export default function SanctuaryPage() {
             <line x1="9" y1="8" x2="15" y2="8" />
             <line x1="9" y1="12" x2="15" y2="12" />
             <line x1="9" y1="16" x2="12" y2="16" />
-          </svg>
-        );
-      case 'pulse':
-        return (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c084a0" strokeWidth="1.5">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
           </svg>
         );
       default:

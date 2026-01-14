@@ -7,11 +7,6 @@ export function VoiceButton() {
   const { tier, loading } = useAuth();
   const router = useRouter();
 
-  // Only show for Sanctuary users
-  if (loading || tier !== "sanctuary") {
-    return null;
-  }
-
   return (
     <button
       onClick={() => router.push("/voice")}

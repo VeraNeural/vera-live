@@ -10,11 +10,6 @@ export function AttachmentButton(props: {
   const { tier, loading } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Only show for Sanctuary users
-  if (loading || tier !== "sanctuary") {
-    return null;
-  }
-
   return (
     <>
       <input
