@@ -318,17 +318,8 @@ export async function POST(req: Request) {
 
       userIdForMetering = user?.id ?? null;
 
-      // Anonymous users: allow first message, gate on second+.
-      // The UI sends full history including the current user message, so we count prior user turns.
       if (!userIdForMetering) {
-        const last = Array.isArray(messages) ? messages[messages.length - 1] : null;
-        const prior = last?.role === 'user' ? messages.slice(0, -1) : messages;
-        const priorUserCount = prior.filter((m) => m.role === 'user').length;
         entitlementTier = 'anonymous';
-
-        if (priorUserCount >= 1) {
-          return NextResponse.json({ gate: 'auth_required', tier: 'anonymous' });
-        }
       } else {
         entitlementTier = await getUserTier(userIdForMetering);
 
@@ -341,10 +332,6 @@ export async function POST(req: Request) {
         if (entitlementTier === 'free') {
           const limitCheck = await checkMessageLimit(userIdForMetering);
           console.log('[chat] metering', { userId: userIdForMetering, limitCheck });
-
-          if (limitCheck.gate === 'limit_reached') {
-            return NextResponse.json({ gate: 'limit_reached', tier: 'free' });
-          }
         }
       }
     } catch (err) {

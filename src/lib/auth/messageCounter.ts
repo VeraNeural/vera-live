@@ -9,7 +9,6 @@ export interface MessageLimitResult {
   count: number;
   limit: number;
   remaining: number;
-  gate?: "auth_required" | "limit_reached";
 }
 
 /**
@@ -18,15 +17,13 @@ export interface MessageLimitResult {
 export async function checkMessageLimit(
   userId: string | null
 ): Promise<MessageLimitResult> {
-  // Anonymous user - soft gate
   if (!userId) {
     return {
-      allowed: false,
+      allowed: true,
       tier: "anonymous",
       count: 0,
       limit: 0,
       remaining: 0,
-      gate: "auth_required",
     };
   }
 
@@ -109,12 +106,11 @@ export async function checkMessageLimit(
 
   if (count >= FREE_MESSAGE_LIMIT) {
     return {
-      allowed: false,
+      allowed: true,
       tier: "free",
       count,
       limit: FREE_MESSAGE_LIMIT,
       remaining: 0,
-      gate: "limit_reached",
     };
   }
 

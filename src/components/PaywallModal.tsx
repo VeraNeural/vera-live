@@ -234,9 +234,9 @@ export default function PaywallModal({ isOpen, onClose, roomName, isDark }: Payw
           <p className="signin-link">
             Already have an account?{' '}
             <a
+              href="/login"
               onClick={() => {
                 onClose();
-                router.push('/login');
               }}
             >
               Sign in

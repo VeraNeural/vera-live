@@ -3,9 +3,9 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 function safeNext(next: string | null) {
-  if (!next) return "/app";
-  if (!next.startsWith("/")) return "/app";
-  if (next.startsWith("//")) return "/app";
+  if (!next) return "/";
+  if (!next.startsWith("/")) return "/";
+  if (next.startsWith("//")) return "/";
   return next;
 }
 
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
   const next = safeNext(searchParams.get("next"));
 
   if (!code) {
-    return NextResponse.redirect(`${origin}/login`);
+    return NextResponse.redirect(`${origin}/`);
   }
 
   const cookieStore = await cookies();
@@ -40,7 +40,7 @@ export async function GET(request: Request) {
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
-    return NextResponse.redirect(`${origin}/login`);
+    return NextResponse.redirect(`${origin}/`);
   }
 
   return NextResponse.redirect(`${origin}${next}`);

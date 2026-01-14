@@ -1,31 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useAuth } from "@/lib/auth/AuthContext";
+import { useSearchParams } from "next/navigation";
 import { SANCTUARY_PREVIEW } from "@/lib/auth/gateMessages";
 
 export default function SanctuaryUpgradeClient() {
-  const { isLoggedIn, tier, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const router = useRouter();
   const searchParams = useSearchParams();
   const canceled = searchParams.get("canceled");
 
-  useEffect(() => {
-    if (authLoading) return;
-    if (tier !== "sanctuary") return;
-    router.push("/");
-  }, [authLoading, tier, router]);
-
   async function handleUpgrade() {
-    if (!isLoggedIn) {
-      router.push("/signup?redirect=/sanctuary/upgrade");
-      return;
-    }
-
     setLoading(true);
     setError("");
 
@@ -243,7 +229,7 @@ export default function SanctuaryUpgradeClient() {
         >
           <button
             onClick={handleUpgrade}
-            disabled={loading || authLoading}
+            disabled={loading}
             style={{
               width: "100%",
               padding: "16px 24px",
@@ -262,11 +248,7 @@ export default function SanctuaryUpgradeClient() {
                 : "0 4px 14px 0 rgba(139, 92, 246, 0.3)",
             }}
           >
-            {loading
-              ? "Loading..."
-              : isLoggedIn
-                ? SANCTUARY_PREVIEW.cta_primary
-                : "Sign up to continue"}
+            {loading ? "Loading..." : SANCTUARY_PREVIEW.cta_primary}
           </button>
 
           <Link

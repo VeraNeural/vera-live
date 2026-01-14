@@ -11,15 +11,6 @@ export default function LoginPage() {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
 
-  // 🔒 STEP 5 — if already logged in, never show login
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
-        window.location.href = "/app";
-      }
-    });
-  }, []);
-
   async function handleEmailLogin(e: FormEvent) {
     e.preventDefault();
     if (!email || loading) return;
@@ -30,10 +21,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-       emailRedirectTo: "https://vera-live-pink.vercel.app/auth/callback"
-
-
-
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/`,
       },
     });
 
@@ -53,7 +41,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/app`,
+        redirectTo: `${window.location.origin}/auth/callback?next=/`,
       },
     });
 
