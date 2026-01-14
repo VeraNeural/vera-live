@@ -2,19 +2,25 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-function safeNext(next: string | null) {
-  if (!next) return "/";
-  if (!next.startsWith("/")) return "/";
-  if (next.startsWith("//")) return "/";
-  return next;
-}
-
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
+  
+  // Check for OAuth/OTP errors from Supabase
+  const error = searchParams.get("error");
+  const errorDescription = searchParams.get("error_description");
+  
+  if (error) {
+    console.error("[Auth Callback] Supabase error:", error, errorDescription);
+    // Redirect to home, user can try again
+    return NextResponse.redirect(`${origin}/?auth_error=${error}`);
+  }
+
   const code = searchParams.get("code");
-  const next = safeNext(searchParams.get("next"));
+  const next = searchParams.get("next") ?? "/";
+  const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/";
 
   if (!code) {
+    console.error("[Auth Callback] No code provided");
     return NextResponse.redirect(`${origin}/`);
   }
 
@@ -37,11 +43,15 @@ export async function GET(request: Request) {
     }
   );
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
-  if (error) {
-    return NextResponse.redirect(`${origin}/`);
+  if (exchangeError) {
+    console.error("[Auth Callback] Exchange error:", exchangeError.message);
+    return NextResponse.redirect(`${origin}/?auth_error=exchange_failed`);
   }
 
-  return NextResponse.redirect(`${origin}${next}`);
+  console.log("[Auth Callback] Success, redirecting to:", safeNext);
+  
+  // Always redirect to home, not /app
+  return NextResponse.redirect(`${origin}/`);
 }

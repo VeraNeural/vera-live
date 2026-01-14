@@ -1,20 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { AttachmentButton } from "@/components/AttachmentButton";
-import { ImagePreview } from "@/components/ImagePreview";
-import { VoiceButton } from "@/components/VoiceButton";
-import { useAuth } from "@/lib/auth/AuthContext";
-import { fileToBase64, getMediaType, isValidImageType } from "@/lib/fileUtils";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 type Message = {
   role: "user" | "assistant";
   content: string;
-  image?: {
-    base64: string;
-    mediaType: string;
-  };
 };
 
 const QUICK_STARTS = [
@@ -25,73 +17,50 @@ const QUICK_STARTS = [
 
 function getGreeting(): string {
   const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) {
-    return "Good morning";
-  } else if (hour >= 12 && hour < 17) {
-    return "Good afternoon";
-  } else if (hour >= 17 && hour < 21) {
-    return "Good evening";
-  } else {
-    return "Good evening";
-  }
+  if (hour >= 5 && hour < 12) return "Good morning";
+  if (hour >= 12 && hour < 17) return "Good afternoon";
+  return "Good evening";
 }
 
 export default function Page() {
-  const { user, isLoggedIn } = useAuth();
-
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [greeting] = useState(getGreeting());
+  const [user, setUser] = useState<{ email?: string } | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
-  const [attachedImage, setAttachedImage] = useState<{
-    base64: string;
-    mediaType: string;
-    previewUrl: string;
-  } | null>(null);
-  const [attachmentError, setAttachmentError] = useState("");
 
   const hasStarted = messages.length > 0;
+  const isLoggedIn = !!user;
 
+  // Check auth on mount
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data }) => {
+      setUser(data.session?.user ?? null);
+      setAuthChecked(true);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Scroll to bottom on new messages
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  async function handleSelectImage(file: File) {
-    setAttachmentError("");
-    if (!isValidImageType(file)) {
-      setAttachmentError("Please select a JPG, PNG, WebP, or GIF image.");
-      return;
-    }
-
-    const mediaType = getMediaType(file);
-    const base64 = await fileToBase64(file);
-    if (!base64) {
-      setAttachmentError("Couldn't read that image. Please try a different file.");
-      return;
-    }
-
-    setAttachedImage({
-      base64,
-      mediaType,
-      previewUrl: `data:${mediaType};base64,${base64}`,
-    });
-  }
 
   async function sendMessage(text?: string) {
     const content = (text ?? input).trim();
     if (!content || loading) return;
 
-    const userMessage: Message = {
-      role: "user",
-      content,
-      image: attachedImage
-        ? { base64: attachedImage.base64, mediaType: attachedImage.mediaType }
-        : undefined,
-    };
+    const userMessage: Message = { role: "user", content };
     setMessages((m) => [...m, userMessage]);
     setInput("");
-    setAttachedImage(null);
     setLoading(true);
 
     try {
@@ -104,6 +73,18 @@ export default function Page() {
       });
 
       const data = await res.json();
+
+      // Handle auth gate
+      if (data?.gate === "auth_required") {
+        setMessages((m) => [
+          ...m,
+          {
+            role: "assistant",
+            content: "I'd love to keep talking. Sign up free to continue our conversation.",
+          },
+        ]);
+        return;
+      }
 
       setMessages((m) => [
         ...m,
@@ -134,161 +115,146 @@ export default function Page() {
         display: "flex",
         flexDirection: "column",
       }}
-            style={{
-              width: 120,
-              height: 120,
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 10,
-              justifyContent: "center",
-              maxWidth: 720,
-            }}
-          >
-            {QUICK_STARTS.map((q) => (
-              <button
-                key={q}
-                onClick={() => sendMessage(q)}
+    >
+      {/* HEADER */}
+      <header
+        style={{
+          padding: "16px 24px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        {/* Left - Orb */}
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: "50%",
+            background: "radial-gradient(circle at 30% 30%, #c4b5fd, #7c3aed)",
+            boxShadow: "0 0 20px 5px rgba(139, 92, 246, 0.2)",
+          }}
+        />
+
+        {/* Right - Auth buttons */}
+        <div style={{ display: "flex", gap: 12 }}>
+          {authChecked && !isLoggedIn && (
+            <>
+              <Link
+                href="/login"
                 style={{
-                  padding: "10px 16px",
+                  padding: "10px 20px",
                   borderRadius: 999,
-                  background: "#1c1c24",
-                  color: "#a1a1aa",
                   border: "1px solid #27272a",
+                  color: "white",
+                  textDecoration: "none",
                   fontSize: 14,
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "#8b5cf6";
-                  e.currentTarget.style.color = "#ffffff";
-                  e.currentTarget.style.background = "#252530";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "#27272a";
-                  e.currentTarget.style.color = "#a1a1aa";
-                  e.currentTarget.style.background = "#1c1c24";
+                  fontWeight: 500,
                 }}
               >
-                {q}
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
+                Sign In
+              </Link>
+              <Link
+                href="/login"
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: 999,
+                  background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
+                  color: "white",
+                  textDecoration: "none",
+                  fontSize: 14,
+                  fontWeight: 600,
+                }}
+              >
+                Start Free
+              </Link>
+            </>
+          )}
+          {authChecked && isLoggedIn && (
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: "50%",
+                background: "#7c3aed",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 14,
+                fontWeight: 600,
+              }}
+            >
+              {user?.email?.charAt(0).toUpperCase() ?? "U"}
+            </div>
+          )}
+        </div>
+      </header>
 
-      {/* CHAT VIEW */}
-      {hasStarted && (
+      {/* HERO - Before chat starts */}
+      {!hasStarted && (
         <section
           style={{
             flex: 1,
-            padding: "24px",
-            paddingBottom: 120,
-            maxWidth: 720,
-            margin: "0 auto",
-            width: "100%",
-          }}
-        >
-          {messages.map((m, i) => (
-            <div
-              key={i}
-              style={{
-                display: "flex",
-                justifyContent: m.role === "user" ? "flex-end" : "flex-start",
-                marginBottom: 12,
-              }}
-            >
-              <div
-                style={{
-                  padding: "12px 16px",
-                  borderRadius: 16,
-                  maxWidth: "85%",
-                  background:
-                    m.role === "user"
-                      ? "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)"
-                      : "#1c1c24",
-                  lineHeight: 1.5,
-                }}
-              >
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {m.image && (
-                    <img
-                      src={`data:${m.image.mediaType};base64,${m.image.base64}`}
-                      alt="Attachment"
-                      style={{
-                        width: "100%",
-                        maxWidth: 420,
-                        borderRadius: 12,
-                        border: "1px solid rgba(0,0,0,0.15)",
-                        objectFit: "cover",
-                      }}
-                    />
-                  )}
-                  <div>{m.content}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {loading && (
-            <div style={{ display: "flex", justifyContent: "flex-start" }}>
-              <div
-                style={{
-                  padding: "12px 16px",
-                  borderRadius: 16,
-                  background: "#1c1c24",
-                  color: "#a1a1aa",
-                }}
-              >
-                Thinking…
-              </div>
-            </div>
-          )}
-          <div ref={endRef} />
-        </section>
-      )}
-
-      {/* INPUT (CHAT MODE) */}
-      {hasStarted && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 24,
-            left: 0,
-            right: 0,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            padding: "0 16px",
-            gap: 12,
+            justifyContent: "center",
+            padding: "0 24px",
+            textAlign: "center",
           }}
         >
-          {attachmentError && (
-            <p style={{ color: "#f87171", fontSize: 13, margin: 0 }}>
-              {attachmentError}
-            </p>
-          )}
-          {attachedImage && (
-            <ImagePreview
-              src={attachedImage.previewUrl}
-              onRemove={() => setAttachedImage(null)}
-            />
-          )}
+          {/* Large Orb */}
           <div
             style={{
-              display: "flex",
+              width: 120,
+              height: 120,
+              borderRadius: "50%",
+              background: "radial-gradient(circle at 30% 30%, #c4b5fd, #7c3aed)",
+              boxShadow: "0 0 60px 15px rgba(139, 92, 246, 0.3)",
+              marginBottom: 32,
+            }}
+          />
+
+          <h1
+            style={{
+              fontSize: 48,
+              fontWeight: 600,
+              margin: 0,
+              marginBottom: 12,
+            }}
+          >
+            {greeting}
+          </h1>
+
+          <p
+            style={{
+              fontSize: 18,
+              color: "#a1a1aa",
+              margin: 0,
+              marginBottom: 40,
+            }}
+          >
+            AI that helps you do anything, your way, your pace
+          </p>
+
+          {/* Input */}
+          <div
+            style={{
               width: "100%",
-              maxWidth: 720,
+              maxWidth: 600,
+              display: "flex",
               background: "#14141a",
               borderRadius: 999,
               padding: "8px 12px",
               border: "1px solid #27272a",
+              marginBottom: 24,
             }}
           >
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-              placeholder="Ask VERA anything…"
+              placeholder="What's on your mind?"
               style={{
                 flex: 1,
                 background: "transparent",
@@ -296,15 +262,12 @@ export default function Page() {
                 outline: "none",
                 color: "white",
                 fontSize: 16,
-                padding: "8px 12px",
+                padding: "12px 16px",
               }}
             />
-
-            <AttachmentButton disabled={loading} onSelect={handleSelectImage} />
-            <VoiceButton />
-
             <button
               onClick={() => sendMessage()}
+              disabled={loading}
               style={{
                 padding: "12px 24px",
                 borderRadius: 999,
@@ -314,19 +277,168 @@ export default function Page() {
                 fontSize: 15,
                 fontWeight: 600,
                 cursor: "pointer",
-                transition: "all 0.2s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "scale(1.02)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "scale(1)";
               }}
             >
               Ask VERA
             </button>
           </div>
-        </div>
+
+          {/* Quick Starts */}
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 10,
+              justifyContent: "center",
+            }}
+          >
+            {QUICK_STARTS.map((text) => (
+              <button
+                key={text}
+                onClick={() => sendMessage(text)}
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: 999,
+                  background: "transparent",
+                  color: "#a1a1aa",
+                  border: "1px solid #27272a",
+                  fontSize: 14,
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                {text}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* CHAT VIEW - After chat starts */}
+      {hasStarted && (
+        <>
+          <div
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              padding: "24px",
+              paddingBottom: 120,
+            }}
+          >
+            <div
+              style={{
+                maxWidth: 720,
+                margin: "0 auto",
+                display: "flex",
+                flexDirection: "column",
+                gap: 16,
+              }}
+            >
+              {messages.map((m, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    justifyContent: m.role === "user" ? "flex-end" : "flex-start",
+                  }}
+                >
+                  <div
+                    style={{
+                      maxWidth: "80%",
+                      padding: "14px 18px",
+                      borderRadius: 20,
+                      background: m.role === "user" ? "#7c3aed" : "#1c1c24",
+                      color: "white",
+                      fontSize: 15,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {m.content}
+                  </div>
+                </div>
+              ))}
+
+              {loading && (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-start",
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: "14px 18px",
+                      borderRadius: 20,
+                      background: "#1c1c24",
+                      color: "#71717a",
+                      fontSize: 15,
+                    }}
+                  >
+                    Thinking...
+                  </div>
+                </div>
+              )}
+
+              <div ref={endRef} />
+            </div>
+          </div>
+
+          {/* Fixed Input */}
+          <div
+            style={{
+              position: "fixed",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: "linear-gradient(transparent, #0b0b0f 20%)",
+              padding: "24px",
+            }}
+          >
+            <div
+              style={{
+                maxWidth: 720,
+                margin: "0 auto",
+                display: "flex",
+                background: "#14141a",
+                borderRadius: 999,
+                padding: "8px 12px",
+                border: "1px solid #27272a",
+              }}
+            >
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                placeholder="Ask VERA anything…"
+                style={{
+                  flex: 1,
+                  background: "transparent",
+                  border: "none",
+                  outline: "none",
+                  color: "white",
+                  fontSize: 16,
+                  padding: "12px 16px",
+                }}
+              />
+              <button
+                onClick={() => sendMessage()}
+                disabled={loading}
+                style={{
+                  padding: "12px 24px",
+                  borderRadius: 999,
+                  background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
+                  color: "white",
+                  border: "none",
+                  fontSize: 15,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Ask VERA
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </main>
   );
