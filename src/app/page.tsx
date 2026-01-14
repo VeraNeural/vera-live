@@ -64,8 +64,26 @@ export default function Page() {
 
   const hasStarted = messages.length > 0;
 
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const gateDismissible = activeGate === "limit_reached";
+
+  useEffect(() => {
+    if (!activeGate) return;
+    if (!gateDismissible) return;
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setActiveGate(null);
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [activeGate, gateDismissible]);
+
   // Don't render auth-dependent UI until loaded.
-  // This prevents server/client mismatches during hydration.
+  // NOTE: This must come after hooks to avoid hook-order mismatches.
   if (authLoading) {
     return (
       <main
@@ -97,24 +115,6 @@ export default function Page() {
       </main>
     );
   }
-
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const gateDismissible = activeGate === "limit_reached";
-
-  useEffect(() => {
-    if (!activeGate) return;
-    if (!gateDismissible) return;
-
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") setActiveGate(null);
-    }
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activeGate, gateDismissible]);
 
   async function handleSelectImage(file: File) {
     setAttachmentError("");
