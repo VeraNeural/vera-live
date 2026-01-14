@@ -106,7 +106,7 @@ export default function TherapyRoom({
           color: '#666',
           margin: 0,
         }}>
-          Therapy Room
+          Recalibration Room
         </h1>
         <div style={{ width: 140 }} /> {/* Spacer for centering */}
       </div>

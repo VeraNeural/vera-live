@@ -10,7 +10,7 @@ type Room = {
 };
 
 const ROOMS: Room[] = [
-  { id: 'therapy', name: 'Therapy Room', essence: 'SPEAK FREELY' },
+  { id: 'recalibration', name: 'Recalibration Room', essence: 'RECALIBRATE' },
   { id: 'zen', name: 'Zen Garden', essence: 'FIND STILLNESS' },
   { id: 'library', name: 'Library', essence: 'DISCOVER WISDOM' },
   { id: 'rest', name: 'Rest Chamber', essence: 'EMBRACE SLEEP' },
@@ -53,7 +53,7 @@ export default function SanctuaryPage() {
     const color = isDark ? 'rgba(160, 140, 180, 0.7)' : 'rgba(120, 100, 140, 0.6)';
     
     switch (id) {
-      case 'therapy':
+      case 'recalibration':
         return (
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
             <path d="M12 20V4M4 12h16" />

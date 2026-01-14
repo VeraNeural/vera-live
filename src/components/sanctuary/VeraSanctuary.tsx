@@ -9,7 +9,7 @@ interface VeraSanctuaryProps {
 }
 
 const ROOMS = [
-  { id: 'therapy', name: 'Therapy Room', essence: 'Speak freely', icon: '💬' },
+  { id: 'recalibration', name: 'Recalibration Room', essence: 'Recalibrate', icon: '💬' },
   { id: 'zen', name: 'Zen Garden', essence: 'Find stillness', icon: '🧘' },
   { id: 'library', name: 'Library', essence: 'Discover wisdom', icon: '📚' },
   { id: 'bedroom', name: 'Rest Chamber', essence: 'Embrace sleep', icon: '🌙' },

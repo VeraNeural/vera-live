@@ -6,7 +6,7 @@ import TherapyRoom from '@/components/sanctuary/TherapyRoom';
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
-export default function TherapyRoomPage() {
+export default function RecalibrationRoomPage() {
   const router = useRouter();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
