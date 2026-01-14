@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useUser, UserButton } from "@clerk/nextjs";
 
@@ -37,6 +38,7 @@ function getGreeting(time: TimeOfDay): string {
 
 export default function Page() {
   const { isLoaded, isSignedIn } = useUser();
+  const router = useRouter();
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -54,6 +56,12 @@ export default function Page() {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      router.push("/sanctuary");
+    }
+  }, [isLoaded, isSignedIn, router]);
 
   const isDark = timeOfDay === "evening" || timeOfDay === "night";
   const isNight = timeOfDay === "night";
