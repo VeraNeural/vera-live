@@ -319,21 +319,37 @@ export async function POST(req: Request) {
       userIdForMetering = user?.id ?? null;
 
       if (!userIdForMetering) {
-        entitlementTier = 'anonymous';
-      } else {
-        entitlementTier = await getUserTier(userIdForMetering);
+  entitlementTier = 'anonymous';
+  
+  // GATE: Anonymous users get 5 messages
+  const userMessageCount = messages.filter((m) => m.role === 'user').length;
+  if (userMessageCount > 5) {
+    return NextResponse.json({
+      gate: 'signup_required',
+      content: "I'm really enjoying our conversation. Sign up free to keep chatting — it only takes a second.",
+    });
+  }
+} else {
+  entitlementTier = await getUserTier(userIdForMetering);
 
-        if (entitlementTier === 'sanctuary') {
-          memoryContext = await getUserMemory(userIdForMetering);
-          memoryPrompt = buildMemoryPrompt(memoryContext);
-        }
+  if (entitlementTier === 'sanctuary') {
+    memoryContext = await getUserMemory(userIdForMetering);
+    memoryPrompt = buildMemoryPrompt(memoryContext);
+  }
 
-        // Sanctuary users: no gates ever, no counters, no prompts.
-        if (entitlementTier === 'free') {
-          const limitCheck = await checkMessageLimit(userIdForMetering);
-          console.log('[chat] metering', { userId: userIdForMetering, limitCheck });
-        }
-      }
+  // GATE: Free users get 20 messages/day
+if (entitlementTier === 'free') {
+  const limitCheck = await checkMessageLimit(userIdForMetering);
+  console.log('[chat] metering', { userId: userIdForMetering, limitCheck });
+  
+  if (limitCheck.remaining <= 0) {
+    return NextResponse.json({
+      gate: 'upgrade_required',
+      content: "You've been busy today! Join Sanctuary for unlimited conversations with me — plus voice, images, and I'll remember our chats.",
+    });
+  }
+}
+}
     } catch (err) {
       // Safe fallback: do not block chat if metering fails unexpectedly.
       console.error('[chat] metering block failed (allowing request)', err);

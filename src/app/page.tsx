@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 type Message = {
   role: "user" | "assistant";
   content: string;
+  gate?: "signup" | "upgrade";
 };
 
 const QUICK_STARTS = [
@@ -74,17 +75,30 @@ export default function Page() {
 
       const data = await res.json();
 
-      // Handle auth gate
-      if (data?.gate === "auth_required") {
-        setMessages((m) => [
-          ...m,
-          {
-            role: "assistant",
-            content: "I'd love to keep talking. Sign up free to continue our conversation.",
-          },
-        ]);
-        return;
-      }
+      // Handle gates
+if (data?.gate === "signup_required" || data?.gate === "auth_required") {
+  setMessages((m) => [
+    ...m,
+    {
+      role: "assistant",
+      content: data.content || "I'd love to keep talking. Sign up free to continue our conversation.",
+      gate: "signup",
+    },
+  ]);
+  return;
+}
+
+if (data?.gate === "upgrade_required") {
+  setMessages((m) => [
+    ...m,
+    {
+      role: "assistant",
+      content: data.content || "Join Sanctuary for unlimited conversations.",
+      gate: "upgrade",
+    },
+  ]);
+  return;
+}
 
       setMessages((m) => [
         ...m,
@@ -335,28 +349,66 @@ export default function Page() {
               }}
             >
               {messages.map((m, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: "flex",
-                    justifyContent: m.role === "user" ? "flex-end" : "flex-start",
-                  }}
-                >
-                  <div
-                    style={{
-                      maxWidth: "80%",
-                      padding: "14px 18px",
-                      borderRadius: 20,
-                      background: m.role === "user" ? "#7c3aed" : "#1c1c24",
-                      color: "white",
-                      fontSize: 15,
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    {m.content}
-                  </div>
-                </div>
-              ))}
+  <div
+    key={i}
+    style={{
+      display: "flex",
+      justifyContent: m.role === "user" ? "flex-end" : "flex-start",
+    }}
+  >
+    <div
+      style={{
+        maxWidth: "80%",
+        padding: "14px 18px",
+        borderRadius: 20,
+        background: m.role === "user" ? "#7c3aed" : "#1c1c24",
+        color: "white",
+        fontSize: 15,
+        lineHeight: 1.5,
+      }}
+    >
+      {m.content}
+      
+      {m.gate === "signup" && (
+        <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+          <Link
+            href="/login"
+            style={{
+              padding: "10px 20px",
+              borderRadius: 999,
+              background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
+              color: "white",
+              textDecoration: "none",
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          >
+            Sign Up Free
+          </Link>
+        </div>
+      )}
+
+      {m.gate === "upgrade" && (
+        <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+          <Link
+            href="/upgrade"
+            style={{
+              padding: "10px 20px",
+              borderRadius: 999,
+              background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
+              color: "white",
+              textDecoration: "none",
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          >
+            Join Sanctuary — $12/mo
+          </Link>
+        </div>
+      )}
+    </div>
+  </div>
+))}
 
               {loading && (
                 <div
