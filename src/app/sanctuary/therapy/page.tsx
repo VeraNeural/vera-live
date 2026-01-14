@@ -14,7 +14,7 @@ export default function TherapyRoomPage() {
   const userName = useMemo(() => 'You', []);
 
   const onBack = useCallback(() => {
-    router.push('/sanctuary/space');
+    router.push('/sanctuary');
   }, [router]);
 
   const onSendMessage = useCallback((message: string) => {

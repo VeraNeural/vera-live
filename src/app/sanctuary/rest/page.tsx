@@ -8,8 +8,8 @@ export default function RestRoomPage() {
   const router = useRouter();
 
   const onBack = useCallback(() => {
-    router.push('/sanctuary/space');
+    router.push('/sanctuary');
   }, [router]);
 
-  return <BedroomRoom onBack={onBack} onStartSleepStory={() => {}} onPlaySound={() => {}} />;
+  return <BedroomRoom onBack={onBack} />;
 }
