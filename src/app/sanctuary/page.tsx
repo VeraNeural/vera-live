@@ -1,801 +1,616 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+
+// ============================================================================
+// TYPES
+// ============================================================================
+type TimeOfDay = 'morning' | 'afternoon' | 'evening' | 'night';
 
 type Room = {
   id: string;
   name: string;
   essence: string;
+  icon: string;
+  gradient: string;
 };
 
+// ============================================================================
+// CONSTANTS
+// ============================================================================
 const ROOMS: Room[] = [
-  { id: 'recalibration', name: 'Recalibration Room', essence: 'RECALIBRATE' },
-  { id: 'zen', name: 'Zen Garden', essence: 'FIND STILLNESS' },
-  { id: 'library', name: 'Library', essence: 'DISCOVER WISDOM' },
-  { id: 'rest', name: 'Rest Chamber', essence: 'EMBRACE SLEEP' },
-  { id: 'studio', name: 'Design Studio', essence: 'CREATE BEAUTY' },
-  { id: 'journal', name: 'Journal Nook', essence: 'REFLECT DEEPLY' },
+  { 
+    id: 'recalibration', 
+    name: 'Recalibration', 
+    essence: 'Find your center', 
+    icon: '◎',
+    gradient: 'linear-gradient(135deg, rgba(120, 100, 180, 0.15) 0%, rgba(100, 120, 160, 0.1) 100%)',
+  },
+  { 
+    id: 'zen', 
+    name: 'Zen Garden', 
+    essence: 'Embrace stillness', 
+    icon: '❋',
+    gradient: 'linear-gradient(135deg, rgba(100, 140, 120, 0.15) 0%, rgba(120, 150, 130, 0.1) 100%)',
+  },
+  { 
+    id: 'library', 
+    name: 'Library', 
+    essence: 'Discover wisdom', 
+    icon: '▤',
+    gradient: 'linear-gradient(135deg, rgba(160, 130, 100, 0.15) 0%, rgba(140, 120, 100, 0.1) 100%)',
+  },
+  { 
+    id: 'rest', 
+    name: 'Rest Chamber', 
+    essence: 'Surrender to sleep', 
+    icon: '☽',
+    gradient: 'linear-gradient(135deg, rgba(100, 110, 140, 0.15) 0%, rgba(90, 100, 130, 0.1) 100%)',
+  },
+  { 
+    id: 'studio', 
+    name: 'Design Studio', 
+    essence: 'Create beauty', 
+    icon: '◈',
+    gradient: 'linear-gradient(135deg, rgba(180, 120, 140, 0.15) 0%, rgba(160, 130, 150, 0.1) 100%)',
+  },
+  { 
+    id: 'journal', 
+    name: 'Journal Nook', 
+    essence: 'Reflect deeply', 
+    icon: '▢',
+    gradient: 'linear-gradient(135deg, rgba(200, 170, 120, 0.15) 0%, rgba(180, 160, 130, 0.1) 100%)',
+  },
 ];
 
-export default function SanctuaryPage() {
+const TIME_COLORS = {
+  morning: {
+    bg: 'linear-gradient(180deg, #f8f5f0 0%, #f0e8dc 30%, #e8dcc8 100%)',
+    accent: '#d4a574',
+    text: 'rgba(60, 50, 40, 0.9)',
+    textMuted: 'rgba(60, 50, 40, 0.5)',
+    cardBg: 'rgba(255, 255, 255, 0.75)',
+    cardBorder: 'rgba(0, 0, 0, 0.06)',
+    glow: 'rgba(255, 200, 120, 0.2)',
+  },
+  afternoon: {
+    bg: 'linear-gradient(180deg, #f5f2ed 0%, #ebe3d5 30%, #dfd5c2 100%)',
+    accent: '#c49a6c',
+    text: 'rgba(55, 45, 35, 0.9)',
+    textMuted: 'rgba(55, 45, 35, 0.45)',
+    cardBg: 'rgba(255, 255, 255, 0.7)',
+    cardBorder: 'rgba(0, 0, 0, 0.05)',
+    glow: 'rgba(255, 180, 100, 0.15)',
+  },
+  evening: {
+    bg: 'linear-gradient(180deg, #1e1a28 0%, #15121c 50%, #0e0b14 100%)',
+    accent: '#c9a87c',
+    text: 'rgba(255, 250, 240, 0.9)',
+    textMuted: 'rgba(255, 250, 240, 0.45)',
+    cardBg: 'rgba(255, 255, 255, 0.06)',
+    cardBorder: 'rgba(255, 255, 255, 0.08)',
+    glow: 'rgba(255, 180, 100, 0.08)',
+  },
+  night: {
+    bg: 'linear-gradient(180deg, #0a0810 0%, #06050a 50%, #030305 100%)',
+    accent: '#a08060',
+    text: 'rgba(255, 250, 245, 0.85)',
+    textMuted: 'rgba(255, 250, 245, 0.35)',
+    cardBg: 'rgba(255, 255, 255, 0.04)',
+    cardBorder: 'rgba(255, 255, 255, 0.06)',
+    glow: 'rgba(255, 200, 120, 0.05)',
+  },
+};
+
+// ============================================================================
+// GLOBAL STYLES
+// ============================================================================
+const GLOBAL_STYLES = `
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=DM+Sans:wght@400;500;600&display=swap');
+  
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+  }
+  
+  body {
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: pan-y;
+    position: fixed;
+    inset: 0;
+  }
+
+  /* Scrollbar styling */
+  .sanctuary-scroll::-webkit-scrollbar {
+    width: 4px;
+  }
+  .sanctuary-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .sanctuary-scroll::-webkit-scrollbar-thumb {
+    background: rgba(150, 140, 130, 0.3);
+    border-radius: 4px;
+  }
+
+  /* Animations */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  @keyframes gentlePulse {
+    0%, 100% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 0.9; transform: scale(1.02); }
+  }
+
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.2; }
+    50% { opacity: 0.9; }
+  }
+
+  @keyframes flicker {
+    0%, 100% { opacity: 0.85; transform: scaleY(1); }
+    25% { opacity: 1; transform: scaleY(1.04); }
+    50% { opacity: 0.9; transform: scaleY(0.98); }
+    75% { opacity: 0.95; transform: scaleY(1.02); }
+  }
+
+  /* Room card interactions */
+  .room-card {
+    transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    transform: translateZ(0);
+    will-change: transform;
+  }
+  
+  .room-card:hover {
+    transform: translateY(-3px) scale(1.02);
+  }
+  
+  .room-card:active {
+    transform: translateY(0) scale(0.98);
+  }
+
+  /* Touch device optimizations */
+  @media (hover: none) and (pointer: coarse) {
+    .room-card:hover {
+      transform: none;
+    }
+    .room-card:active {
+      transform: scale(0.97);
+    }
+  }
+
+  /* Safe area handling */
+  .safe-area-top {
+    padding-top: max(env(safe-area-inset-top, 0px), 12px);
+  }
+  .safe-area-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 20px);
+  }
+`;
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+const getTimeOfDay = (): TimeOfDay => {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return 'morning';
+  if (hour >= 12 && hour < 17) return 'afternoon';
+  if (hour >= 17 && hour < 21) return 'evening';
+  return 'night';
+};
+
+const getGreeting = (time: TimeOfDay): string => {
+  switch (time) {
+    case 'morning': return 'Good morning';
+    case 'afternoon': return 'Good afternoon';
+    case 'evening': return 'Good evening';
+    case 'night': return 'Welcome back';
+  }
+};
+
+// ============================================================================
+// COMPONENT
+// ============================================================================
+export default function SanctuaryHub() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  const [timeOfDay, setTimeOfDay] = useState<'morning' | 'afternoon' | 'evening' | 'night'>('morning');
+  const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('afternoon');
+  const [hoveredRoom, setHoveredRoom] = useState<string | null>(null);
+  const [manualTheme, setManualTheme] = useState<'light' | 'dark' | 'auto'>('auto');
 
   useEffect(() => {
     setMounted(true);
-
-    const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) setTimeOfDay('morning');
-    else if (hour >= 12 && hour < 17) setTimeOfDay('afternoon');
-    else if (hour >= 17 && hour < 21) setTimeOfDay('evening');
-    else setTimeOfDay('night');
+    setTimeOfDay(getTimeOfDay());
+    
+    // Update time periodically
+    const interval = setInterval(() => {
+      setTimeOfDay(getTimeOfDay());
+    }, 60000);
+    
+    return () => clearInterval(interval);
   }, []);
 
-  const isDark = timeOfDay === 'evening' || timeOfDay === 'night';
+  const handleRoomClick = useCallback((roomId: string) => {
+    router.push(`/sanctuary/${roomId}`);
+  }, [router]);
 
-  const getGreeting = () => {
-    switch (timeOfDay) {
-      case 'morning': return 'Good morning';
-      case 'afternoon': return 'Good afternoon';
-      case 'evening': return 'Good evening';
-      case 'night': return 'Welcome';
-    }
-  };
+  // Determine if dark mode based on manual override or auto time
+  const isDark = manualTheme === 'dark' 
+    ? true 
+    : manualTheme === 'light' 
+      ? false 
+      : (timeOfDay === 'evening' || timeOfDay === 'night');
+  
+  // Use appropriate colors based on dark mode
+  const colors = isDark ? TIME_COLORS.evening : TIME_COLORS[timeOfDay];
 
-  const handleRoomClick = (room: Room) => {
-    router.push(`/sanctuary/${room.id}`);
-  };
-
-  // Icon components
-  const renderIcon = (id: string) => {
-    const color = isDark ? 'rgba(160, 140, 180, 0.7)' : 'rgba(120, 100, 140, 0.6)';
-    
-    switch (id) {
-      case 'recalibration':
-        return (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
-            <path d="M12 20V4M4 12h16" />
-          </svg>
-        );
-      case 'zen':
-        return (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
-            <circle cx="12" cy="12" r="8" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
-        );
-      case 'library':
-        return (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
-            <rect x="6" y="4" width="4" height="16" />
-            <rect x="11" y="6" width="4" height="14" />
-            <rect x="16" y="8" width="4" height="12" />
-          </svg>
-        );
-      case 'rest':
-        return (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-          </svg>
-        );
-      case 'studio':
-        return (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
-            <rect x="3" y="3" width="18" height="14" rx="2" />
-            <line x1="12" y1="17" x2="12" y2="21" />
-            <line x1="8" y1="21" x2="16" y2="21" />
-          </svg>
-        );
-      case 'journal':
-        return (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
-            <rect x="5" y="3" width="14" height="18" rx="1" />
-            <line x1="9" y1="8" x2="15" y2="8" />
-            <line x1="9" y1="12" x2="15" y2="12" />
-            <line x1="9" y1="16" x2="12" y2="16" />
-          </svg>
-        );
-      default:
-        return null;
-    }
-  };
-
+  // Loading state
   if (!mounted) {
-    return <div style={{ minHeight: '100vh', background: '#f8f6f2' }} />;
+    return (
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        background: '#f5f2ed',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <div style={{
+          width: 32,
+          height: 32,
+          border: '2px solid rgba(150, 130, 110, 0.2)',
+          borderTopColor: 'rgba(150, 130, 110, 0.7)',
+          borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite',
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
   }
 
   return (
     <>
-      <style jsx global>{`
-        * {
-          box-sizing: border-box;
-          margin: 0;
-          padding: 0;
-        }
-
-        html, body {
-          font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          -webkit-font-smoothing: antialiased;
-          overflow: hidden;
-        }
-
-        .sanctuary {
-          position: fixed;
-          inset: 0;
-          background: ${isDark
-            ? 'linear-gradient(180deg, #0a0a12 0%, #12121f 40%, #0d0d18 100%)'
-            : 'linear-gradient(180deg, #f8f6f2 0%, #f0ebe3 50%, #e8e2d8 100%)'};
-          overflow: hidden;
-        }
-
-        /* Architecture */
-        .wall {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 65%;
-          background: ${isDark
-            ? 'linear-gradient(180deg, #0e0e18 0%, #141420 60%, #18182a 100%)'
-            : 'linear-gradient(180deg, #faf8f5 0%, #f5f0e8 60%, #ebe5db 100%)'};
-        }
-
-        .floor {
-          position: absolute;
-          bottom: 0;
-          left: -20%;
-          right: -20%;
-          height: 50%;
-          background: ${isDark
-            ? 'linear-gradient(180deg, #18182a 0%, #0f0f1a 50%, #0a0a12 100%)'
-            : 'linear-gradient(180deg, #ebe5db 0%, #ddd5c8 50%, #d0c8ba 100%)'};
-          transform: perspective(1000px) rotateX(65deg);
-          transform-origin: top center;
-        }
-
-        /* Window */
-        .window {
-          position: absolute;
-          top: 8%;
-          right: 8%;
-          width: 22%;
-          max-width: 220px;
-          aspect-ratio: 3/4;
-          background: ${isDark
-            ? 'linear-gradient(180deg, #0a1020 0%, #151535 40%, #0d0d28 100%)'
-            : 'linear-gradient(180deg, #d4e8f0 0%, #b8d8e8 30%, #a8d0e0 60%, #c8e0ec 100%)'};
-          border: 5px solid ${isDark ? '#252540' : '#c8b8a8'};
-          border-radius: 4px;
-          overflow: hidden;
-        }
-
-        .window-mullion-v {
-          position: absolute;
-          top: 0;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 5px;
-          height: 100%;
-          background: ${isDark ? '#252540' : '#c8b8a8'};
-        }
-
-        .window-mullion-h {
-          position: absolute;
-          top: 50%;
-          left: 0;
-          transform: translateY(-50%);
-          width: 100%;
-          height: 5px;
-          background: ${isDark ? '#252540' : '#c8b8a8'};
-        }
-
-        .trees {
-          position: absolute;
-          bottom: 10%;
-          left: 0;
-          right: 0;
-          height: 50%;
-          display: flex;
-          align-items: flex-end;
-          justify-content: space-around;
-          padding: 0 10%;
-        }
-
-        .tree {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-
-        .tree-canopy {
-          border-radius: 50% 50% 45% 45%;
-        }
-
-        .tree-trunk {
-          background: ${isDark ? '#1a1a30' : '#6b7b68'};
-        }
-
-        /* Moon */
-        .moon {
-          position: absolute;
-          top: 15%;
-          right: 18%;
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          background: radial-gradient(circle at 35% 35%, #f4f4ff 0%, #d8d8f0 50%, #b8b8e0 100%);
-          box-shadow: 0 0 20px rgba(200, 210, 255, 0.4);
-          display: ${isDark ? 'block' : 'none'};
-        }
-
-        /* Pendant Light */
-        .pendant {
-          position: absolute;
-          top: 0;
-          left: 38%;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-
-        .pendant-cord {
-          width: 2px;
-          height: 70px;
-          background: ${isDark ? '#3a3a50' : '#a0a090'};
-        }
-
-        .pendant-shade {
-          width: 60px;
-          height: 40px;
-          background: ${isDark
-            ? 'linear-gradient(180deg, rgba(255,250,240,0.85) 0%, rgba(240,235,220,0.8) 100%)'
-            : 'linear-gradient(180deg, #faf8f4 0%, #f0ebe4 100%)'};
-          border-radius: 50% 50% 45% 45% / 30% 30% 70% 70%;
-          box-shadow: 0 8px 30px ${isDark ? 'rgba(255,200,120,0.2)' : 'rgba(0,0,0,0.08)'};
-        }
-
-        /* Sofa */
-        .sofa-group {
-          position: absolute;
-          bottom: 22%;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 320px;
-        }
-
-        .sofa {
-          position: relative;
-          height: 130px;
-        }
-
-        .sofa-back {
-          position: absolute;
-          bottom: 45px;
-          left: 0;
-          right: 0;
-          height: 85px;
-          background: ${isDark
-            ? 'linear-gradient(180deg, #3a3250 0%, #2d2840 50%, #252238 100%)'
-            : 'linear-gradient(180deg, #e8e0d4 0%, #dcd4c4 50%, #d0c8b8 100%)'};
-          border-radius: 18px 18px 0 0;
-        }
-
-        .sofa-seat {
-          position: absolute;
-          bottom: 25px;
-          left: 8%;
-          right: 8%;
-          height: 32px;
-          background: ${isDark
-            ? 'linear-gradient(180deg, #403858 0%, #342e48 100%)'
-            : 'linear-gradient(180deg, #f0e8dc 0%, #e4dcd0 100%)'};
-          border-radius: 10px;
-          box-shadow: 0 10px 30px ${isDark ? 'rgba(0,0,0,0.35)' : 'rgba(0,0,0,0.06)'};
-        }
-
-        .sofa-arm {
-          position: absolute;
-          bottom: 25px;
-          width: 10%;
-          height: 65px;
-          background: ${isDark
-            ? 'linear-gradient(180deg, #3a3250 0%, #2d2840 100%)'
-            : 'linear-gradient(180deg, #e0d8cc 0%, #d4ccc0 100%)'};
-          border-radius: 12px;
-        }
-
-        .arm-left {
-          left: 0;
-          border-radius: 12px 5px 5px 12px;
-        }
-
-        .arm-right {
-          right: 0;
-          border-radius: 5px 12px 12px 5px;
-        }
-
-        .sofa-leg {
-          position: absolute;
-          bottom: 0;
-          width: 7px;
-          height: 25px;
-          background: ${isDark ? '#1a1828' : '#6b5545'};
-          border-radius: 2px;
-        }
-
-        .pillow {
-          position: absolute;
-          bottom: 75px;
-          width: 42px;
-          height: 36px;
-          border-radius: 8px;
-          box-shadow: 2px 4px 12px ${isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)'};
-        }
-
-        .pillow-1 {
-          left: 15%;
-          background: ${isDark ? '#4a6b5a' : '#a8b5a0'};
-          transform: rotate(-8deg);
-        }
-
-        .pillow-2 {
-          right: 15%;
-          background: ${isDark ? '#6b5a4a' : '#c4a890'};
-          transform: rotate(6deg);
-        }
-
-        /* Coffee Table */
-        .coffee-table {
-          position: absolute;
-          bottom: 10%;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 140px;
-        }
-
-        .table-top {
-          height: 12px;
-          background: ${isDark ? '#3a2a1a' : '#a08060'};
-          border-radius: 16px;
-          box-shadow: 0 10px 30px ${isDark ? 'rgba(0,0,0,0.35)' : 'rgba(0,0,0,0.12)'};
-        }
-
-        .table-legs {
-          display: flex;
-          justify-content: space-between;
-          padding: 0 20%;
-          margin-top: 5px;
-        }
-
-        .table-leg {
-          width: 6px;
-          height: 30px;
-          background: ${isDark ? '#2a1a0a' : '#806848'};
-          border-radius: 2px;
-        }
-
-        .table-items {
-          position: absolute;
-          top: -40px;
-          left: 50%;
-          transform: translateX(-50%);
-          display: flex;
-          align-items: flex-end;
-          gap: 20px;
-        }
-
-        .vase {
-          width: 18px;
-          height: 35px;
-          background: ${isDark ? '#d0c8c0' : '#f8f4f0'};
-          border-radius: 6px 6px 4px 4px;
-        }
-
-        .books {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-        }
-
-        .book {
-          height: 6px;
-          border-radius: 1px;
-        }
-
-        .book-1 { width: 32px; background: ${isDark ? '#4a6a5a' : '#8aa898'}; }
-        .book-2 { width: 28px; background: ${isDark ? '#6a5040' : '#c4a484'}; }
-        .book-3 { width: 30px; background: ${isDark ? '#5a5a6a' : '#a8a8b8'}; }
-
-        .candle {
-          width: 14px;
-          height: 24px;
-          background: linear-gradient(180deg, #faf8f4 0%, #e8e4dc 100%);
-          border-radius: 2px;
-          position: relative;
-        }
-
-        .flame {
-          position: absolute;
-          top: -10px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 6px;
-          height: 12px;
-          background: radial-gradient(ellipse at 50% 80%, rgba(255,220,140,0.9) 0%, rgba(255,160,60,0.6) 50%, transparent 100%);
-          border-radius: 50% 50% 50% 50% / 70% 70% 30% 30%;
-          animation: flicker 0.4s ease-in-out infinite alternate;
-        }
-
-        @keyframes flicker {
-          0% { transform: translateX(-50%) scaleY(1) rotate(-2deg); }
-          100% { transform: translateX(-50%) scaleY(1.1) rotate(2deg); }
-        }
-
-        /* Plant */
-        .plant {
-          position: absolute;
-          bottom: 24%;
-          right: 12%;
-        }
-
-        .pot {
-          width: 40px;
-          height: 35px;
-          background: ${isDark ? '#3a3030' : '#c4b4a0'};
-          border-radius: 4px 4px 10px 10px;
-        }
-
-        .leaves {
-          position: absolute;
-          bottom: 32px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 70px;
-          height: 80px;
-        }
-
-        .leaf {
-          position: absolute;
-          background: ${isDark ? '#2d4535' : '#5a8a60'};
-          border-radius: 50% 50% 50% 50% / 90% 90% 10% 10%;
-          transform-origin: bottom center;
-        }
-
-        .leaf-1 { width: 12px; height: 40px; left: 29px; bottom: 0; }
-        .leaf-2 { width: 14px; height: 48px; left: 32px; bottom: 0; transform: rotate(8deg); }
-        .leaf-3 { width: 11px; height: 35px; left: 22px; bottom: 5px; transform: rotate(-15deg); }
-        .leaf-4 { width: 13px; height: 42px; left: 38px; bottom: 3px; transform: rotate(12deg); }
-
-        /* Floor Lamp */
-        .floor-lamp {
-          position: absolute;
-          bottom: 28%;
-          left: 10%;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-
-        .lamp-shade {
-          width: 45px;
-          height: 35px;
-          background: ${isDark ? '#f8f4ec' : '#fcfaf6'};
-          border-radius: 6px 6px 18px 18px;
-          box-shadow: inset 0 -20px 30px ${isDark ? 'rgba(255,200,120,0.25)' : 'rgba(255,220,150,0.2)'};
-        }
-
-        .lamp-pole {
-          width: 5px;
-          height: 100px;
-          background: ${isDark ? '#4a3a28' : '#907858'};
-        }
-
-        .lamp-base {
-          width: 30px;
-          height: 8px;
-          background: ${isDark ? '#3a2a18' : '#806848'};
-          border-radius: 50%;
-        }
-
-        /* Greeting */
-        .greeting-area {
-          position: absolute;
-          top: 32%;
-          left: 50%;
-          transform: translateX(-50%);
-          text-align: center;
-          z-index: 10;
-        }
-
-        .greeting {
-          font-family: 'Cormorant Garamond', Georgia, serif;
-          font-size: clamp(1.8rem, 4vw, 2.5rem);
-          font-weight: 300;
-          color: ${isDark ? 'rgba(255,255,255,0.7)' : 'rgba(42,42,42,0.6)'};
-          margin-bottom: 8px;
-        }
-
-        .greeting-sub {
-          font-size: 0.65rem;
-          letter-spacing: 0.25em;
-          text-transform: uppercase;
-          color: ${isDark ? 'rgba(255,255,255,0.35)' : 'rgba(42,42,42,0.35)'};
-        }
-
-        /* Room Cards */
-        .rooms {
-          position: absolute;
-          top: 15%;
-          left: 3%;
-          z-index: 20;
-        }
-
-        .rooms-grid {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 8px;
-        }
-
-        .room-card {
-          width: 100px;
-          padding: 18px 12px;
-          background: ${isDark
-            ? 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)'
-            : 'linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.65) 100%)'};
-          border: 1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'};
-          border-radius: 14px;
-          text-align: center;
-          cursor: pointer;
-          backdrop-filter: blur(20px);
-          transition: all 0.3s ease;
-          position: relative;
-        }
-
-        .room-card:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 10px 30px ${isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.08)'};
-        }
-
-        .room-icon {
-          margin-bottom: 10px;
-          opacity: 0.85;
-        }
-
-        .room-name {
-          font-size: 0.75rem;
-          font-weight: 500;
-          color: ${isDark ? 'rgba(255,255,255,0.9)' : 'rgba(42,42,42,0.85)'};
-          margin-bottom: 3px;
-        }
-
-        .room-essence {
-          font-size: 0.5rem;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          color: ${isDark ? 'rgba(255,255,255,0.4)' : 'rgba(42,42,42,0.4)'};
-        }
-
-        /* Bottom Bar */
-        .bottom-bar {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          padding: 20px;
-          padding-bottom: max(20px, env(safe-area-inset-bottom));
-          background: linear-gradient(to top, ${isDark ? 'rgba(10,10,18,0.95)' : 'rgba(248,246,242,0.95)'} 0%, transparent 100%);
-          display: flex;
-          justify-content: center;
-          z-index: 30;
-        }
-
-        .talk-btn {
-          padding: 16px 40px;
-          background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
-          border: none;
-          border-radius: 50px;
-          color: white;
-          font-size: 0.9rem;
-          font-weight: 500;
-          cursor: pointer;
-          box-shadow: 0 8px 30px rgba(139, 92, 246, 0.35);
-          transition: all 0.3s ease;
-        }
-
-        .talk-btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 12px 40px rgba(139, 92, 246, 0.45);
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-          .rooms {
-            top: 12%;
-            left: 2%;
-          }
-
-          .rooms-grid {
-            gap: 6px;
-          }
-
-          .room-card {
-            width: 85px;
-            padding: 14px 10px;
-          }
-
-          .room-name {
-            font-size: 0.65rem;
-          }
-
-          .sofa-group {
-            width: 260px;
-            bottom: 20%;
-          }
-
-          .coffee-table {
-            width: 120px;
-          }
-
-          .greeting {
-            font-size: 1.5rem;
-          }
-
-          .floor-lamp {
-            display: none;
-          }
-
-          .plant {
-            right: 8%;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .rooms-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .room-card {
-            width: 75px;
-            padding: 12px 8px;
-          }
-
-          .room-essence {
-            display: none;
-          }
-
-          .window {
-            width: 25%;
-            top: 6%;
-            right: 5%;
-          }
-
-          .sofa-group {
-            width: 220px;
-          }
-
-          .plant {
-            display: none;
-          }
-        }
-      `}</style>
-
-      <div className="sanctuary">
-        {/* Wall & Floor */}
-        <div className="wall" />
-        <div className="floor" />
-
-        {/* Window */}
-        <div className="window">
-          <div className="moon" />
-          <div className="trees">
-            <div className="tree">
-              <div className="tree-canopy" style={{ width: 28, height: 36, background: isDark ? 'rgba(30,50,40,0.9)' : 'rgba(80,110,80,0.7)' }} />
-              <div className="tree-trunk" style={{ width: 5, height: 18 }} />
-            </div>
-            <div className="tree">
-              <div className="tree-canopy" style={{ width: 38, height: 48, background: isDark ? 'rgba(25,45,35,0.95)' : 'rgba(70,100,70,0.75)' }} />
-              <div className="tree-trunk" style={{ width: 6, height: 24 }} />
-            </div>
-            <div className="tree">
-              <div className="tree-canopy" style={{ width: 24, height: 30, background: isDark ? 'rgba(35,55,45,0.85)' : 'rgba(90,120,85,0.65)' }} />
-              <div className="tree-trunk" style={{ width: 4, height: 14 }} />
-            </div>
-          </div>
-          <div className="window-mullion-v" />
-          <div className="window-mullion-h" />
+      <style jsx global>{GLOBAL_STYLES}</style>
+
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        background: colors.bg,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}>
+        
+        {/* ================================================================ */}
+        {/* AMBIENT BACKGROUND - Warm light effects */}
+        {/* ================================================================ */}
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          overflow: 'hidden',
+        }}>
+          {/* Primary warm glow - center top */}
+          <div style={{
+            position: 'absolute',
+            top: '-10%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 'min(120vw, 700px)',
+            height: 'min(80vh, 500px)',
+            background: isDark
+              ? 'radial-gradient(ellipse at 50% 30%, rgba(255, 180, 100, 0.08) 0%, rgba(255, 150, 80, 0.03) 40%, transparent 70%)'
+              : 'radial-gradient(ellipse at 50% 30%, rgba(255, 220, 180, 0.4) 0%, rgba(255, 200, 150, 0.15) 40%, transparent 70%)',
+            borderRadius: '50%',
+            animation: 'gentlePulse 10s ease-in-out infinite',
+          }} />
+
+          {/* Secondary warm glow - bottom left */}
+          <div style={{
+            position: 'absolute',
+            bottom: '5%',
+            left: '-15%',
+            width: 'min(60vw, 350px)',
+            height: 'min(60vw, 350px)',
+            background: isDark
+              ? 'radial-gradient(circle, rgba(255, 160, 100, 0.06) 0%, transparent 60%)'
+              : 'radial-gradient(circle, rgba(255, 200, 150, 0.25) 0%, transparent 60%)',
+            borderRadius: '50%',
+            animation: 'gentlePulse 12s ease-in-out infinite 2s',
+          }} />
+
+          {/* Tertiary warm glow - bottom right */}
+          <div style={{
+            position: 'absolute',
+            bottom: '10%',
+            right: '-10%',
+            width: 'min(50vw, 300px)',
+            height: 'min(50vw, 300px)',
+            background: isDark
+              ? 'radial-gradient(circle, rgba(200, 150, 100, 0.05) 0%, transparent 60%)'
+              : 'radial-gradient(circle, rgba(255, 210, 170, 0.2) 0%, transparent 60%)',
+            borderRadius: '50%',
+            animation: 'gentlePulse 14s ease-in-out infinite 4s',
+          }} />
+
+          {/* Floating light particles */}
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              style={{
+                position: 'absolute',
+                top: `${15 + (i * 13) % 60}%`,
+                left: `${10 + (i * 17) % 80}%`,
+                width: isDark ? 'clamp(2px, 0.5vw, 4px)' : 'clamp(3px, 0.8vw, 6px)',
+                height: isDark ? 'clamp(2px, 0.5vw, 4px)' : 'clamp(3px, 0.8vw, 6px)',
+                background: isDark
+                  ? 'rgba(255, 200, 150, 0.3)'
+                  : 'rgba(255, 220, 180, 0.6)',
+                borderRadius: '50%',
+                boxShadow: isDark
+                  ? '0 0 8px rgba(255, 180, 120, 0.3)'
+                  : '0 0 12px rgba(255, 200, 150, 0.5)',
+                animation: `float ${6 + i * 1.5}s ease-in-out infinite, twinkle ${4 + i}s ease-in-out infinite`,
+                animationDelay: `${i * 0.8}s`,
+              }}
+            />
+          ))}
+
+          {/* Subtle grain texture overlay */}
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            opacity: isDark ? 0.03 : 0.02,
+            background: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+          }} />
         </div>
 
-        {/* Pendant Light */}
-        <div className="pendant">
-          <div className="pendant-cord" />
-          <div className="pendant-shade" />
-        </div>
+        {/* ================================================================ */}
+        {/* MAIN SCROLLABLE CONTENT */}
+        {/* ================================================================ */}
+        <div 
+          className="sanctuary-scroll safe-area-top"
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            WebkitOverflowScrolling: 'touch',
+            position: 'relative',
+            zIndex: 10,
+          }}
+        >
+          <div style={{
+            minHeight: '100%',
+            padding: 'clamp(16px, 4vw, 24px)',
+            paddingTop: 'clamp(20px, 5vh, 40px)',
+            paddingBottom: 'clamp(40px, 10vh, 80px)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            
+            {/* ============================================================ */}
+            {/* GREETING SECTION */}
+            {/* ============================================================ */}
+            <header style={{
+              textAlign: 'center',
+              marginBottom: 'clamp(20px, 4vh, 32px)',
+              animation: 'fadeInUp 0.6s ease-out',
+            }}>
+              <h1 style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: 'clamp(2rem, 8vw, 3.2rem)',
+                fontWeight: 300,
+                color: colors.text,
+                marginBottom: 'clamp(6px, 1.5vw, 10px)',
+                letterSpacing: '-0.02em',
+                lineHeight: 1.1,
+              }}>
+                {getGreeting(timeOfDay)}
+              </h1>
+              <p style={{
+                fontSize: 'clamp(0.65rem, 2.8vw, 0.8rem)',
+                fontWeight: 500,
+                letterSpacing: '0.18em',
+                textTransform: 'uppercase',
+                color: colors.textMuted,
+              }}>
+                Your sanctuary awaits
+              </p>
+            </header>
 
-        {/* Floor Lamp */}
-        <div className="floor-lamp">
-          <div className="lamp-shade" />
-          <div className="lamp-pole" />
-          <div className="lamp-base" />
-        </div>
-
-        {/* Sofa */}
-        <div className="sofa-group">
-          <div className="sofa">
-            <div className="sofa-back" />
-            <div className="sofa-seat" />
-            <div className="sofa-arm arm-left" />
-            <div className="sofa-arm arm-right" />
-            <div className="sofa-leg" style={{ left: '15%' }} />
-            <div className="sofa-leg" style={{ left: '40%' }} />
-            <div className="sofa-leg" style={{ right: '40%' }} />
-            <div className="sofa-leg" style={{ right: '15%' }} />
-            <div className="pillow pillow-1" />
-            <div className="pillow pillow-2" />
-          </div>
-        </div>
-
-        {/* Coffee Table */}
-        <div className="coffee-table">
-          <div className="table-items">
-            <div className="vase" />
-            <div className="books">
-              <div className="book book-1" />
-              <div className="book book-2" />
-              <div className="book book-3" />
-            </div>
-            <div className="candle">
-              <div className="flame" />
-            </div>
-          </div>
-          <div className="table-top" />
-          <div className="table-legs">
-            <div className="table-leg" />
-            <div className="table-leg" />
-          </div>
-        </div>
-
-        {/* Plant */}
-        <div className="plant">
-          <div className="leaves">
-            <div className="leaf leaf-1" />
-            <div className="leaf leaf-2" />
-            <div className="leaf leaf-3" />
-            <div className="leaf leaf-4" />
-          </div>
-          <div className="pot" />
-        </div>
-
-        {/* Greeting */}
-        <div className="greeting-area">
-          <h1 className="greeting">{getGreeting()}</h1>
-          <p className="greeting-sub">Your sanctuary awaits</p>
-        </div>
-
-        {/* Room Cards */}
-        <div className="rooms">
-          <div className="rooms-grid">
-            {ROOMS.map((room) => (
-              <div
-                key={room.id}
-                className="room-card"
-                onClick={() => handleRoomClick(room)}
-              >
-                <div className="room-icon">{renderIcon(room.id)}</div>
-                <div className="room-name">{room.name}</div>
-                <div className="room-essence">{room.essence}</div>
+            {/* ============================================================ */}
+            {/* THEME TOGGLE */}
+            {/* ============================================================ */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              marginBottom: 'clamp(24px, 5vh, 40px)',
+              animation: 'fadeInUp 0.6s ease-out 0.1s both',
+            }}>
+              <span style={{
+                fontSize: 12,
+                color: colors.textMuted,
+                fontWeight: 500,
+              }}>
+                {manualTheme === 'auto' ? 'Auto' : manualTheme === 'light' ? 'Light' : 'Dark'}
+              </span>
+              
+              {/* Three-way toggle: Light / Auto / Dark */}
+              <div style={{
+                display: 'flex',
+                gap: 4,
+                padding: 4,
+                background: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                borderRadius: 20,
+              }}>
+                {(['light', 'auto', 'dark'] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setManualTheme(mode)}
+                    aria-label={`${mode} mode`}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: 16,
+                      border: 'none',
+                      background: manualTheme === mode 
+                        ? (isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.9)')
+                        : 'transparent',
+                      color: manualTheme === mode 
+                        ? colors.text 
+                        : colors.textMuted,
+                      fontSize: 11,
+                      fontWeight: manualTheme === mode ? 600 : 400,
+                      cursor: 'pointer',
+                      textTransform: 'capitalize',
+                      transition: 'all 0.2s ease',
+                      boxShadow: manualTheme === mode 
+                        ? (isDark ? 'none' : '0 1px 3px rgba(0,0,0,0.1)')
+                        : 'none',
+                    }}
+                  >
+                    {mode === 'auto' ? '◐' : mode === 'light' ? '○' : '●'}
+                  </button>
+                ))}
               </div>
-            ))}
+            </div>
+
+            {/* ============================================================ */}
+            {/* ROOM CARDS GRID */}
+            {/* ============================================================ */}
+            <section style={{
+              width: '100%',
+              maxWidth: 500,
+              animation: 'fadeInUp 0.6s ease-out 0.1s both',
+            }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: 'clamp(12px, 3.5vw, 18px)',
+              }}>
+                {ROOMS.map((room, index) => (
+                  <button
+                    key={room.id}
+                    className="room-card"
+                    onClick={() => handleRoomClick(room.id)}
+                    onMouseEnter={() => setHoveredRoom(room.id)}
+                    onMouseLeave={() => setHoveredRoom(null)}
+                    style={{
+                      position: 'relative',
+                      padding: 'clamp(20px, 5.5vw, 30px) clamp(14px, 3.5vw, 20px)',
+                      background: isDark
+                        ? (hoveredRoom === room.id 
+                            ? 'linear-gradient(145deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 250, 240, 0.06) 100%)'
+                            : 'linear-gradient(145deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 250, 240, 0.03) 100%)')
+                        : (hoveredRoom === room.id
+                            ? 'linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 252, 245, 0.9) 100%)'
+                            : 'linear-gradient(145deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 252, 248, 0.7) 100%)'),
+                      border: `1px solid ${isDark
+                        ? (hoveredRoom === room.id ? 'rgba(255, 220, 180, 0.15)' : 'rgba(255, 255, 255, 0.06)')
+                        : (hoveredRoom === room.id ? 'rgba(220, 200, 170, 0.4)' : 'rgba(255, 255, 255, 0.6)')}`,
+                      borderRadius: 'clamp(16px, 4vw, 24px)',
+                      textAlign: 'center',
+                      cursor: 'pointer',
+                      backdropFilter: 'blur(20px)',
+                      WebkitBackdropFilter: 'blur(20px)',
+                      outline: 'none',
+                      overflow: 'hidden',
+                      animation: `fadeInUp 0.5s ease-out ${0.1 + index * 0.06}s both`,
+                      boxShadow: isDark
+                        ? (hoveredRoom === room.id
+                            ? '0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 200, 150, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                            : '0 4px 20px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.03)')
+                        : (hoveredRoom === room.id
+                            ? '0 8px 32px rgba(180, 150, 120, 0.2), 0 2px 8px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
+                            : '0 4px 16px rgba(180, 150, 120, 0.12), 0 1px 4px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.6)'),
+                    }}
+                  >
+                    {/* Warm glow overlay on hover */}
+                    <div style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background: hoveredRoom === room.id 
+                        ? (isDark 
+                            ? 'radial-gradient(ellipse at 50% 30%, rgba(255, 200, 150, 0.1) 0%, transparent 70%)'
+                            : 'radial-gradient(ellipse at 50% 30%, rgba(255, 220, 180, 0.3) 0%, transparent 70%)')
+                        : 'transparent',
+                      transition: 'background 0.4s ease',
+                      borderRadius: 'inherit',
+                    }} />
+                    
+                    {/* Content */}
+                    <div style={{ position: 'relative', zIndex: 1 }}>
+                      {/* Icon */}
+                      <div style={{
+                        fontSize: 'clamp(1.5rem, 6vw, 2rem)',
+                        marginBottom: 'clamp(10px, 3vw, 16px)',
+                        opacity: hoveredRoom === room.id ? 1 : 0.65,
+                        color: isDark 
+                          ? (hoveredRoom === room.id ? 'rgba(255, 230, 200, 0.9)' : colors.text)
+                          : (hoveredRoom === room.id ? 'rgba(120, 100, 80, 0.9)' : colors.text),
+                        transition: 'all 0.3s ease',
+                        animation: hoveredRoom === room.id ? 'float 3s ease-in-out infinite' : 'none',
+                        textShadow: hoveredRoom === room.id
+                          ? (isDark ? '0 0 20px rgba(255, 200, 150, 0.3)' : '0 0 20px rgba(200, 170, 130, 0.3)')
+                          : 'none',
+                      }}>
+                        {room.icon}
+                      </div>
+                      
+                      {/* Name */}
+                      <div style={{
+                        fontSize: 'clamp(0.85rem, 3.8vw, 1rem)',
+                        fontWeight: 600,
+                        color: colors.text,
+                        marginBottom: 'clamp(4px, 1.2vw, 8px)',
+                        lineHeight: 1.2,
+                      }}>
+                        {room.name}
+                      </div>
+                      
+                      {/* Essence */}
+                      <div style={{
+                        fontSize: 'clamp(0.65rem, 2.8vw, 0.75rem)',
+                        letterSpacing: '0.03em',
+                        color: colors.textMuted,
+                        lineHeight: 1.4,
+                      }}>
+                        {room.essence}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </section>
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="bottom-bar">
-          <button className="talk-btn" onClick={() => router.push('/')}>
-            Talk to VERA
-          </button>
-        </div>
       </div>
     </>
   );

@@ -1,10 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth/AuthContext";
 
 export function VoiceButton() {
-  const { tier, loading } = useAuth();
   const router = useRouter();
 
   return (

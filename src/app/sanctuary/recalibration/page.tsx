@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import TherapyRoom from '@/components/sanctuary/TherapyRoom';
+import RecalibrationRoom from '@/components/sanctuary/RecalibrationRoom';
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
@@ -11,34 +11,78 @@ export default function RecalibrationRoomPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const userName = useMemo(() => 'You', []);
+  const userName = 'You';
 
   const onBack = useCallback(() => {
     router.push('/sanctuary');
   }, [router]);
 
-  const onSendMessage = useCallback((message: string) => {
+  const onSendMessage = useCallback(async (message: string) => {
     const content = message.trim();
-    if (!content) return;
+    if (!content || isGenerating) return;
 
-    setMessages((prev) => [...prev, { role: 'user', content }]);
+    const userMessage: ChatMessage = { role: 'user', content };
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     setIsGenerating(true);
 
-    // Local-only placeholder response (no backend wired yet)
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: updatedMessages }),
+      });
+
+      const data = await response.json();
+
+      if (data.gate === 'signup_required') {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: "I'm really enjoying our conversation. Sign up free to keep chatting — it only takes a second.",
+          },
+        ]);
+        return;
+      }
+
+      if (data.gate === 'upgrade_required') {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: "You've been doing great work today. Upgrade to Sanctuary for unlimited conversations.",
+          },
+        ]);
+        return;
+      }
+
+      const assistantContent = data.message || data.content || data.response;
+      if (assistantContent) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: assistantContent,
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error('Chat error:', error);
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: "I'm here with you. Tell me more about what's coming up right now.",
+          content: "I'm having a moment. Could you try again?",
         },
       ]);
+    } finally {
       setIsGenerating(false);
-    }, 450);
-  }, []);
+    }
+  }, [messages, isGenerating]);
 
   return (
-    <TherapyRoom
+    <RecalibrationRoom
       onBack={onBack}
       onSendMessage={onSendMessage}
       messages={messages}

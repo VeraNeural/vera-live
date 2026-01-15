@@ -1,19 +1,14 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
-import { createClient } from "@/lib/supabase/client";
-import type { User } from "@supabase/supabase-js";
-import { normalizeTier, type Tier } from "./tiers";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { useUser } from "@clerk/nextjs";
+import type { Tier } from "./tiers";
 
 interface AuthContextType {
-  user: User | null;
+  userId: string | null;
   isLoggedIn: boolean;
+  // NOTE: Tier/limits are enforced server-side in /api/chat.
+  // This value is non-authoritative and must not be used for gating decisions.
   tier: Tier;
   loading: boolean;
   refreshTier: () => Promise<void>;
@@ -23,95 +18,18 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [tier, setTier] = useState<Tier>("anonymous");
-  const [loading, setLoading] = useState(true);
+  const { isLoaded, isSignedIn, user } = useUser();
 
-  const supabase = createClient();
-
-  // Fetch tier from database (source of truth)
-  async function fetchTier(userId: string): Promise<Tier> {
-    try {
-      const { data, error } = await supabase
-        .from("users")
-        .select("tier")
-        .eq("id", userId)
-        .single();
-
-      if (error || !data) {
-        console.error("Error fetching tier:", error);
-        return "free"; // Default for authenticated users
-      }
-
-      const normalized = normalizeTier((data as any)?.tier);
-      if (normalized) return normalized;
-
-      console.warn("Unknown tier value in users.tier; defaulting to free", {
-        userId,
-        tier: (data as any)?.tier,
-      });
-      return "free";
-    } catch (err) {
-      console.error("Exception fetching tier:", err);
-      return "free";
-    }
-  }
-
-  async function refreshTier() {
-    if (user) {
-      const newTier = await fetchTier(user.id);
-      setTier(newTier);
-    }
-  }
-
-  async function signOut() {
-    await supabase.auth.signOut();
-    setUser(null);
-    setTier("anonymous");
-  }
-
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user);
-        const userTier = await fetchTier(session.user.id);
-        setTier(userTier);
-      } else {
-        setUser(null);
-        setTier("anonymous");
-      }
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        setUser(session.user);
-        const userTier = await fetchTier(session.user.id);
-        setTier(userTier);
-      } else {
-        setUser(null);
-        setTier("anonymous");
-      }
-      setLoading(false);
-    });
-
-    return () => {
-      subscription.unsubscribe();
+  const value = useMemo<AuthContextType>(() => {
+    return {
+      userId: user?.id ?? null,
+      isLoggedIn: Boolean(isSignedIn),
+      tier: isSignedIn ? ("free" as Tier) : ("anonymous" as Tier),
+      loading: !isLoaded,
+      refreshTier: async () => {},
+      signOut: async () => {},
     };
-  }, []);
-
-  const value: AuthContextType = {
-    user,
-    isLoggedIn: !!user,
-    tier,
-    loading,
-    refreshTier,
-    signOut,
-  };
+  }, [isLoaded, isSignedIn, user?.id]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

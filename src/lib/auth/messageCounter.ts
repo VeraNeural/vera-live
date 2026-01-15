@@ -1,7 +1,68 @@
 import { createClient } from "@/lib/supabase/server";
-import { normalizeTier, type Tier, TIER_LIMITS } from "./tiers";
+import { createHash } from "crypto";
+import type { Tier } from "./tiers";
+import { TIER_LIMITS } from "./tiers";
+import { getUserAccessState } from "./accessState";
 
 const FREE_MESSAGE_LIMIT = TIER_LIMITS.free.messages_per_day;
+const ANON_MESSAGE_LIMIT = 5;
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+}
+
+/**
+ * Deterministically map an arbitrary string to a UUID-like value.
+ * This is used ONLY to satisfy Postgres UUID input for metering.
+ */
+function stableUuidFromString(input: string): string {
+  const hex = createHash("sha256").update(input).digest("hex");
+  // Take first 32 hex chars.
+  const base = hex.slice(0, 32).split("");
+
+  // Set version to 5 (positions are 0-indexed in the 32-hex string)
+  base[12] = "5";
+  // Set RFC 4122 variant (8, 9, a, b)
+  base[16] = "8";
+
+  const s = base.join("");
+  return `${s.slice(0, 8)}-${s.slice(8, 12)}-${s.slice(12, 16)}-${s.slice(16, 20)}-${s.slice(20, 32)}`;
+}
+
+/**
+ * Resolve the UUID metering id for an authenticated Clerk user.
+ * Prefers the DB uuid in `users.id` (looked up by `clerk_user_id`).
+ * Falls back to a deterministic UUID derived from the Clerk user id.
+ */
+export async function resolveMeteringIdForClerkUserId(clerkUserId: string): Promise<string> {
+  if (!clerkUserId) return stableUuidFromString("clerk:missing");
+
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("users")
+      .select("id")
+      .eq("clerk_user_id", clerkUserId)
+      .limit(1)
+      .maybeSingle();
+
+    const dbId = (data as any)?.id;
+    if (typeof dbId === "string" && isUuid(dbId)) {
+      return dbId;
+    }
+  } catch {
+    // Ignore and fall back to deterministic UUID.
+  }
+
+  return stableUuidFromString(`clerk:${clerkUserId}`);
+}
+
+/**
+ * Resolve the UUID metering id for an anonymous session.
+ */
+export function meteringIdFromSessionId(sessionId: string): string {
+  return stableUuidFromString(`sid:${sessionId}`);
+}
 
 export interface MessageLimitResult {
   allowed: boolean;
@@ -11,47 +72,30 @@ export interface MessageLimitResult {
   remaining: number;
 }
 
+export async function getMessageCount24h(meteringId: string): Promise<number> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("get_message_count_24h", {
+    p_user_id: meteringId,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data ?? 0) as number;
+}
+
 /**
  * Check if user can send a message (server-authoritative)
  */
 export async function checkMessageLimit(
-  userId: string | null
+  input: {
+    tier: Tier;
+    meteringId: string;
+  }
 ): Promise<MessageLimitResult> {
-  if (!userId) {
-    return {
-      allowed: true,
-      tier: "anonymous",
-      count: 0,
-      limit: 0,
-      remaining: 0,
-    };
-  }
-
-  const supabase = await createClient();
-
-  // Get user tier from database (source of truth)
-  let tier: Tier = "free";
-  try {
-    const { data: userData, error } = await supabase
-      .from("users")
-      .select("tier")
-      .eq("id", userId)
-      .single();
-
-    if (error) {
-      console.error("[messageCounter] users.tier lookup failed", {
-        userId,
-        error: error.message,
-      });
-    } else {
-      tier = normalizeTier((userData as any)?.tier) ?? "free";
-    }
-  } catch (err) {
-    console.error("[messageCounter] users.tier lookup threw", { userId, err });
-  }
-
-  // Sanctuary users - unlimited
-  if (tier === "sanctuary") {
+  if (input.tier === "sanctuary") {
     return {
       allowed: true,
       tier: "sanctuary",
@@ -61,64 +105,43 @@ export async function checkMessageLimit(
     };
   }
 
-  // Free users - check 24h rolling limit
+  const limit = input.tier === "anonymous" ? ANON_MESSAGE_LIMIT : FREE_MESSAGE_LIMIT;
+
   let count = 0;
   try {
-    const { data: countData, error } = await supabase.rpc(
-      "get_message_count_24h",
-      {
-        p_user_id: userId,
-      }
-    );
-
-    if (error) {
-      // Safe fallback: allow message if metering can't be read.
-      console.error("[messageCounter] get_message_count_24h RPC failed", {
-        userId,
-        error: error.message,
-      });
-      return {
-        allowed: true,
-        tier: "free",
-        count: 0,
-        limit: FREE_MESSAGE_LIMIT,
-        remaining: FREE_MESSAGE_LIMIT,
-      };
-    }
-
-    count = countData ?? 0;
+    count = await getMessageCount24h(input.meteringId);
   } catch (err) {
-    // Safe fallback: allow message if metering can't be read.
-    console.error("[messageCounter] get_message_count_24h RPC threw", {
-      userId,
+    // Fail closed: if metering can't be read, block.
+    console.error("[messageCounter] get_message_count_24h failed", {
+      meteringId: input.meteringId,
       err,
     });
     return {
-      allowed: true,
-      tier: "free",
+      allowed: false,
+      tier: input.tier,
       count: 0,
-      limit: FREE_MESSAGE_LIMIT,
-      remaining: FREE_MESSAGE_LIMIT,
+      limit,
+      remaining: 0,
     };
   }
 
-  const remaining = Math.max(0, FREE_MESSAGE_LIMIT - count);
+  const remaining = Math.max(0, limit - count);
 
-  if (count >= FREE_MESSAGE_LIMIT) {
+  if (count >= limit) {
     return {
-      allowed: true,
-      tier: "free",
+      allowed: false,
+      tier: input.tier,
       count,
-      limit: FREE_MESSAGE_LIMIT,
+      limit,
       remaining: 0,
     };
   }
 
   return {
     allowed: true,
-    tier: "free",
+    tier: input.tier,
     count,
-    limit: FREE_MESSAGE_LIMIT,
+    limit,
     remaining,
   };
 }
@@ -148,27 +171,9 @@ export async function recordMessage(userId: string): Promise<void> {
  * Get user's current tier from database
  */
 export async function getUserTier(userId: string): Promise<Tier> {
-  if (!userId) return "anonymous";
-
-  const supabase = await createClient();
-
   try {
-    const { data, error } = await supabase
-      .from("users")
-      .select("tier")
-      .eq("id", userId)
-      .single();
-
-    if (error) {
-      console.error("[messageCounter] getUserTier lookup failed", {
-        userId,
-        error: error.message,
-      });
-      return "free";
-    }
-
-    if (!data) return "free";
-    return normalizeTier((data as any)?.tier) ?? "free";
+    const access = await getUserAccessState(userId);
+    return access.state === "sanctuary" ? "sanctuary" : access.state === "anonymous" ? "anonymous" : "free";
   } catch (err) {
     console.error("[messageCounter] getUserTier lookup threw", { userId, err });
     return "free";

@@ -13,7 +13,7 @@ export default function PaywallModal({ isOpen, onClose, roomName, isDark }: Payw
   const router = useRouter();
 
   const handleStartTrial = async () => {
-    const response = await fetch('/api/checkout', { method: 'POST' });
+    const response = await fetch('/api/stripe/checkout', { method: 'POST' });
     const { url, error } = await response.json();
     if (url) {
       window.location.href = url;

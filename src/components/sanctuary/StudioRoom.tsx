@@ -1,518 +1,797 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useTheme, ThemeToggle } from '@/contexts/ThemeContext';
+import EmotionColorMap from './creative/EmotionColorMap';
+import MandalaCreation from './creative/MandalaCreation';
+import SketchYourDay from './creative/SketchYourDay';
+import PaperFolding from './creative/PaperFolding';
+import WorryStoneDesign from './creative/WorryStoneDesign';
+import GratitudeJar from './creative/GratitudeJar';
+import DesignSafeSpace from './creative/DesignSafeSpaces';
+import DigitalVisionBoard from './creative/DigitalVisionBoard';
+import ComfortKitBuilder from './creative/ComfortKitBuilder';
+import ZentanglePatterns from './creative/ZentaglePatterns';
+import BlankCanvas from './creative/BlankCanvas';
+import StreamOfCreation from './creative/SteamOfCreation';
 
-interface DesignStudioProps {
-  onBack: () => void;
+// ============================================================================
+// ELEGANT SVG ICONS (no emojis, no cartoons)
+// ============================================================================
+interface IconProps {
+  size?: number;
+  color?: string;
 }
 
-type Tab = 'templates' | 'projects';
+function EmotionColorMapIcon({ size = 24, color = 'currentColor' }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.5" />
+      <circle cx="12" cy="12" r="5" stroke={color} strokeWidth="1.5" opacity="0.6" />
+      <circle cx="12" cy="12" r="1.5" fill={color} opacity="0.8" />
+      <path d="M12 3V5" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.4" />
+      <path d="M12 19V21" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.4" />
+      <path d="M3 12H5" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.4" />
+      <path d="M19 12H21" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.4" />
+    </svg>
+  );
+}
 
-const TEMPLATES = [
-  { id: 1, title: 'Sanctuary Spaces', desc: 'Calming environments to design', count: 6 },
-  { id: 2, title: 'Healing Elements', desc: 'Objects for your sanctuary', count: 4 },
-  { id: 3, title: 'Mood Palettes', desc: 'Color schemes for emotions', count: 5 },
+function ZentangleIcon({ size = 24, color = 'currentColor' }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M3 8C5 6 7 10 9 8C11 6 13 10 15 8C17 6 19 10 21 8" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M3 12C5 10 7 14 9 12C11 10 13 14 15 12C17 10 19 14 21 12" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.7" />
+      <path d="M3 16C5 14 7 18 9 16C11 14 13 18 15 16C17 14 19 18 21 16" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.4" />
+    </svg>
+  );
+}
+
+function MandalaIcon({ size = 24, color = 'currentColor' }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.5" opacity="0.3" />
+      <circle cx="12" cy="12" r="6" stroke={color} strokeWidth="1.5" opacity="0.5" />
+      <circle cx="12" cy="12" r="3" stroke={color} strokeWidth="1.5" opacity="0.7" />
+      <circle cx="12" cy="12" r="1" fill={color} />
+      <path d="M12 3V6" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M12 18V21" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M3 12H6" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M18 12H21" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SketchIcon({ size = 24, color = 'currentColor' }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M17 3L21 7L8 20H4V16L17 3Z" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M14 6L18 10" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
+    </svg>
+  );
+}
+
+function CraftIcon({ size = 24, color = 'currentColor' }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M12 2L15 8H9L12 2Z" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 8L6 16H18L15 8" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.7" />
+      <path d="M6 16L4 22H20L18 16" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.4" />
+    </svg>
+  );
+}
+
+function BuildIcon({ size = 24, color = 'currentColor' }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="3" width="7" height="7" rx="1" stroke={color} strokeWidth="1.5" opacity="0.6" />
+      <rect x="14" y="3" width="7" height="7" rx="1" stroke={color} strokeWidth="1.5" opacity="0.8" />
+      <rect x="3" y="14" width="7" height="7" rx="1" stroke={color} strokeWidth="1.5" opacity="0.8" />
+      <rect x="14" y="14" width="7" height="7" rx="1" stroke={color} strokeWidth="1.5" opacity="0.6" />
+    </svg>
+  );
+}
+
+function ExpressIcon({ size = 24, color = 'currentColor' }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.5" opacity="0.3" />
+      <circle cx="12" cy="12" r="5" stroke={color} strokeWidth="1.5" opacity="0.6" />
+      <circle cx="12" cy="12" r="1.5" fill={color} />
+    </svg>
+  );
+}
+
+// Category icon mapping
+const CATEGORY_ICONS: Record<string, React.FC<IconProps>> = {
+  'art': EmotionColorMapIcon,
+  'craft': CraftIcon,
+  'build': BuildIcon,
+  'express': ExpressIcon,
+};
+
+// Activity icon mapping
+const ACTIVITY_ICONS: Record<string, React.FC<IconProps>> = {
+  'emotion-colors': EmotionColorMapIcon,
+  'zentangle': ZentangleIcon,
+  'mandala': MandalaIcon,
+  'sketch-feelings': SketchIcon,
+};
+
+// ============================================================================
+// TYPES
+// ============================================================================
+interface CreativeStudioProps {
+  onBack: () => void;
+  onStartActivity?: (activityId: string) => void;
+}
+
+type Tab = 'activities' | 'projects';
+
+type Activity = {
+  id: string;
+  title: string;
+  description: string;
+  duration: string;
+  category: 'art' | 'craft' | 'build' | 'express';
+  hasExperience?: boolean; // true if we've built the actual experience
+};
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+const ACTIVITY_CATEGORIES = [
+  { id: 'art', title: 'Art & Drawing', description: 'Express through visual creation', count: 4 },
+  { id: 'craft', title: 'Mindful Crafts', description: 'Hands-on calming activities', count: 3 },
+  { id: 'build', title: 'Build & Create', description: 'Construct something meaningful', count: 3 },
+  { id: 'express', title: 'Free Expression', description: 'Unstructured creative space', count: 2 },
 ];
 
-export default function DesignStudio({ onBack }: DesignStudioProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('templates');
+const ACTIVITIES: Activity[] = [
+  // Art & Drawing
+  { id: 'emotion-colors', title: 'Emotion Color Map', description: 'Paint your feelings using colors that resonate', duration: '15-30 min', category: 'art', hasExperience: true },
+  { id: 'zentangle', title: 'Zentangle Patterns', description: 'Meditative drawing through repetitive patterns', duration: '20 min', category: 'art', hasExperience: true },
+  { id: 'mandala', title: 'Mandala Creation', description: 'Design symmetrical patterns for focus', duration: '25 min', category: 'art', hasExperience: true },
+  { id: 'sketch-feelings', title: 'Sketch Your Day', description: 'Simple drawings to process experiences', duration: '10 min', category: 'art', hasExperience: true },
+  
+  // Mindful Crafts
+  { id: 'paper-folding', title: 'Paper Folding', description: 'Origami and paper crafts for presence', duration: '15 min', category: 'craft', hasExperience: true },
+  { id: 'worry-stones', title: 'Worry Stone Design', description: 'Create a tactile comfort object', duration: '20 min', category: 'craft', hasExperience: true },
+  { id: 'gratitude-jar', title: 'Gratitude Jar', description: 'Craft a container for positive moments', duration: '25 min', category: 'craft', hasExperience: true },
+  
+  // Build & Create
+  { id: 'safe-space', title: 'Design Safe Space', description: 'Visualize and plan your ideal sanctuary', duration: '20 min', category: 'build', hasExperience: true },
+  { id: 'vision-board', title: 'Digital Vision Board', description: 'Collect images that inspire calm', duration: '30 min', category: 'build', hasExperience: true },
+  { id: 'comfort-kit', title: 'Comfort Kit Builder', description: 'Plan your personal wellness toolkit', duration: '15 min', category: 'build', hasExperience: true },
+  
+  // Free Expression
+  { id: 'blank-canvas', title: 'Blank Canvas', description: 'Open space to create without guidance', duration: 'Unlimited', category: 'express', hasExperience: true },
+  { id: 'stream-create', title: 'Stream of Creation', description: 'Let your hands move freely', duration: 'Unlimited', category: 'express', hasExperience: true },
+];
 
+type ThemeColors = {
+  bg: string;
+  accent: string;
+  text: string;
+  textMuted: string;
+  cardBg: string;
+  cardBorder: string;
+  glow: string;
+};
+
+const getStudioColors = (theme: ThemeColors) => {
+  return {
+    bg: theme.bg,
+    text: theme.text,
+    textMuted: theme.textMuted,
+    textDim: theme.textMuted,
+    cardBg: theme.cardBg,
+    cardBorder: theme.cardBorder,
+    accent: theme.accent,
+    accentSecondary: theme.accent,
+    accentDim: theme.accent,
+    accentGlow: theme.glow,
+  };
+};
+
+// ============================================================================
+// STYLES
+// ============================================================================
+const GLOBAL_STYLES = `
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=DM+Sans:wght@400;500;600&display=swap');
+  
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  html, body {
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.7; }
+  }
+
+  .card-btn {
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+  .card-btn:active {
+    transform: scale(0.97);
+  }
+
+  .tab-btn {
+    transition: all 0.2s ease;
+  }
+  .tab-btn:active {
+    transform: scale(0.96);
+  }
+
+  .studio-scroll::-webkit-scrollbar {
+    width: 3px;
+  }
+  .studio-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .studio-scroll::-webkit-scrollbar-thumb {
+    background: rgba(168, 85, 247, 0.2);
+    border-radius: 3px;
+  }
+`;
+
+// ============================================================================
+// COMPONENT
+// ============================================================================
+export default function CreativeStudio({ onBack, onStartActivity }: CreativeStudioProps) {
+  const { colors } = useTheme();
+  const COLORS = getStudioColors(colors);
+
+  const [activeTab, setActiveTab] = useState<Tab>('activities');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [activeActivity, setActiveActivity] = useState<string | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    setTimeout(() => setIsLoaded(true), 100);
+  }, []);
+
+  const handleCategoryClick = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+  };
+
+  const handleBackToCategories = () => {
+    setSelectedCategory(null);
+  };
+
+  const handleActivityClick = (activityId: string) => {
+    if (activityId === 'emotion-colors') {
+      setActiveActivity('emotion-colors');
+      return;
+    }
+
+    const activity = ACTIVITIES.find(a => a.id === activityId);
+    
+    // If activity has a built experience, show it
+    if (activity?.hasExperience) {
+      setActiveActivity(activityId);
+    } else {
+      // Otherwise, call the external handler (for future activities)
+      onStartActivity?.(activityId);
+    }
+  };
+
+  const handleActivityComplete = (data?: any) => {
+    console.log('Activity completed:', data);
+    setActiveActivity(null);
+    // Could save to projects here
+  };
+
+  const activitiesInCategory = ACTIVITIES.filter(a => a.category === selectedCategory);
+
+  // ============================================================================
+  // RENDER ACTIVE ACTIVITY EXPERIENCE
+  // ============================================================================
+  if (activeActivity === 'emotion-colors') {
+    return (
+      <EmotionColorMap
+        onBack={() => setActiveActivity(null)}
+        onComplete={(data) => {
+          console.log('Completed:', data);
+          setActiveActivity(null);
+        }}
+      />
+    );
+  }
+
+  if (activeActivity === 'zentangle') {
+    return <ZentanglePatterns onBack={() => setActiveActivity(null)} onComplete={handleActivityComplete} />;
+  }
+
+  if (activeActivity === 'mandala') {
+    return <MandalaCreation onBack={() => setActiveActivity(null)} onComplete={handleActivityComplete} />;
+  }
+
+  if (activeActivity === 'sketch-feelings') {
+    return <SketchYourDay onBack={() => setActiveActivity(null)} onComplete={handleActivityComplete} />;
+  }
+
+  if (activeActivity === 'paper-folding') {
+    return <PaperFolding onBack={() => setActiveActivity(null)} onComplete={handleActivityComplete} />;
+  }
+
+  // NOTE: Activity id is plural in ACTIVITIES: 'worry-stones'
+  if (activeActivity === 'worry-stones') {
+    return <WorryStoneDesign onBack={() => setActiveActivity(null)} onComplete={handleActivityComplete} />;
+  }
+
+  if (activeActivity === 'gratitude-jar') {
+    return <GratitudeJar onBack={() => setActiveActivity(null)} onComplete={handleActivityComplete} />;
+  }
+
+  if (activeActivity === 'safe-space') {
+    return <DesignSafeSpace onBack={() => setActiveActivity(null)} onComplete={handleActivityComplete} />;
+  }
+
+  if (activeActivity === 'vision-board') {
+    return <DigitalVisionBoard onBack={() => setActiveActivity(null)} onComplete={handleActivityComplete} />;
+  }
+
+  if (activeActivity === 'comfort-kit') {
+    return <ComfortKitBuilder onBack={() => setActiveActivity(null)} onComplete={handleActivityComplete} />;
+  }
+
+  if (activeActivity === 'blank-canvas') {
+    return <BlankCanvas onBack={() => setActiveActivity(null)} onComplete={handleActivityComplete} />;
+  }
+
+  // NOTE: Activity id in ACTIVITIES is 'stream-create'
+  if (activeActivity === 'stream-create') {
+    return <StreamOfCreation onBack={() => setActiveActivity(null)} onComplete={handleActivityComplete} />;
+  }
+
+  // ============================================================================
+  // RENDER
+  // ============================================================================
   return (
     <>
-      <style jsx global>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0); opacity: 0.2; }
-          50% { transform: translateY(-15px); opacity: 0.5; }
-        }
-        @keyframes glow {
-          0%, 100% { opacity: 0.3; }
-          50% { opacity: 0.5; }
-        }
-      `}</style>
+      <style jsx global>{GLOBAL_STYLES}</style>
 
       <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(180deg, #18182a 0%, #1e1e38 50%, #141428 100%)',
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-        color: '#fff',
-        position: 'relative',
+        position: 'fixed',
+        inset: 0,
+        background: COLORS.bg,
+        display: 'flex',
+        flexDirection: 'column',
         overflow: 'hidden',
       }}>
         
-        {/* Floating particles - subtle */}
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-          {[...Array(12)].map((_, i) => (
-            <div
-              key={i}
-              style={{
-                position: 'absolute',
-                width: i % 3 === 0 ? 4 : 3,
-                height: i % 3 === 0 ? 4 : 3,
-                background: `rgba(168, 85, 247, ${0.2 + Math.random() * 0.2})`,
-                borderRadius: '50%',
-                top: `${15 + Math.random() * 55}%`,
-                left: `${Math.random() * 100}%`,
-                animation: `float ${6 + Math.random() * 4}s ease-in-out infinite`,
-                animationDelay: `${Math.random() * 3}s`,
-              }}
-            />
-          ))}
-        </div>
-
-        {/* Ambient glow */}
+        {/* ================================================================ */}
+        {/* AMBIENT BACKGROUND */}
+        {/* ================================================================ */}
         <div style={{
           position: 'absolute',
-          top: '10%',
-          left: '20%',
-          width: 300,
-          height: 300,
-          background: 'radial-gradient(circle, rgba(168, 85, 247, 0.08) 0%, transparent 60%)',
-          borderRadius: '50%',
-          filter: 'blur(60px)',
-          animation: 'glow 8s ease-in-out infinite',
+          inset: 0,
           pointerEvents: 'none',
-        }} />
-
-        {/* Window */}
-        <div style={{
-          position: 'absolute',
-          top: '6%',
-          right: '6%',
-          width: 130,
-          height: 175,
-          background: 'linear-gradient(180deg, #7a9fc0 0%, #9ac4e0 40%, #6a8fb0 100%)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 3,
           overflow: 'hidden',
-          boxShadow: 'inset 0 0 30px rgba(255,255,255,0.1)',
         }}>
-          {/* Sun */}
+          {/* Creative glow - top left */}
           <div style={{
             position: 'absolute',
-            top: 22,
-            right: 22,
-            width: 20,
-            height: 20,
-            background: 'radial-gradient(circle at 35% 35%, #fff8e0 0%, #ffd700 100%)',
+            top: '-15%',
+            left: '-10%',
+            width: '60%',
+            height: '50%',
+            background: `radial-gradient(ellipse at center, ${COLORS.accentGlow} 0%, transparent 60%)`,
             borderRadius: '50%',
-            boxShadow: '0 0 20px rgba(255,200,0,0.4)',
+            animation: 'pulse 8s ease-in-out infinite',
           }} />
-          {/* Soft clouds */}
+
+          {/* Secondary glow - bottom right */}
           <div style={{
             position: 'absolute',
-            top: '25%',
-            left: '8%',
-            width: 32,
-            height: 14,
-            background: 'rgba(255,255,255,0.5)',
-            borderRadius: 14,
-            filter: 'blur(1px)',
-          }} />
-          {/* Hills */}
-          <div style={{
-            position: 'absolute',
-            bottom: 0,
-            left: -10,
-            right: -10,
-            height: '30%',
-            background: 'linear-gradient(180deg, rgba(90,130,90,0.8) 0%, rgba(70,110,70,0.9) 100%)',
-            borderRadius: '50% 50% 0 0',
-          }} />
-          {/* Window dividers */}
-          <div style={{ 
-            position: 'absolute', 
-            top: 0, 
-            left: '50%', 
-            width: 1, 
-            height: '100%', 
-            background: 'rgba(255,255,255,0.15)',
-            transform: 'translateX(-50%)',
-          }} />
-          <div style={{ 
-            position: 'absolute', 
-            top: '50%', 
-            left: 0, 
-            width: '100%', 
-            height: 1, 
-            background: 'rgba(255,255,255,0.15)',
-            transform: 'translateY(-50%)',
+            bottom: '-10%',
+            right: '-15%',
+            width: '50%',
+            height: '40%',
+            background: `radial-gradient(ellipse at center, ${COLORS.accentGlow} 0%, transparent 60%)`,
+            borderRadius: '50%',
+            animation: 'pulse 10s ease-in-out infinite 2s',
           }} />
         </div>
 
-        {/* Art Frame on Wall */}
-        <div style={{
-          position: 'absolute',
-          top: '8%',
-          left: '10%',
-          width: 100,
-          height: 130,
-          background: 'linear-gradient(180deg, rgba(60,55,75,0.6) 0%, rgba(50,45,65,0.5) 100%)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 3,
+        {/* ================================================================ */}
+        {/* HEADER */}
+        {/* ================================================================ */}
+        <header style={{
+          padding: '16px',
+          paddingTop: 'max(16px, env(safe-area-inset-top))',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+          justifyContent: 'space-between',
+          zIndex: 50,
         }}>
-          {/* Abstract art */}
-          <div style={{
-            width: 50,
-            height: 70,
-            background: 'linear-gradient(135deg, rgba(168,85,247,0.4) 0%, rgba(236,72,153,0.3) 100%)',
-            borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
-          }} />
-        </div>
-
-        {/* Easel - Refined */}
-        <div style={{
-          position: 'absolute',
-          bottom: '18%',
-          left: '7%',
-        }}>
-          {/* Canvas */}
-          <div style={{
-            width: 70,
-            height: 90,
-            background: 'linear-gradient(180deg, #f5f2ec 0%, #e8e2d8 100%)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 2,
-            marginBottom: 8,
-            boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
-          }} />
-          {/* Stand */}
-          <div style={{
-            width: 35,
-            height: 6,
-            background: 'rgba(80,70,100,0.6)',
-            margin: '0 auto',
-            borderRadius: 2,
-          }} />
-          {/* Legs */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 28, marginTop: 4 }}>
-            <div style={{ 
-              width: 2, 
-              height: 55, 
-              background: 'linear-gradient(180deg, rgba(80,70,100,0.7) 0%, rgba(60,50,80,0.5) 100%)', 
-              transform: 'rotate(-10deg)',
-              borderRadius: 1,
-            }} />
-            <div style={{ 
-              width: 2, 
-              height: 55, 
-              background: 'linear-gradient(180deg, rgba(80,70,100,0.7) 0%, rgba(60,50,80,0.5) 100%)', 
-              transform: 'rotate(10deg)',
-              borderRadius: 1,
-            }} />
-          </div>
-        </div>
-
-        {/* Desk with Monitor - Refined */}
-        <div style={{
-          position: 'absolute',
-          bottom: '10%',
-          right: '8%',
-        }}>
-          {/* Monitor */}
-          <div style={{
-            width: 85,
-            height: 55,
-            background: 'linear-gradient(180deg, rgba(40,38,60,0.8) 0%, rgba(30,28,50,0.7) 100%)',
-            borderRadius: '4px 4px 0 0',
-            border: '1px solid rgba(255,255,255,0.06)',
-            marginBottom: 4,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-            {/* Screen glow */}
-            <div style={{
-              width: '80%',
-              height: '80%',
-              background: 'linear-gradient(135deg, rgba(168,85,247,0.1) 0%, rgba(100,80,150,0.05) 100%)',
-              borderRadius: 2,
-            }} />
-          </div>
-          {/* Stand */}
-          <div style={{ 
-            width: 24, 
-            height: 16, 
-            background: 'rgba(50,45,70,0.6)', 
-            margin: '0 auto',
-            borderRadius: '0 0 2px 2px',
-          }} />
-          {/* Desk surface */}
-          <div style={{
-            width: 130,
-            height: 12,
-            background: 'linear-gradient(180deg, rgba(60,55,80,0.7) 0%, rgba(50,45,70,0.6) 100%)',
-            borderRadius: 3,
-            marginLeft: -22,
-            marginTop: 4,
-            border: '1px solid rgba(255,255,255,0.05)',
-          }} />
-          {/* Desk body */}
-          <div style={{
-            width: 130,
-            height: 50,
-            background: 'linear-gradient(180deg, rgba(45,42,65,0.6) 0%, rgba(35,32,55,0.5) 100%)',
-            marginLeft: -22,
-            borderRadius: '0 0 4px 4px',
-            border: '1px solid rgba(255,255,255,0.04)',
-            borderTop: 'none',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 3,
-            padding: '8px 10px',
-          }}>
-            <div style={{ 
-              height: 14, 
-              background: 'rgba(60,55,85,0.5)', 
-              borderRadius: 2,
-              border: '1px solid rgba(255,255,255,0.03)',
-            }} />
-            <div style={{ 
-              height: 14, 
-              background: 'rgba(60,55,85,0.5)', 
-              borderRadius: 2,
-              border: '1px solid rgba(255,255,255,0.03)',
-            }} />
-          </div>
-          
-          {/* Small plant */}
-          <div style={{
-            position: 'absolute',
-            top: -25,
-            right: -25,
-          }}>
-            <div style={{
-              width: 22,
-              height: 18,
-              background: 'linear-gradient(180deg, rgba(70,65,90,0.7) 0%, rgba(55,50,75,0.6) 100%)',
-              borderRadius: '3px 3px 6px 6px',
-              border: '1px solid rgba(255,255,255,0.05)',
-            }} />
-            <div style={{
-              position: 'absolute',
-              bottom: 16,
-              left: '50%',
-              transform: 'translateX(-50%)',
-            }}>
-              {[0, 1, 2].map((i) => (
-                <div key={i} style={{
-                  position: 'absolute',
-                  width: 6,
-                  height: 20,
-                  background: 'linear-gradient(180deg, rgba(100,160,100,0.8) 0%, rgba(80,130,80,0.6) 100%)',
-                  borderRadius: '50% 50% 0 0',
-                  left: `${-8 + i * 8}px`,
-                  transform: `rotate(${-12 + i * 12}deg)`,
-                  transformOrigin: 'bottom center',
-                }} />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Back Button */}
-        <button
-          onClick={onBack}
-          style={{
-            position: 'absolute',
-            top: 20,
-            left: 20,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '10px 18px',
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 50,
-            color: 'rgba(255,255,255,0.6)',
-            fontSize: 13,
-            fontWeight: 450,
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            zIndex: 10,
-          }}
-        >
-          ← Back to Sanctuary
-        </button>
-
-        {/* Main Content */}
-        <div style={{
-          position: 'relative',
-          zIndex: 5,
-          padding: '70px 24px 40px',
-          maxWidth: 700,
-          margin: '0 auto',
-          textAlign: 'center',
-        }}>
-          <h1 style={{
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
-            fontSize: 'clamp(2rem, 5vw, 2.8rem)',
-            fontWeight: 300,
-            marginBottom: 8,
-            color: 'rgba(255,255,255,0.9)',
-            letterSpacing: '-0.02em',
-          }}>
-            Design Studio
-          </h1>
-          <p style={{
-            color: 'rgba(255,255,255,0.4)',
-            marginBottom: 32,
-            fontSize: 14,
-            letterSpacing: '0.03em',
-          }}>
-            Create your perfect sanctuary
-          </p>
-
-          {/* Main CTA */}
           <button
+            onClick={onBack}
             style={{
-              padding: '15px 36px',
-              background: 'linear-gradient(135deg, #a855f7 0%, #ec4899 100%)',
-              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '10px 18px',
+              background: COLORS.cardBg,
+              border: `1px solid ${COLORS.cardBorder}`,
               borderRadius: 50,
-              color: '#fff',
+              cursor: 'pointer',
               fontSize: 14,
               fontWeight: 500,
-              cursor: 'pointer',
-              marginBottom: 36,
-              boxShadow: '0 8px 30px rgba(168,85,247,0.35)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              letterSpacing: '0.02em',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 12px 40px rgba(168,85,247,0.45)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 8px 30px rgba(168,85,247,0.35)';
+              color: COLORS.textMuted,
             }}
           >
-            Open Virtual Design Studio
+            ← Sanctuary
           </button>
+          
+          <span style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: COLORS.textDim,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+          }}>
+            Creative Studio
+          </span>
 
-          {/* Tabs */}
+          <ThemeToggle />
+        </header>
+
+        {/* ================================================================ */}
+        {/* SCROLLABLE CONTENT */}
+        {/* ================================================================ */}
+        <div 
+          className="studio-scroll"
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
           <div style={{
             display: 'flex',
-            justifyContent: 'center',
-            gap: 8,
-            marginBottom: 28,
+            flexDirection: 'column',
+            alignItems: 'center',
+            padding: '20px',
+            paddingBottom: 'max(40px, env(safe-area-inset-bottom))',
+            minHeight: '100%',
+            opacity: isLoaded ? 1 : 0,
+            transform: isLoaded ? 'translateY(0)' : 'translateY(20px)',
+            transition: 'opacity 0.6s ease, transform 0.6s ease',
           }}>
-            {(['templates', 'projects'] as Tab[]).map((tab) => (
+            
+            {/* Title */}
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <h1 style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: 32,
+                fontWeight: 300,
+                color: COLORS.text,
+                marginBottom: 8,
+              }}>
+                Creative Studio
+              </h1>
+              <p style={{
+                fontSize: 14,
+                color: COLORS.textDim,
+              }}>
+                Express, create, and find calm
+              </p>
+            </div>
+
+            {/* Main CTA - only show on main view */}
+            {!selectedCategory && activeTab === 'activities' && (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => handleActivityClick('emotion-colors')}
                 style={{
-                  padding: '10px 22px',
-                  background: activeTab === tab ? 'rgba(168,85,247,0.15)' : 'transparent',
-                  border: `1px solid ${activeTab === tab ? 'rgba(168,85,247,0.3)' : 'rgba(255,255,255,0.1)'}`,
-                  borderRadius: 25,
-                  color: activeTab === tab ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.5)',
-                  fontSize: 13,
-                  fontWeight: activeTab === tab ? 500 : 400,
+                  padding: '16px 36px',
+                  background: `linear-gradient(135deg, ${COLORS.accent} 0%, ${COLORS.accentSecondary} 100%)`,
+                  border: 'none',
+                  borderRadius: 50,
+                  color: '#fff',
+                  fontSize: 15,
+                  fontWeight: 600,
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  textTransform: 'capitalize',
+                  marginBottom: 28,
+                  boxShadow: `0 8px 28px rgba(168, 85, 247, 0.35)`,
                 }}
               >
-                {tab === 'projects' ? 'My Projects' : tab}
+                Start Creating
               </button>
-            ))}
-          </div>
+            )}
 
-          {/* Template Cards */}
-          {activeTab === 'templates' && (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: 14,
-            }}>
-              {TEMPLATES.map((template) => (
+            {/* Tabs - only show when not in a category */}
+            {!selectedCategory && (
+              <div style={{
+                display: 'flex',
+                gap: 8,
+                marginBottom: 24,
+              }}>
+                {(['activities', 'projects'] as Tab[]).map((tab) => (
+                  <button
+                    key={tab}
+                    className="tab-btn"
+                    onClick={() => setActiveTab(tab)}
+                    style={{
+                      padding: '10px 20px',
+                      borderRadius: 50,
+                      border: `1px solid ${activeTab === tab ? COLORS.accentDim : COLORS.cardBorder}`,
+                      background: activeTab === tab ? COLORS.accentGlow : 'transparent',
+                      color: activeTab === tab ? COLORS.text : COLORS.textMuted,
+                      fontSize: 14,
+                      cursor: 'pointer',
+                      textTransform: 'capitalize',
+                    }}
+                  >
+                    {tab === 'projects' ? 'My Projects' : tab}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* ============================================================ */}
+            {/* ACTIVITIES TAB - Categories */}
+            {/* ============================================================ */}
+            {activeTab === 'activities' && !selectedCategory && (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: 12,
+                maxWidth: 360,
+                width: '100%',
+                animation: 'fadeIn 0.4s ease-out',
+              }}>
+                {ACTIVITY_CATEGORIES.map((category) => {
+                  const IconComponent = CATEGORY_ICONS[category.id] || ExpressIcon;
+                  return (
+                    <button
+                      key={category.id}
+                      className="card-btn"
+                      onClick={() => handleCategoryClick(category.id)}
+                      style={{
+                        padding: '22px 16px',
+                        background: COLORS.cardBg,
+                        border: `1px solid ${COLORS.cardBorder}`,
+                        borderRadius: 16,
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                      }}
+                    >
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        marginBottom: 10,
+                      }}>
+                        <IconComponent size={28} color={COLORS.accentDim} />
+                      </div>
+                      <h3 style={{
+                        fontSize: 15,
+                        fontWeight: 600,
+                        color: COLORS.text,
+                        marginBottom: 6,
+                      }}>
+                        {category.title}
+                      </h3>
+                      <p style={{
+                        fontSize: 12,
+                        color: COLORS.textDim,
+                        marginBottom: 10,
+                        lineHeight: 1.4,
+                      }}>
+                        {category.description}
+                      </p>
+                      <span style={{
+                        fontSize: 11,
+                        color: COLORS.accentDim,
+                      }}>
+                        {category.count} activities
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* ============================================================ */}
+            {/* ACTIVITIES TAB - Activity List */}
+            {/* ============================================================ */}
+            {activeTab === 'activities' && selectedCategory && (
+              <div style={{
+                width: '100%',
+                maxWidth: 400,
+                animation: 'fadeIn 0.4s ease-out',
+              }}>
                 <button
-                  key={template.id}
+                  onClick={handleBackToCategories}
                   style={{
-                    padding: '24px 18px',
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    borderRadius: 16,
-                    textAlign: 'center',
+                    background: 'none',
+                    border: 'none',
+                    color: COLORS.accentDim,
+                    fontSize: 13,
                     cursor: 'pointer',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                    e.currentTarget.style.transform = 'translateY(-3px)';
-                    e.currentTarget.style.borderColor = 'rgba(168,85,247,0.25)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                    marginBottom: 16,
                   }}
                 >
-                  <h3 style={{ 
-                    color: 'rgba(255,255,255,0.9)', 
-                    fontSize: 15, 
-                    fontWeight: 500, 
-                    marginBottom: 8,
-                    letterSpacing: '-0.01em',
-                  }}>
-                    {template.title}
-                  </h3>
-                  <p style={{ 
-                    color: 'rgba(255,255,255,0.4)', 
-                    fontSize: 12, 
-                    marginBottom: 12,
-                    lineHeight: 1.4,
-                  }}>
-                    {template.desc}
-                  </p>
-                  <span style={{ 
-                    color: 'rgba(168,85,247,0.7)', 
-                    fontSize: 11,
-                    letterSpacing: '0.05em',
-                  }}>
-                    {template.count} options
-                  </span>
+                  ← Back to categories
                 </button>
-              ))}
-            </div>
-          )}
 
-          {activeTab === 'projects' && (
-            <div style={{
-              padding: '50px 30px',
-              background: 'rgba(255,255,255,0.02)',
-              borderRadius: 16,
-              border: '1px dashed rgba(255,255,255,0.08)',
-            }}>
-              <p style={{ 
-                color: 'rgba(255,255,255,0.4)', 
-                marginBottom: 18,
-                fontSize: 14,
+                <h2 style={{
+                  fontFamily: "'Cormorant Garamond', Georgia, serif",
+                  fontSize: 22,
+                  fontWeight: 300,
+                  color: COLORS.text,
+                  marginBottom: 20,
+                  textAlign: 'center',
+                }}>
+                  {ACTIVITY_CATEGORIES.find(c => c.id === selectedCategory)?.title}
+                </h2>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {activitiesInCategory.map((activity) => {
+                    const IconComponent = ACTIVITY_ICONS[activity.id];
+                    return (
+                      <button
+                        key={activity.id}
+                        className="card-btn"
+                        onClick={() => handleActivityClick(activity.id)}
+                        style={{
+                          padding: '18px',
+                          background: COLORS.cardBg,
+                          border: `1px solid ${COLORS.cardBorder}`,
+                          borderRadius: 14,
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: 14,
+                          opacity: activity.hasExperience ? 1 : 0.7,
+                        }}
+                      >
+                        {/* Icon */}
+                        {IconComponent && (
+                          <div style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 10,
+                            background: COLORS.accentGlow,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                          }}>
+                            <IconComponent size={20} color={COLORS.accentDim} />
+                          </div>
+                        )}
+                        
+                        {/* Content */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-start',
+                            marginBottom: 6,
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <h3 style={{
+                                fontSize: 15,
+                                fontWeight: 600,
+                                color: COLORS.text,
+                              }}>
+                                {activity.title}
+                              </h3>
+                              {!activity.hasExperience && (
+                                <span style={{
+                                  fontSize: 9,
+                                  fontWeight: 600,
+                                  letterSpacing: '0.05em',
+                                  textTransform: 'uppercase',
+                                  color: COLORS.accentDim,
+                                  background: COLORS.accentGlow,
+                                  padding: '3px 8px',
+                                  borderRadius: 10,
+                                }}>
+                                  Soon
+                                </span>
+                              )}
+                            </div>
+                            <span style={{
+                              fontSize: 11,
+                              color: COLORS.accentDim,
+                              marginLeft: 12,
+                              flexShrink: 0,
+                            }}>
+                              {activity.duration}
+                            </span>
+                          </div>
+                          <p style={{
+                            fontSize: 13,
+                            color: COLORS.textDim,
+                            lineHeight: 1.5,
+                          }}>
+                            {activity.description}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ============================================================ */}
+            {/* PROJECTS TAB */}
+            {/* ============================================================ */}
+            {activeTab === 'projects' && (
+              <div style={{
+                width: '100%',
+                maxWidth: 400,
+                animation: 'fadeIn 0.4s ease-out',
               }}>
-                No projects yet
-              </p>
-              <button
-                style={{
-                  padding: '12px 24px',
-                  background: 'rgba(168,85,247,0.15)',
-                  border: '1px solid rgba(168,85,247,0.25)',
-                  borderRadius: 25,
-                  color: 'rgba(255,255,255,0.9)',
-                  fontSize: 13,
-                  fontWeight: 450,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                Create your first project
-              </button>
-            </div>
-          )}
+                <div style={{
+                  padding: '50px 24px',
+                  background: COLORS.cardBg,
+                  border: `1px dashed ${COLORS.cardBorder}`,
+                  borderRadius: 16,
+                  textAlign: 'center',
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    marginBottom: 16,
+                    opacity: 0.4,
+                  }}>
+                    <ExpressIcon size={32} color={COLORS.text} />
+                  </div>
+                  <p style={{
+                    color: COLORS.textDim,
+                    marginBottom: 20,
+                    fontSize: 14,
+                  }}>
+                    No projects yet
+                  </p>
+                  <p style={{
+                    color: COLORS.textDim,
+                    marginBottom: 24,
+                    fontSize: 13,
+                    lineHeight: 1.5,
+                  }}>
+                    Your creative works will appear here.<br />
+                    Start an activity to begin.
+                  </p>
+                  <button
+                    onClick={() => setActiveTab('activities')}
+                    style={{
+                      padding: '12px 24px',
+                      background: COLORS.accentGlow,
+                      border: `1px solid ${COLORS.accentDim}`,
+                      borderRadius: 50,
+                      color: COLORS.text,
+                      fontSize: 14,
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Browse Activities
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </>

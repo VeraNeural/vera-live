@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAuth } from "@/lib/auth/AuthContext";
 import { useHumeVoice, VoiceStatus } from "@/lib/hume/useHumeVoice";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +32,6 @@ const STATUS_COLORS: Record<VoiceStatus, string> = {
 };
 
 export default function VoicePage() {
-  const { user, isLoggedIn, tier, loading: authLoading } = useAuth();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 
@@ -50,31 +48,6 @@ export default function VoicePage() {
       setError(err);
     },
   });
-
-  // Gate: Sanctuary only
-  useEffect(() => {
-    if (!authLoading && tier !== "sanctuary") {
-      router.push("/sanctuary/upgrade?feature=voice");
-    }
-  }, [authLoading, tier, router]);
-
-  // Show loading while checking auth
-  if (authLoading || tier !== "sanctuary") {
-    return (
-      <main
-        style={{
-          minHeight: "100vh",
-          background: "#0b0b0f",
-          color: "white",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <p style={{ color: "#71717a" }}>Loading...</p>
-      </main>
-    );
-  }
 
   const isActive = status !== "idle" && status !== "error";
 

@@ -1,13 +1,11 @@
 "use client";
 
 import { useRef } from "react";
-import { useAuth } from "@/lib/auth/AuthContext";
 
 export function AttachmentButton(props: {
   disabled?: boolean;
   onSelect: (file: File) => void | Promise<void>;
 }) {
-  const { tier, loading } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (

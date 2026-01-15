@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-// Sanctuary Price ID - $12/month
-const SANCTUARY_PRICE_ID = 'price_1SpLiRF8aJ0BDqA3fO5BT4Ca';
 
 function getRequiredEnv(name: string): string {
   const value = process.env[name];
@@ -23,11 +20,37 @@ function getStripe(): Stripe {
   });
 }
 
-function getSupabaseAdmin() {
-  const url = getRequiredEnv('NEXT_PUBLIC_SUPABASE_URL');
-  const serviceRoleKey = getRequiredEnv('SUPABASE_SERVICE_ROLE_KEY');
+async function upsertSanctuaryEntitlement(
+  supabase: typeof supabaseAdmin,
+  input: {
+    clerkUserId: string;
+    status: string;
+    currentPeriodStart?: string | null;
+    currentPeriodEnd?: string | null;
+  }
+): Promise<void> {
+  const now = new Date().toISOString();
 
-  return createClient(url, serviceRoleKey);
+  const { error } = await supabase
+    .from('user_entitlements')
+    .upsert(
+      {
+        clerk_user_id: input.clerkUserId,
+        entitlement: 'sanctuary',
+        status: input.status,
+        current_period_start: input.currentPeriodStart ?? null,
+        current_period_end: input.currentPeriodEnd ?? null,
+        updated_at: now,
+      },
+      {
+        // Expected unique key: one row per user+entitlement.
+        onConflict: 'clerk_user_id,entitlement',
+      }
+    );
+
+  if (error) {
+    throw new Error(`Failed to upsert user_entitlements: ${error.message}`);
+  }
 }
 
 function getBillingPeriodFromSubscription(subscription: Stripe.Subscription): {
@@ -76,81 +99,49 @@ export async function POST(request: NextRequest) {
 
   try {
     const stripe = getStripe();
-    const supabase = getSupabaseAdmin();
+    const supabase = supabaseAdmin;
 
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
-        const userId = session.client_reference_id || session.metadata?.user_id;
+        const clerkUserId = session.metadata?.clerk_user_id || session.client_reference_id || null;
         const subscriptionId =
           typeof session.subscription === 'string'
             ? session.subscription
             : session.subscription?.id ?? null;
 
-        if (userId && subscriptionId) {
+        if (clerkUserId && subscriptionId) {
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           const { currentPeriodStart, currentPeriodEnd } = getBillingPeriodFromSubscription(subscription);
 
-          // Update subscriptions table
-          await supabase.from('subscriptions').upsert({
-            user_id: userId,
-            stripe_subscription_id: subscriptionId,
-            stripe_customer_id: session.customer as string,
+          // ✅ AUTHORITATIVE ENTITLEMENT WRITE (Clerk-only identity)
+          await upsertSanctuaryEntitlement(supabase, {
+            clerkUserId,
             status: subscription.status,
-            price_id: SANCTUARY_PRICE_ID,
-            current_period_start: currentPeriodStart,
-            current_period_end: currentPeriodEnd,
-            trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
+            currentPeriodStart,
+            currentPeriodEnd,
           });
 
-          // ✅ UPDATE USER TIER TO SANCTUARY
-          await supabase
-            .from('users')
-            .update({ 
-              tier: 'sanctuary', 
-              updated_at: new Date().toISOString() 
-            })
-            .eq('id', userId);
-
-          console.log(`Subscription created for user ${userId} - upgraded to sanctuary`);
+          console.log(`Entitlement updated: sanctuary active for ${clerkUserId}`);
         }
         break;
       }
 
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
-        const userId = subscription.metadata?.user_id;
+        const clerkUserId = subscription.metadata?.clerk_user_id;
 
-        if (userId) {
+        if (clerkUserId) {
           const { currentPeriodStart, currentPeriodEnd } = getBillingPeriodFromSubscription(subscription);
-          
-          await supabase
-            .from('subscriptions')
-            .update({
-              status: subscription.status,
-              current_period_start: currentPeriodStart,
-              current_period_end: currentPeriodEnd,
-              trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('stripe_subscription_id', subscription.id);
 
-          // ✅ UPDATE TIER BASED ON SUBSCRIPTION STATUS
-          if (subscription.status === 'active') {
-            await supabase
-              .from('users')
-              .update({ tier: 'sanctuary', updated_at: new Date().toISOString() })
-              .eq('id', userId);
-          } else if (subscription.status === 'canceled' || subscription.status === 'unpaid') {
-            await supabase
-              .from('users')
-              .update({ tier: 'free', updated_at: new Date().toISOString() })
-              .eq('id', userId);
-          }
+          await upsertSanctuaryEntitlement(supabase, {
+            clerkUserId,
+            status: subscription.status,
+            currentPeriodStart,
+            currentPeriodEnd,
+          });
 
-          console.log(`Subscription updated for user ${userId} - status: ${subscription.status}`);
+          console.log(`Entitlement updated: sanctuary status=${subscription.status} for ${clerkUserId}`);
         }
         break;
       }
@@ -158,34 +149,17 @@ export async function POST(request: NextRequest) {
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
 
-        // Update subscription status
-        await supabase
-          .from('subscriptions')
-          .update({
+        const clerkUserId = subscription.metadata?.clerk_user_id;
+        if (clerkUserId) {
+          await upsertSanctuaryEntitlement(supabase, {
+            clerkUserId,
             status: 'canceled',
-            updated_at: new Date().toISOString(),
-          })
-          .eq('stripe_subscription_id', subscription.id);
-
-        // ✅ GET USER ID AND DOWNGRADE TO FREE
-        const { data: sub } = await supabase
-          .from('subscriptions')
-          .select('user_id')
-          .eq('stripe_subscription_id', subscription.id)
-          .single();
-
-        if (sub?.user_id) {
-          await supabase
-            .from('users')
-            .update({ 
-              tier: 'free', 
-              updated_at: new Date().toISOString() 
-            })
-            .eq('id', sub.user_id);
-
-          console.log(`Subscription canceled - user ${sub.user_id} downgraded to free`);
+            currentPeriodStart: null,
+            currentPeriodEnd: null,
+          });
+          console.log(`Entitlement updated: sanctuary canceled for ${clerkUserId}`);
         } else {
-          console.log(`Subscription canceled: ${subscription.id} (no user found)`);
+          console.log(`Subscription deleted: ${subscription.id} (no clerk_user_id in metadata)`);
         }
         break;
       }
@@ -199,28 +173,17 @@ export async function POST(request: NextRequest) {
           : null;
 
         if (subscriptionId) {
-          await supabase
-            .from('subscriptions')
-            .update({
-              status: 'active',
-              updated_at: new Date().toISOString(),
-            })
-            .eq('stripe_subscription_id', subscriptionId);
-
-          // ✅ ENSURE USER IS SANCTUARY ON SUCCESSFUL PAYMENT
-          const { data: sub } = await supabase
-            .from('subscriptions')
-            .select('user_id')
-            .eq('stripe_subscription_id', subscriptionId)
-            .single();
-
-          if (sub?.user_id) {
-            await supabase
-              .from('users')
-              .update({ tier: 'sanctuary', updated_at: new Date().toISOString() })
-              .eq('id', sub.user_id);
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+          const clerkUserId = subscription.metadata?.clerk_user_id;
+          if (clerkUserId) {
+            const { currentPeriodStart, currentPeriodEnd } = getBillingPeriodFromSubscription(subscription);
+            await upsertSanctuaryEntitlement(supabase, {
+              clerkUserId,
+              status: subscription.status,
+              currentPeriodStart,
+              currentPeriodEnd,
+            });
           }
-
           console.log(`Invoice paid for subscription: ${subscriptionId}`);
         }
         break;
@@ -235,16 +198,17 @@ export async function POST(request: NextRequest) {
           : null;
 
         if (subscriptionId) {
-          await supabase
-            .from('subscriptions')
-            .update({
-              status: 'past_due',
-              updated_at: new Date().toISOString(),
-            })
-            .eq('stripe_subscription_id', subscriptionId);
-
-          // Note: We don't immediately downgrade on payment failure
-          // Stripe will retry and eventually delete the subscription if all retries fail
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+          const clerkUserId = subscription.metadata?.clerk_user_id;
+          if (clerkUserId) {
+            const { currentPeriodStart, currentPeriodEnd } = getBillingPeriodFromSubscription(subscription);
+            await upsertSanctuaryEntitlement(supabase, {
+              clerkUserId,
+              status: subscription.status,
+              currentPeriodStart,
+              currentPeriodEnd,
+            });
+          }
           console.log(`Payment failed for subscription: ${subscriptionId}`);
         }
         break;

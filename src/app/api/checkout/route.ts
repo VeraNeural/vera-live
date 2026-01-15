@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { auth, clerkClient } from '@clerk/nextjs/server';
+import { createClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -25,36 +25,18 @@ export async function POST(request: NextRequest) {
   try {
     const stripe = getStripe();
 
-    const cookieStore = await cookies();
-
-    const supabase = createServerClient(
-      getRequiredEnv('NEXT_PUBLIC_SUPABASE_URL'),
-      getRequiredEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
-          },
-        },
-      }
-    );
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
+    const { userId } = await auth();
+    if (!userId) {
       return NextResponse.json({ error: 'You must be logged in to subscribe' }, { status: 401 });
     }
+
+    const supabase = await createClient();
+    const user = await (await clerkClient()).users.getUser(userId);
 
     const { data: existingSubscription } = await supabase
       .from('subscriptions')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('status', 'active')
       .single();
 
@@ -65,8 +47,8 @@ export async function POST(request: NextRequest) {
     const origin = request.nextUrl.origin;
 
     const session = await stripe.checkout.sessions.create({
-      customer_email: user.email ?? undefined,
-      client_reference_id: user.id,
+      customer_email: user.emailAddresses?.[0]?.emailAddress ?? undefined,
+      client_reference_id: userId,
       payment_method_types: ['card'],
       mode: 'subscription',
       line_items: [
@@ -78,13 +60,13 @@ export async function POST(request: NextRequest) {
       subscription_data: {
         trial_period_days: 7,
         metadata: {
-          user_id: user.id,
+          user_id: userId,
         },
       },
       success_url: `${origin}/sanctuarysuccess=true`,
       cancel_url: `${origin}/sanctuary?canceled=true`,
       metadata: {
-        user_id: user.id,
+        user_id: userId,
       },
     });
 

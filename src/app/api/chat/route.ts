@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { cookies } from 'next/headers';
 import { createHash, randomUUID } from 'crypto';
-import { createClient } from '@/lib/supabase/server';
 import { buildMemoryPrompt, getUserMemory, saveConversation, updateConversation, updateUserMemory } from '@/lib/memory';
 import { extractMemoryFromConversation } from '@/lib/memoryExtractor';
 import { routeTurn } from '@/lib/vera/router';
@@ -14,11 +13,19 @@ import { unifyVeraResponse } from '@/lib/vera/unifyVoice';
 import { enforceInterLayerContract } from '@/lib/vera/interLayerContract';
 import { detectFailureMode } from '@/lib/vera/failureModes';
 import { logDecisionEvent } from '@/core/telemetry/logDecisionEvent';
+import { finalizeResponse } from '@/lib/vera/finalizeResponse';
 import { NEURAL_INTERNAL_SYSTEM_PROMPT } from '@/lib/vera/neuralPrompt';
 import { IBA_INTERNAL_SYSTEM_PROMPT } from '@/lib/vera/ibaPrompt';
 import { VERA_POLICY_VERSION } from '@/lib/vera/policyVersion';
 import type { MemoryUse, Tier } from '@/lib/vera/decisionObject';
-import { checkMessageLimit, getUserTier, recordMessage } from '@/lib/auth/messageCounter';
+import { auth } from '@clerk/nextjs/server';
+import { getUserAccessState } from '@/lib/auth/accessState';
+import {
+  checkMessageLimit,
+  meteringIdFromSessionId,
+  recordMessage,
+  resolveMeteringIdForClerkUserId,
+} from '@/lib/auth/messageCounter';
 import type { Tier as AuthTier } from '@/lib/auth/tiers';
 import type { BuildProjectState } from '@/lib/vera/buildTier';
 import { isValidBuildProjectState, BUILD_ENTRY_FIRST_RESPONSE_TEMPLATE } from '@/lib/vera/buildTier';
@@ -46,8 +53,32 @@ export const dynamic = 'force-dynamic';
 
 const UNAVAILABLE_CONTENT = 'VERA is temporarily unavailable. Please try again.';
 
+const CHAT_MODEL_TIMEOUT_MS = 12_000;
+
 function jsonContent(content: string, init?: ResponseInit): NextResponse {
   return NextResponse.json({ content }, init);
+}
+
+function finalizeAndReturnText(input: {
+  text: string;
+  gate?: string;
+  init?: ResponseInit;
+  finalize?: { iba_active: boolean; sim_state: import('@/lib/vera/finalizeResponse').FinalizeSimState };
+}): NextResponse {
+  try {
+    const finalized = finalizeResponse({
+      text: typeof input.text === 'string' ? input.text : '',
+      iba_active: Boolean(input.finalize?.iba_active),
+      sim_state: (input.finalize?.sim_state ?? 'stable') as import('@/lib/vera/finalizeResponse').FinalizeSimState,
+    });
+    const payload: any = { content: finalized.text };
+    if (input.gate) payload.gate = input.gate;
+    return NextResponse.json(payload, input.init);
+  } catch {
+    const payload: any = { content: typeof input.text === 'string' ? input.text : '' };
+    if (input.gate) payload.gate = input.gate;
+    return NextResponse.json(payload, input.init);
+  }
 }
 
 type IncomingMessage = { role: 'user' | 'assistant'; content: string };
@@ -64,6 +95,16 @@ type IncomingMessageWithImage = IncomingMessage & {
 type RoutingTier = 'free' | 'sanctuary' | 'build';
 
 type MemoryMessage = { role: 'user' | 'assistant'; content: string };
+
+type ModelProvenance = {
+  provider: 'anthropic' | 'openai' | 'grok' | 'qwen' | 'unknown';
+  model_id: string;
+  selection_reason: string;
+  execution_path: 'planned' | 'fallback' | 'safety';
+  finalize_applied: boolean;
+  finalize_passed: boolean;
+  no_drift_passed: boolean;
+};
 
 const SIM_ACTIVE = process.env.SIM_ACTIVE === 'true';
 
@@ -235,6 +276,16 @@ async function ensureSessionId(): Promise<{ sessionId: string; shouldSetCookie: 
   return { sessionId: randomUUID(), shouldSetCookie: true };
 }
 
+function normalizeConversationId(input: unknown): string | null {
+  if (typeof input !== 'string') return null;
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+  if (trimmed.length > 128) return null;
+  // Accept only simple identifier characters to avoid header/body injection.
+  if (!/^[A-Za-z0-9_-]+$/.test(trimmed)) return null;
+  return trimmed;
+}
+
 function extractTaggedBlocks(text: string): { vera?: string; neural?: string } {
   const veraMatch = text.match(/\[\[VERA\]\]([\s\S]*?)\[\[\/VERA\]\]/i);
   const neuralMatch = text.match(/\[\[NEURAL\]\]([\s\S]*?)\[\[\/NEURAL\]\]/i);
@@ -269,7 +320,6 @@ export async function POST(req: Request) {
     const body = (await req.json()) as {
       messages?: IncomingMessageWithImage[];
       conversationId?: string;
-      tier?: Tier;
       project_state?: BuildProjectState;
       sanctuary_state?: SanctuaryState;
       meta?: {
@@ -288,73 +338,76 @@ export async function POST(req: Request) {
       };
     };
 
-    const { messages, conversationId: conversationIdFromBody, tier, project_state, sanctuary_state } = body;
+    const { messages, conversationId: conversationIdFromBody, project_state, sanctuary_state } = body;
 
     if (!process.env.ANTHROPIC_API_KEY) {
-      return jsonContent(UNAVAILABLE_CONTENT, { status: 500 });
+      return finalizeAndReturnText({
+        text: UNAVAILABLE_CONTENT,
+        init: { status: 500 },
+        finalize: { iba_active: false, sim_state: 'stable' },
+      });
     }
 
     if (!Array.isArray(messages) || messages.length === 0) {
-      return jsonContent('Please send at least one message.', { status: 400 });
+      return finalizeAndReturnText({
+        text: 'Please send at least one message.',
+        init: { status: 400 },
+        finalize: { iba_active: false, sim_state: 'stable' },
+      });
     }
 
+    const { sessionId, shouldSetCookie } = await ensureSessionId();
+
+    // Clerk is the only identity source.
+    const { userId } = await auth();
+
     let entitlementTier: AuthTier = 'free';
+
+    // Anonymous 5th response includes a soft invite.
+    let anonymousSoftInvite = false;
 
     // Memory is Sanctuary-only (persistent). Loaded only for authenticated Sanctuary users.
     let memoryContext: Awaited<ReturnType<typeof getUserMemory>> | null = null;
     let memoryPrompt = '';
 
-    let userIdForMetering: string | null = null;
-    try {
-      const supabase = await createClient();
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+    const userIdForMetering: string | null = userId ?? null;
 
-      if (userError) {
-        console.error('[chat] supabase.auth.getUser failed', { error: userError.message });
+    // Access state is derived server-side from user_entitlements.
+    const access = await getUserAccessState(userId ?? undefined);
+    entitlementTier = access.state;
+
+    // Access control MUST happen before governance.
+    if (entitlementTier === 'anonymous') {
+      const anonMeteringId = meteringIdFromSessionId(sessionId);
+      const limitCheck = await checkMessageLimit({ tier: 'anonymous', meteringId: anonMeteringId });
+      if (!limitCheck.allowed) {
+        return finalizeAndReturnText({
+          gate: 'signup_required',
+          text: "I'm really enjoying our conversation. Sign up free to keep chatting — it only takes a second.",
+          finalize: { iba_active: false, sim_state: 'stable' },
+        });
       }
+      if (limitCheck.count === 4) {
+        anonymousSoftInvite = true;
+      }
+    }
 
-      userIdForMetering = user?.id ?? null;
+    if (entitlementTier === 'free' && userIdForMetering) {
+      const freeMeteringId = await resolveMeteringIdForClerkUserId(userIdForMetering);
+      const limitCheck = await checkMessageLimit({ tier: 'free', meteringId: freeMeteringId });
+      if (!limitCheck.allowed) {
+        return finalizeAndReturnText({
+          gate: 'upgrade_required',
+          text:
+            "You've been busy today! Join Sanctuary for unlimited conversations with me — plus voice, images, and I'll remember our chats.",
+          finalize: { iba_active: false, sim_state: 'stable' },
+        });
+      }
+    }
 
-      if (!userIdForMetering) {
-  entitlementTier = 'anonymous';
-  
-  // GATE: Anonymous users get 5 messages
-  const userMessageCount = messages.filter((m) => m.role === 'user').length;
-  if (userMessageCount > 5) {
-    return NextResponse.json({
-      gate: 'signup_required',
-      content: "I'm really enjoying our conversation. Sign up free to keep chatting — it only takes a second.",
-    });
-  }
-} else {
-  entitlementTier = await getUserTier(userIdForMetering);
-
-  if (entitlementTier === 'sanctuary') {
-    memoryContext = await getUserMemory(userIdForMetering);
-    memoryPrompt = buildMemoryPrompt(memoryContext);
-  }
-
-  // GATE: Free users get 20 messages/day
-if (entitlementTier === 'free') {
-  const limitCheck = await checkMessageLimit(userIdForMetering);
-  console.log('[chat] metering', { userId: userIdForMetering, limitCheck });
-  
-  if (limitCheck.remaining <= 0) {
-    return NextResponse.json({
-      gate: 'upgrade_required',
-      content: "You've been busy today! Join Sanctuary for unlimited conversations with me — plus voice, images, and I'll remember our chats.",
-    });
-  }
-}
-}
-    } catch (err) {
-      // Safe fallback: do not block chat if metering fails unexpectedly.
-      console.error('[chat] metering block failed (allowing request)', err);
-      userIdForMetering = null;
-      entitlementTier = 'free';
+    if (entitlementTier === 'sanctuary' && userIdForMetering) {
+      memoryContext = await getUserMemory(userIdForMetering);
+      memoryPrompt = buildMemoryPrompt(memoryContext);
     }
 
     const incomingChallenge = body.meta?.challenge ??
@@ -377,16 +430,28 @@ if (entitlementTier === 'free') {
     if (hasAnyImage) {
       // Server enforcement (UI also hides the button).
       if (entitlementTier !== 'sanctuary') {
-        return jsonContent('Image attachments are available for Sanctuary members.', { status: 403 });
+        return finalizeAndReturnText({
+          text: 'Image attachments are available for Sanctuary members.',
+          init: { status: 403 },
+          finalize: { iba_active: false, sim_state: 'stable' },
+        });
       }
 
       for (const m of messages) {
         if (m.role !== 'user' || !m.image) continue;
         if (!allowedVisionMediaTypes.has(m.image.mediaType)) {
-          return jsonContent('Unsupported image type. Please use JPG, PNG, WebP, or GIF.', { status: 400 });
+          return finalizeAndReturnText({
+            text: 'Unsupported image type. Please use JPG, PNG, WebP, or GIF.',
+            init: { status: 400 },
+            finalize: { iba_active: false, sim_state: 'stable' },
+          });
         }
         if (!m.image.base64 || m.image.base64.length < 8) {
-          return jsonContent('Invalid image payload.', { status: 400 });
+          return finalizeAndReturnText({
+            text: 'Invalid image payload.',
+            init: { status: 400 },
+            finalize: { iba_active: false, sim_state: 'stable' },
+          });
         }
       }
     }
@@ -399,26 +464,12 @@ if (entitlementTier === 'free') {
         ? incomingChallenge.user_choice
         : null;
 
-    // Build-tier requires an explicit project_state. Downgrade behavior is forbidden.
-    if (tier === 'build' && !isValidBuildProjectState(project_state)) {
-      const { sessionId, shouldSetCookie } = await ensureSessionId();
-      const res = jsonContent(BUILD_ENTRY_FIRST_RESPONSE_TEMPLATE.first_response);
-      if (shouldSetCookie) {
-        res.cookies.set('vera_sid', sessionId, {
-          httpOnly: true,
-          sameSite: 'lax',
-          secure: process.env.NODE_ENV === 'production',
-          path: '/',
-          maxAge: 60 * 60 * 24 * 30,
-        });
-      }
-      return res;
-    }
-
     // Sanctuary-tier requires an explicit sanctuary_state. Downgrade behavior is forbidden.
-    if (tier === 'sanctuary' && !isValidSanctuaryState(sanctuary_state)) {
-      const { sessionId, shouldSetCookie } = await ensureSessionId();
-      const res = jsonContent(SANCTUARY_ENTRY_FIRST_RESPONSE_TEMPLATE.first_response);
+    if (entitlementTier === 'sanctuary' && !isValidSanctuaryState(sanctuary_state)) {
+      const res = finalizeAndReturnText({
+        text: SANCTUARY_ENTRY_FIRST_RESPONSE_TEMPLATE.first_response,
+        finalize: { iba_active: false, sim_state: 'stable' },
+      });
       if (shouldSetCookie) {
         res.cookies.set('vera_sid', sessionId, {
           httpOnly: true,
@@ -431,16 +482,21 @@ if (entitlementTier === 'free') {
       return res;
     }
 
-    const { sessionId, shouldSetCookie } = await ensureSessionId();
-    const conversationId = conversationIdFromBody || req.headers.get('x-vera-conversation-id') || sessionId;
+    // Reduce client-influenced branching: downstream logic treats sanctuary_state as optional intent/context only.
+    // For Sanctuary tier, the gate above ensures validity.
+    const sanctuaryStateSafe: SanctuaryState | null = isValidSanctuaryState(sanctuary_state) ? sanctuary_state : null;
+    const conversationId =
+      normalizeConversationId(conversationIdFromBody) ||
+      normalizeConversationId(req.headers.get('x-vera-conversation-id')) ||
+      sessionId;
     const turnId = messages.filter((m) => m.role === 'user').length;
 
     const cookieStore = await cookies();
     const chalCookieRaw = cookieStore.get('vera_chal')?.value;
-    const chalState = decodeChallengeCookieState(chalCookieRaw);
+    const chalState = decodeChallengeCookieState(chalCookieRaw, { session_id: sessionId });
     let chalStateNext: ChallengeCookieState = { ...chalState };
 
-    const tierResolved = (tier ?? 'free') as Tier;
+    const tierResolved = (entitlementTier === 'sanctuary' ? 'sanctuary' : 'free') as Tier;
 
     // SHADOW MODE: evaluate SIM before the model call (observability only).
     // IMPORTANT: No throttling, no suppression, no pacing changes unless SIM_ACTIVE is explicitly enabled.
@@ -505,7 +561,9 @@ if (entitlementTier === 'free') {
     const incomingConsentScope: ChallengeScope | null =
       incomingChallenge?.scope === 'single_turn' || incomingChallenge?.scope === 'none' ? incomingChallenge.scope : null;
 
-    if (incomingChoice && incomingConsentTs && incomingConsentPolicyId === CHALLENGE_POLICY_ID && incomingConsentScope) {
+    const incomingConsentTsOk = Boolean(incomingConsentTs && Number.isFinite(Date.parse(incomingConsentTs)));
+
+    if (incomingChoice && incomingConsentTsOk && incomingConsentPolicyId === CHALLENGE_POLICY_ID && incomingConsentScope) {
       chalStateNext = {
         ...chalStateNext,
         consent: {
@@ -549,7 +607,7 @@ if (entitlementTier === 'free') {
           responseText: declineAck,
           stateSnapshot: {
             project_state: project_state ?? null,
-            sanctuary_state: sanctuary_state ?? null,
+            sanctuary_state: sanctuaryStateSafe,
           },
         }),
         reflection_layers: simDecision.max_reflection_layers,
@@ -579,7 +637,10 @@ if (entitlementTier === 'free') {
         } as any,
       });
 
-      const res = jsonContent(declineAck);
+      const res = finalizeAndReturnText({
+        text: declineAck,
+        finalize: { iba_active: false, sim_state: simDecision.next_sim_state },
+      });
       if (shouldSetCookie) {
         res.cookies.set('vera_sid', sessionId, {
           httpOnly: true,
@@ -589,7 +650,7 @@ if (entitlementTier === 'free') {
           maxAge: 60 * 60 * 24 * 30,
         });
       }
-      res.cookies.set('vera_chal', encodeChallengeCookieState(nextState), {
+      res.cookies.set('vera_chal', encodeChallengeCookieState(nextState, { session_id: sessionId }), {
         httpOnly: true,
         sameSite: 'lax',
         secure: process.env.NODE_ENV === 'production',
@@ -639,7 +700,7 @@ if (entitlementTier === 'free') {
           responseText: third.text,
           stateSnapshot: {
             project_state: project_state ?? null,
-            sanctuary_state: sanctuary_state ?? null,
+            sanctuary_state: sanctuaryStateSafe,
           },
         }),
         reflection_layers: simDecision.max_reflection_layers,
@@ -677,7 +738,10 @@ if (entitlementTier === 'free') {
         },
       });
 
-      const res = jsonContent(third.text);
+      const res = finalizeAndReturnText({
+        text: third.text,
+        finalize: { iba_active: false, sim_state: simDecision.next_sim_state },
+      });
       if (shouldSetCookie) {
         res.cookies.set('vera_sid', sessionId, {
           httpOnly: true,
@@ -748,7 +812,7 @@ if (entitlementTier === 'free') {
           responseText: '',
           stateSnapshot: {
             project_state: project_state ?? null,
-            sanctuary_state: sanctuary_state ?? null,
+            sanctuary_state: sanctuaryStateSafe,
           },
         }),
         reflection_layers: simDecision.max_reflection_layers,
@@ -782,7 +846,10 @@ if (entitlementTier === 'free') {
         typeof (policyUi as any)?.prompt === 'string' ? (policyUi as any).prompt : 'Want a more direct take?',
         typeof (policyUi as any)?.subtext === 'string' ? (policyUi as any).subtext : 'Direct and grounded, never harsh.',
       ].join('\n');
-      const res = jsonContent(consentPrompt);
+      const res = finalizeAndReturnText({
+        text: consentPrompt,
+        finalize: { iba_active: false, sim_state: simDecision.next_sim_state },
+      });
       if (shouldSetCookie) {
         res.cookies.set('vera_sid', sessionId, {
           httpOnly: true,
@@ -792,7 +859,7 @@ if (entitlementTier === 'free') {
           maxAge: 60 * 60 * 24 * 30,
         });
       }
-      res.cookies.set('vera_chal', encodeChallengeCookieState(chalStateNext), {
+      res.cookies.set('vera_chal', encodeChallengeCookieState(chalStateNext, { session_id: sessionId }), {
         httpOnly: true,
         sameSite: 'lax',
         secure: process.env.NODE_ENV === 'production',
@@ -815,7 +882,7 @@ if (entitlementTier === 'free') {
 
     const system = composeSystemPrompt(decision, {
       projectState: project_state ?? null,
-      sanctuaryState: sanctuary_state ?? null,
+      sanctuaryState: sanctuaryStateSafe,
       sim: SIM_ACTIVE ? simPromptFlags : undefined,
       // Fourth-message escalation is a backend-first rule; apply even when SIM_ACTIVE=false.
       // Memory prompt is Sanctuary-only.
@@ -887,7 +954,10 @@ if (entitlementTier === 'free') {
           : undefined,
       });
 
-      const res = jsonContent(crisisText);
+      const res = finalizeAndReturnText({
+        text: crisisText,
+        finalize: { iba_active: false, sim_state: simDecision.next_sim_state },
+      });
       if (shouldSetCookie) {
         res.cookies.set('vera_sid', sessionId, {
           httpOnly: true,
@@ -946,11 +1016,15 @@ if (entitlementTier === 'free') {
     let modelCallFailed = false;
     let outputTokensUsed = 0;
     try {
-      const result = await client.messages.create({
-        model: effectiveExecutedModelVersion,
-        max_tokens: effectiveMaxTokens,
-        system,
-        messages: modelMessages.map((m) => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), CHAT_MODEL_TIMEOUT_MS);
+
+      try {
+        const result = await client.messages.create({
+          model: effectiveExecutedModelVersion,
+          max_tokens: effectiveMaxTokens,
+          system,
+          messages: modelMessages.map((m) => {
           if (m.role === 'user' && m.image?.base64 && m.image?.mediaType) {
             return {
               role: m.role,
@@ -972,16 +1046,20 @@ if (entitlementTier === 'free') {
             role: m.role,
             content: m.content,
           };
-        }) as any,
-      });
+          }) as any,
+          signal: controller.signal,
+        } as any);
 
-      outputTokensUsed = (result as any)?.usage?.output_tokens ?? 0;
+        outputTokensUsed = (result as any)?.usage?.output_tokens ?? 0;
 
-      content = result.content
-        .filter((block) => block.type === 'text')
-        .map((block) => block.text)
-        .join('\n')
-        .trim();
+        content = result.content
+          .filter((block) => block.type === 'text')
+          .map((block) => block.text)
+          .join('\n')
+          .trim();
+      } finally {
+        clearTimeout(timeout);
+      }
     } catch (modelErr) {
       modelCallFailed = true;
       console.error('[MODEL] execution failed', modelErr);
@@ -1050,18 +1128,26 @@ if (entitlementTier === 'free') {
     const ibaNeedsFallback = Boolean(ibaActiveCandidate && (!ibaStyleEligible || !ibaRubricOk));
     const fallbackCandidate = ibaNeedsFallback ? buildConservativeVeraFallback() : null;
     const serveFallback = ibaNeedsFallback && rolloutEnabledBySession(sessionId, IBA_DRYRUN_FALLBACK_PCT);
-    const servedTextCandidate = serveFallback && fallbackCandidate ? fallbackCandidate : unifiedWithChallengePreface;
+    const servedTextCandidateBase = serveFallback && fallbackCandidate ? fallbackCandidate : unifiedWithChallengePreface;
+    const servedTextCandidate = anonymousSoftInvite
+      ? `${servedTextCandidateBase}\n\n—\n\nI'm really enjoying our conversation. Sign up free to keep chatting — it only takes a second.`
+      : servedTextCandidateBase;
     const servedPath: 'planned' | 'fallback' = serveFallback ? 'fallback' : 'planned';
 
     const noDrift = enforceNoDrift({ decision, selection, veraText: servedTextCandidate });
-    const servedText = noDrift.vera;
+    const finalized = finalizeResponse({
+      text: noDrift.vera,
+      iba_active: ibaActiveCandidate,
+      sim_state: simDecision.next_sim_state,
+    });
+    const servedText = finalized.text;
 
     const ibaTagActive = Boolean(ibaStyleEligible && ibaRubricOk && servedPath === 'planned' && noDrift.ok);
     const ibaStyleActive = ibaTagActive;
 
     const stateSnapshot: { project_state?: unknown; sanctuary_state?: unknown; sim?: unknown } = {};
     if (resolvedTier === 'build') stateSnapshot.project_state = project_state ?? null;
-    if (resolvedTier === 'sanctuary') stateSnapshot.sanctuary_state = sanctuary_state ?? null;
+    if (resolvedTier === 'sanctuary') stateSnapshot.sanctuary_state = sanctuaryStateSafe;
     stateSnapshot.sim = {
       sim_active: SIM_ACTIVE,
       sim_input: {
@@ -1161,6 +1247,14 @@ if (entitlementTier === 'free') {
       ? (simDecision as any).sim_interventions
       : [];
 
+    const modelProvenance = buildModelProvenance({
+      effectiveExecutedModelVersion,
+      selectionReason: modelCallFailed ? 'model_call_failed' : selection.reason,
+      modelCallFailed,
+      finalizePassed: finalized.finalize_passed,
+      noDriftOk: noDrift.ok,
+    });
+
     await logTelemetry({
       session_id: sessionId,
       user_id: sessionId,
@@ -1196,7 +1290,10 @@ if (entitlementTier === 'free') {
 
       // This runtime does not yet collect explicit user responses to invitations.
 
-      state_snapshot: stateSnapshot as any,
+      state_snapshot: {
+        ...(stateSnapshot as any),
+        model_provenance: modelProvenance,
+      } as any,
     });
 
     const failure = detectFailureMode({
@@ -1220,6 +1317,7 @@ if (entitlementTier === 'free') {
       turnId,
       sessionId,
       userId: sessionId,
+      modelProvenance,
       decision: {
         intentPrimary: decision.intent.primary,
         intentSecondary: decision.intent.secondary,
@@ -1251,7 +1349,7 @@ if (entitlementTier === 'free') {
       },
       policyVersion: VERA_POLICY_VERSION,
       output: {
-        responseLengthChars: (noDrift.vera || '').length,
+        responseLengthChars: (servedText || '').length,
         responseTimeMs,
         unifierApplied: true,
         unifierStrictApplied: unifiedResult.strictApplied,
@@ -1281,7 +1379,7 @@ if (entitlementTier === 'free') {
     }
 
     const responseMode = consentGrantedThisTurn ? 'challenge' : 'conversation';
-    const finalContent = modelCallFailed ? UNAVAILABLE_CONTENT : (noDrift.vera || "I'm here. What would you like to explore?");
+    const finalContent = modelCallFailed ? UNAVAILABLE_CONTENT : servedText;
 
     // Fire-and-forget memory update (Sanctuary only). Never blocks the response.
     if (userIdForMetering && entitlementTier === 'sanctuary') {
@@ -1297,11 +1395,23 @@ if (entitlementTier === 'free') {
       });
     }
 
-    if (userIdForMetering && entitlementTier === 'free') {
-      await recordMessage(userIdForMetering);
+    if (entitlementTier === 'anonymous') {
+      const anonMeteringId = meteringIdFromSessionId(sessionId);
+      await recordMessage(anonMeteringId);
     }
 
-    const res = jsonContent(finalContent);
+    if (userIdForMetering && entitlementTier === 'free') {
+      const freeMeteringId = await resolveMeteringIdForClerkUserId(userIdForMetering);
+      await recordMessage(freeMeteringId);
+    }
+
+    const res = finalizeAndReturnText({
+      text: finalContent,
+      finalize: {
+        iba_active: Boolean(!modelCallFailed && ibaActiveCandidate),
+        sim_state: simDecision.next_sim_state,
+      },
+    });
     if (shouldSetCookie) {
       res.cookies.set('vera_sid', sessionId, {
         httpOnly: true,
@@ -1311,7 +1421,7 @@ if (entitlementTier === 'free') {
         maxAge: 60 * 60 * 24 * 30,
       });
     }
-    res.cookies.set('vera_chal', encodeChallengeCookieState(chalStateNext), {
+    res.cookies.set('vera_chal', encodeChallengeCookieState(chalStateNext, { session_id: sessionId }), {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
@@ -1321,7 +1431,11 @@ if (entitlementTier === 'free') {
     return res;
   } catch (err) {
     console.error('Chat route error:', err);
-    return jsonContent(UNAVAILABLE_CONTENT, { status: 500 });
+    return finalizeAndReturnText({
+      text: UNAVAILABLE_CONTENT,
+      init: { status: 500 },
+      finalize: { iba_active: false, sim_state: 'stable' },
+    });
   }
 }
 
@@ -1362,5 +1476,35 @@ async function updateMemoryInBackground(input: {
     }
   } catch (err) {
     console.error('[Memory Background Update] Error:', err);
+  }
+}
+
+function buildModelProvenance(input: {
+  effectiveExecutedModelVersion: string;
+  selectionReason: string;
+  modelCallFailed: boolean;
+  finalizePassed: boolean;
+  noDriftOk: boolean;
+}): ModelProvenance {
+  try {
+    return {
+      provider: 'anthropic',
+      model_id: String(input.effectiveExecutedModelVersion ?? ''),
+      selection_reason: String(input.selectionReason ?? ''),
+      execution_path: input.modelCallFailed ? 'fallback' : 'planned',
+      finalize_applied: true,
+      finalize_passed: Boolean(input.finalizePassed),
+      no_drift_passed: Boolean(input.noDriftOk),
+    };
+  } catch {
+    return {
+      provider: 'anthropic',
+      model_id: 'unknown',
+      selection_reason: 'unknown',
+      execution_path: 'planned',
+      finalize_applied: true,
+      finalize_passed: false,
+      no_drift_passed: false,
+    };
   }
 }

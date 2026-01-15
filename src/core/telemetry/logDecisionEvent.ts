@@ -51,6 +51,15 @@ export type DecisionAuditEvent = {
   failure_mode?: string;
   failure_triggers?: string[];
   failure_actions?: string[];
+
+  model_provenance?: {
+    provider: 'anthropic' | 'openai' | 'grok' | 'qwen' | 'unknown';
+    model_id: string;
+    selection_reason: string;
+    execution_path: 'planned' | 'fallback' | 'safety';
+    finalize_applied: boolean;
+    no_drift_passed: boolean;
+  };
 };
 
 // ---- Helpers ----
@@ -76,6 +85,15 @@ export async function logDecisionEvent(params: {
   turnId: number;
   sessionId: string;
   userId: string; // raw user id, never stored directly
+
+  modelProvenance?: {
+    provider: 'anthropic' | 'openai' | 'grok' | 'qwen' | 'unknown';
+    model_id: string;
+    selection_reason: string;
+    execution_path: 'planned' | 'fallback' | 'safety';
+    finalize_applied: boolean;
+    no_drift_passed: boolean;
+  };
 
   decision: {
     intentPrimary: string;
@@ -167,6 +185,8 @@ export async function logDecisionEvent(params: {
     failure_mode: params.failure?.mode,
     failure_triggers: params.failure?.triggers,
     failure_actions: params.failure?.actions,
+
+    model_provenance: params.modelProvenance,
   };
 
   // ---- Storage Adapter (default: console) ----

@@ -1,7 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useTheme, ThemeToggle } from '@/contexts/ThemeContext';
 
+// ============================================================================
+// TYPES
+// ============================================================================
 interface RestChamberProps {
   onBack: () => void;
 }
@@ -9,27 +13,127 @@ interface RestChamberProps {
 type Category = 'soundscapes' | 'stories' | 'meditations';
 type TimerOption = '15m' | '30m' | '1h' | '∞';
 
-const CONTENT = {
+type Track = {
+  id: number;
+  title: string;
+  duration: string;
+  icon: string;
+};
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+const CONTENT: Record<Category, Track[]> = {
   soundscapes: [
-    { id: 1, title: 'Ocean Waves', duration: '45 min' },
-    { id: 2, title: 'Rain on Leaves', duration: '60 min' },
-    { id: 3, title: 'Night Forest', duration: '30 min' },
+    { id: 1, title: 'Ocean Waves', duration: '45 min', icon: '〰' },
+    { id: 2, title: 'Rain on Leaves', duration: '60 min', icon: '⁘' },
+    { id: 3, title: 'Night Forest', duration: '30 min', icon: '❋' },
   ],
   stories: [
-    { id: 1, title: 'The Quiet Village', duration: '20 min' },
-    { id: 2, title: 'Moonlit Garden', duration: '25 min' },
+    { id: 1, title: 'The Quiet Village', duration: '20 min', icon: '◇' },
+    { id: 2, title: 'Moonlit Garden', duration: '25 min', icon: '☽' },
   ],
   meditations: [
-    { id: 1, title: 'Body Scan for Sleep', duration: '15 min' },
-    { id: 2, title: 'Letting Go of the Day', duration: '20 min' },
+    { id: 1, title: 'Body Scan for Sleep', duration: '15 min', icon: '◎' },
+    { id: 2, title: 'Letting Go of the Day', duration: '20 min', icon: '○' },
   ],
 };
 
+const CATEGORIES = [
+  { id: 'soundscapes' as Category, title: 'Soundscapes', desc: 'Ambient sounds for deep rest', count: 3 },
+  { id: 'stories' as Category, title: 'Sleep Stories', desc: 'Gentle tales to drift away', count: 2 },
+  { id: 'meditations' as Category, title: 'Meditations', desc: 'Guided journeys into rest', count: 2 },
+];
+
+const TIMER_OPTIONS: TimerOption[] = ['15m', '30m', '1h', '∞'];
+
+// ============================================================================
+// STYLES
+// ============================================================================
+const GLOBAL_STYLES = `
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=DM+Sans:wght@400;500;600&display=swap');
+  
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  html, body {
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+
+  @keyframes breathe {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.05); opacity: 0.8; }
+  }
+
+  .card-btn {
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+  .card-btn:active {
+    transform: scale(0.97);
+  }
+
+  .timer-btn {
+    transition: all 0.2s ease;
+  }
+  .timer-btn:active {
+    transform: scale(0.94);
+  }
+
+  .rest-scroll::-webkit-scrollbar {
+    width: 3px;
+  }
+  .rest-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .rest-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+  }
+`;
+
+// ============================================================================
+// COMPONENT
+// ============================================================================
 export default function RestChamber({ onBack }: RestChamberProps) {
+  const { isDark, colors } = useTheme();
+
+  const COLORS = {
+    bg: colors.bg,
+    text: colors.text,
+    textMuted: colors.textMuted,
+    textDim: isDark ? 'rgba(255, 255, 255, 0.35)' : 'rgba(60, 50, 40, 0.35)',
+    cardBg: colors.cardBg,
+    cardBorder: colors.cardBorder,
+    accent: '#8b5cf6',
+    accentDim: 'rgba(139, 92, 246, 0.6)',
+    accentGlow: colors.glow,
+    moonGlow: colors.glow,
+  } as const;
+
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedTimer, setSelectedTimer] = useState<TimerOption>('30m');
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrack, setCurrentTrack] = useState<string | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    setTimeout(() => setIsLoaded(true), 100);
+  }, []);
 
   const handlePlayTrack = (title: string) => {
     if (currentTrack === title) {
@@ -40,497 +144,386 @@ export default function RestChamber({ onBack }: RestChamberProps) {
     }
   };
 
+  const handleBackToCategories = () => {
+    setSelectedCategory(null);
+  };
+
+  // ============================================================================
+  // RENDER
+  // ============================================================================
   return (
     <>
-      <style jsx global>{`
-        @keyframes twinkle {
-          0%, 100% { opacity: 0.2; }
-          50% { opacity: 0.8; }
-        }
-        @keyframes flicker {
-          0%, 100% { transform: translateX(-50%) scaleY(1) rotate(-1deg); }
-          50% { transform: translateX(-50%) scaleY(1.08) rotate(1deg); }
-        }
-        @keyframes glow {
-          0%, 100% { opacity: 0.3; }
-          50% { opacity: 0.5; }
-        }
-      `}</style>
+      <style jsx global>{GLOBAL_STYLES}</style>
 
       <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(180deg, #0c0c16 0%, #111120 40%, #0a0a12 100%)',
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-        color: '#fff',
-        position: 'relative',
+        position: 'fixed',
+        inset: 0,
+        background: COLORS.bg,
+        display: 'flex',
+        flexDirection: 'column',
         overflow: 'hidden',
       }}>
         
-        {/* Subtle Stars */}
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-          {[...Array(25)].map((_, i) => (
+        {/* ================================================================ */}
+        {/* AMBIENT BACKGROUND */}
+        {/* ================================================================ */}
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          overflow: 'hidden',
+        }}>
+          {/* Moon glow - top right */}
+          <div style={{
+            position: 'absolute',
+            top: '-10%',
+            right: '-10%',
+            width: '70%',
+            height: '50%',
+            background: `radial-gradient(ellipse at center, ${COLORS.moonGlow} 0%, transparent 60%)`,
+            borderRadius: '50%',
+            animation: 'breathe 8s ease-in-out infinite',
+          }} />
+
+          {/* Subtle bottom glow */}
+          <div style={{
+            position: 'absolute',
+            bottom: '-20%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '100%',
+            height: '40%',
+            background: `radial-gradient(ellipse at center, ${COLORS.accentGlow} 0%, transparent 60%)`,
+            borderRadius: '50%',
+          }} />
+
+          {/* Simple stars - just a few dots */}
+          {[...Array(12)].map((_, i) => (
             <div
               key={i}
               style={{
                 position: 'absolute',
                 width: i % 3 === 0 ? 2 : 1,
                 height: i % 3 === 0 ? 2 : 1,
-                background: 'rgba(255,255,255,0.5)',
+                background: 'rgba(255, 255, 255, 0.6)',
                 borderRadius: '50%',
-                top: `${5 + Math.random() * 40}%`,
-                left: `${Math.random() * 100}%`,
-                animation: `twinkle ${3 + Math.random() * 4}s ease-in-out infinite`,
-                animationDelay: `${Math.random() * 3}s`,
+                top: `${8 + (i * 7) % 35}%`,
+                left: `${5 + (i * 11) % 90}%`,
+                opacity: 0.3 + (i % 4) * 0.2,
               }}
             />
           ))}
         </div>
 
-        {/* Ambient Moon Glow */}
-        <div style={{
-          position: 'absolute',
-          top: '5%',
-          right: '10%',
-          width: 300,
-          height: 300,
-          background: 'radial-gradient(circle, rgba(180,180,220,0.08) 0%, transparent 60%)',
-          borderRadius: '50%',
-          filter: 'blur(40px)',
-          animation: 'glow 6s ease-in-out infinite',
-          pointerEvents: 'none',
-        }} />
-
-        {/* Window with Moon */}
-        <div style={{
-          position: 'absolute',
-          top: '6%',
-          right: '6%',
-          width: 140,
-          height: 190,
-          background: 'linear-gradient(180deg, #12122a 0%, #0a0a18 100%)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 3,
-          overflow: 'hidden',
-          boxShadow: 'inset 0 0 40px rgba(100,100,180,0.05)',
+        {/* ================================================================ */}
+        {/* HEADER */}
+        {/* ================================================================ */}
+        <header style={{
+          padding: '16px',
+          paddingTop: 'max(16px, env(safe-area-inset-top))',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          zIndex: 50,
         }}>
-          {/* Moon */}
-          <div style={{
-            position: 'absolute',
-            top: 25,
-            right: 25,
-            width: 28,
-            height: 28,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle at 35% 35%, #f8f8ff 0%, #d8d8f0 40%, #b8b8d8 100%)',
-            boxShadow: '0 0 25px rgba(200,200,255,0.35), 0 0 50px rgba(180,180,220,0.15)',
-          }} />
-          {/* Window dividers */}
-          <div style={{ 
-            position: 'absolute', 
-            top: 0, 
-            left: '50%', 
-            width: 1, 
-            height: '100%', 
-            background: 'rgba(255,255,255,0.08)',
-            transform: 'translateX(-50%)',
-          }} />
-          <div style={{ 
-            position: 'absolute', 
-            top: '50%', 
-            left: 0, 
-            width: '100%', 
-            height: 1, 
-            background: 'rgba(255,255,255,0.08)',
-            transform: 'translateY(-50%)',
-          }} />
-        </div>
-
-        {/* Bed - Refined */}
-        <div style={{
-          position: 'absolute',
-          bottom: '12%',
-          left: '8%',
-          width: 320,
-        }}>
-          {/* Headboard */}
-          <div style={{
-            height: 70,
-            background: 'linear-gradient(180deg, rgba(60,55,80,0.6) 0%, rgba(45,42,65,0.5) 100%)',
-            borderRadius: '6px 6px 0 0',
-            border: '1px solid rgba(255,255,255,0.05)',
-            borderBottom: 'none',
-          }} />
-          {/* Mattress */}
-          <div style={{
-            height: 45,
-            background: 'linear-gradient(180deg, rgba(70,65,95,0.5) 0%, rgba(55,52,78,0.4) 100%)',
-            borderRadius: 3,
-            border: '1px solid rgba(255,255,255,0.04)',
-            position: 'relative',
-          }}>
-            {/* Pillows */}
-            <div style={{
+          <button
+            onClick={onBack}
+            style={{
               display: 'flex',
-              gap: 12,
-              padding: '10px 24px',
-            }}>
-              <div style={{ 
-                width: 70, 
-                height: 26, 
-                background: 'linear-gradient(180deg, rgba(90,85,115,0.6) 0%, rgba(75,72,100,0.5) 100%)', 
-                borderRadius: 5,
-                border: '1px solid rgba(255,255,255,0.05)',
-              }} />
-              <div style={{ 
-                width: 70, 
-                height: 26, 
-                background: 'linear-gradient(180deg, rgba(90,85,115,0.6) 0%, rgba(75,72,100,0.5) 100%)', 
-                borderRadius: 5,
-                border: '1px solid rgba(255,255,255,0.05)',
-              }} />
-            </div>
-          </div>
-          {/* Blanket */}
-          <div style={{
-            height: 35,
-            background: 'linear-gradient(180deg, rgba(45,42,68,0.5) 0%, rgba(35,33,55,0.4) 100%)',
-            borderRadius: '0 0 6px 6px',
-            border: '1px solid rgba(255,255,255,0.03)',
-            borderTop: 'none',
-          }} />
-        </div>
-
-        {/* Nightstand with Candle */}
-        <div style={{
-          position: 'absolute',
-          bottom: '15%',
-          left: 'calc(8% + 340px)',
-        }}>
-          {/* Table */}
-          <div style={{
-            width: 50,
-            height: 42,
-            background: 'linear-gradient(180deg, rgba(50,45,70,0.6) 0%, rgba(40,38,60,0.5) 100%)',
-            borderRadius: 3,
-            border: '1px solid rgba(255,255,255,0.05)',
-          }} />
-          {/* Candle */}
-          <div style={{
-            position: 'absolute',
-            bottom: 48,
-            left: 18,
-            width: 10,
-            height: 22,
-            background: 'linear-gradient(180deg, #f5f2ec 0%, #e8e2d8 100%)',
-            borderRadius: 2,
+              alignItems: 'center',
+              gap: 6,
+              padding: '10px 18px',
+              background: COLORS.cardBg,
+              border: `1px solid ${COLORS.cardBorder}`,
+              borderRadius: 50,
+              cursor: 'pointer',
+              fontSize: 14,
+              fontWeight: 500,
+              color: COLORS.textMuted,
+            }}
+          >
+            ← Sanctuary
+          </button>
+          
+          <span style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: COLORS.textDim,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
           }}>
-            {/* Flame */}
-            <div style={{
-              position: 'absolute',
-              top: -9,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: 5,
-              height: 10,
-              background: 'radial-gradient(ellipse at 50% 70%, rgba(255,200,100,0.95) 0%, rgba(255,140,50,0.7) 40%, transparent 100%)',
-              borderRadius: '50% 50% 50% 50% / 70% 70% 30% 30%',
-              animation: 'flicker 0.8s ease-in-out infinite',
-              boxShadow: '0 0 8px rgba(255,180,80,0.5)',
-            }} />
-          </div>
-          {/* Candle glow on table */}
-          <div style={{
-            position: 'absolute',
-            bottom: 42,
-            left: 10,
-            width: 30,
-            height: 15,
-            background: 'radial-gradient(ellipse, rgba(255,180,100,0.15) 0%, transparent 70%)',
-            borderRadius: '50%',
-          }} />
-        </div>
+            Rest Chamber
+          </span>
 
-        {/* Telescope - Refined */}
-        <div style={{
-          position: 'absolute',
-          bottom: '18%',
-          right: '10%',
-        }}>
-          {/* Tripod legs */}
-          <div style={{
-            width: 2,
-            height: 70,
-            background: 'linear-gradient(180deg, rgba(80,75,100,0.7) 0%, rgba(60,55,80,0.5) 100%)',
-            transform: 'rotate(-12deg)',
-            transformOrigin: 'top center',
-            position: 'absolute',
-            bottom: 0,
-            left: 12,
-          }} />
-          <div style={{
-            width: 2,
-            height: 70,
-            background: 'linear-gradient(180deg, rgba(80,75,100,0.7) 0%, rgba(60,55,80,0.5) 100%)',
-            transform: 'rotate(12deg)',
-            transformOrigin: 'top center',
-            position: 'absolute',
-            bottom: 0,
-            right: 12,
-          }} />
-          {/* Scope body */}
-          <div style={{
-            width: 50,
-            height: 16,
-            background: 'linear-gradient(90deg, rgba(70,65,95,0.8) 0%, rgba(55,52,78,0.7) 100%)',
-            borderRadius: '3px 8px 8px 3px',
-            position: 'absolute',
-            bottom: 60,
-            left: -8,
-            transform: 'rotate(-25deg)',
-            border: '1px solid rgba(255,255,255,0.06)',
-          }} />
-        </div>
+          <ThemeToggle />
+        </header>
 
-        {/* Back Button */}
-        <button
-          onClick={onBack}
+        {/* ================================================================ */}
+        {/* SCROLLABLE CONTENT */}
+        {/* ================================================================ */}
+        <div 
+          className="rest-scroll"
           style={{
-            position: 'absolute',
-            top: 20,
-            left: 20,
+            flex: 1,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            WebkitOverflowScrolling: 'touch',
+            paddingBottom: 100, // Space for timer bar
+          }}
+        >
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            padding: '20px',
+            minHeight: '100%',
+            opacity: isLoaded ? 1 : 0,
+            transform: isLoaded ? 'translateY(0)' : 'translateY(20px)',
+            transition: 'opacity 0.6s ease, transform 0.6s ease',
+          }}>
+            
+            {/* Title */}
+            <div style={{ textAlign: 'center', marginBottom: 28 }}>
+              <h1 style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: 32,
+                fontWeight: 300,
+                color: COLORS.text,
+                marginBottom: 8,
+              }}>
+                Rest Chamber
+              </h1>
+              <p style={{
+                fontSize: 14,
+                color: COLORS.textDim,
+                letterSpacing: '0.03em',
+              }}>
+                Let go of the day
+              </p>
+            </div>
+
+            {/* ============================================================ */}
+            {/* CATEGORY SELECTION */}
+            {/* ============================================================ */}
+            {!selectedCategory && (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: 12,
+                maxWidth: 360,
+                width: '100%',
+                animation: 'fadeIn 0.4s ease-out',
+              }}>
+                {CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.id}
+                    className="card-btn"
+                    onClick={() => setSelectedCategory(cat.id)}
+                    style={{
+                      padding: '22px 16px',
+                      background: COLORS.cardBg,
+                      border: `1px solid ${COLORS.cardBorder}`,
+                      borderRadius: 16,
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <h3 style={{
+                      fontSize: 15,
+                      fontWeight: 600,
+                      color: COLORS.text,
+                      marginBottom: 8,
+                    }}>
+                      {cat.title}
+                    </h3>
+                    <p style={{
+                      fontSize: 12,
+                      color: COLORS.textDim,
+                      marginBottom: 12,
+                      lineHeight: 1.4,
+                    }}>
+                      {cat.desc}
+                    </p>
+                    <span style={{
+                      fontSize: 11,
+                      color: COLORS.accentDim,
+                    }}>
+                      {cat.count} tracks
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* ============================================================ */}
+            {/* TRACK LIST */}
+            {/* ============================================================ */}
+            {selectedCategory && (
+              <div style={{
+                width: '100%',
+                maxWidth: 400,
+                animation: 'fadeIn 0.4s ease-out',
+              }}>
+                <button
+                  onClick={handleBackToCategories}
+                  style={{
+                    marginBottom: 20,
+                    padding: '8px 16px',
+                    background: 'transparent',
+                    border: `1px solid ${COLORS.cardBorder}`,
+                    borderRadius: 20,
+                    color: COLORS.textMuted,
+                    fontSize: 13,
+                    cursor: 'pointer',
+                  }}
+                >
+                  ← All categories
+                </button>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {CONTENT[selectedCategory].map((track) => (
+                    <button
+                      key={track.id}
+                      className="card-btn"
+                      onClick={() => handlePlayTrack(track.title)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '16px 18px',
+                        background: currentTrack === track.title 
+                          ? 'rgba(139, 92, 246, 0.1)' 
+                          : COLORS.cardBg,
+                        border: `1px solid ${currentTrack === track.title 
+                          ? 'rgba(139, 92, 246, 0.25)' 
+                          : COLORS.cardBorder}`,
+                        borderRadius: 14,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <span style={{ 
+                          fontSize: 20, 
+                          opacity: 0.5,
+                          color: COLORS.text,
+                        }}>
+                          {track.icon}
+                        </span>
+                        <div>
+                          <div style={{
+                            fontSize: 15,
+                            fontWeight: 500,
+                            color: COLORS.text,
+                            marginBottom: 4,
+                          }}>
+                            {track.title}
+                          </div>
+                          <div style={{
+                            fontSize: 12,
+                            color: COLORS.textDim,
+                          }}>
+                            {track.duration}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Play/Pause Button */}
+                      <div style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: '50%',
+                        background: currentTrack === track.title && isPlaying
+                          ? `linear-gradient(135deg, ${COLORS.accent} 0%, #7c3aed 100%)`
+                          : 'rgba(255, 255, 255, 0.06)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: currentTrack === track.title && isPlaying
+                          ? `0 4px 16px ${COLORS.accentGlow}`
+                          : 'none',
+                      }}>
+                        {currentTrack === track.title && isPlaying ? (
+                          <div style={{ display: 'flex', gap: 3 }}>
+                            <div style={{ width: 3, height: 14, background: '#fff', borderRadius: 1 }} />
+                            <div style={{ width: 3, height: 14, background: '#fff', borderRadius: 1 }} />
+                          </div>
+                        ) : (
+                          <div style={{
+                            width: 0,
+                            height: 0,
+                            borderTop: '7px solid transparent',
+                            borderBottom: '7px solid transparent',
+                            borderLeft: `11px solid ${COLORS.textMuted}`,
+                            marginLeft: 3,
+                          }} />
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ================================================================ */}
+        {/* SLEEP TIMER BAR */}
+        {/* ================================================================ */}
+        <div style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          padding: '16px',
+          paddingBottom: 'max(20px, env(safe-area-inset-bottom))',
+          background: isDark
+            ? 'linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.25) 50%, transparent 100%)'
+            : 'linear-gradient(to top, rgba(248, 245, 240, 0.9) 0%, rgba(248, 245, 240, 0.35) 50%, transparent 100%)',
+          display: 'flex',
+          justifyContent: 'center',
+          zIndex: 40,
+        }}>
+          <div style={{
             display: 'flex',
             alignItems: 'center',
             gap: 6,
             padding: '10px 18px',
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.08)',
+            background: isDark ? 'rgba(15, 12, 25, 0.95)' : 'rgba(255, 255, 255, 0.85)',
             borderRadius: 50,
-            color: 'rgba(255,255,255,0.6)',
-            fontSize: 13,
-            fontWeight: 450,
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            zIndex: 10,
-          }}
-        >
-          ← Back to Sanctuary
-        </button>
-
-        {/* Main Content */}
-        <div style={{
-          position: 'relative',
-          zIndex: 5,
-          padding: '70px 24px 100px',
-          maxWidth: 680,
-          margin: '0 auto',
-        }}>
-          <h1 style={{
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
-            fontSize: 'clamp(2rem, 5vw, 2.8rem)',
-            fontWeight: 300,
-            textAlign: 'center',
-            marginBottom: 8,
-            color: 'rgba(255,255,255,0.85)',
-            letterSpacing: '-0.02em',
+            border: `1px solid ${COLORS.cardBorder}`,
           }}>
-            Rest Chamber
-          </h1>
-          <p style={{
-            textAlign: 'center',
-            color: 'rgba(255,255,255,0.4)',
-            marginBottom: 40,
-            fontSize: 14,
-            letterSpacing: '0.05em',
-          }}>
-            Let go of the day
-          </p>
-
-          {/* Category Cards */}
-          {!selectedCategory ? (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: 14,
-              marginBottom: 40,
+            <span style={{
+              color: COLORS.textDim,
+              fontSize: 12,
+              marginRight: 8,
             }}>
-              {[
-                { id: 'soundscapes' as Category, title: 'Soundscapes', desc: 'Ambient sounds for deep rest', count: 3 },
-                { id: 'stories' as Category, title: 'Sleep Stories', desc: 'Gentle tales to drift away', count: 2 },
-                { id: 'meditations' as Category, title: 'Meditations', desc: 'Guided journeys into rest', count: 2 },
-              ].map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  style={{
-                    padding: '24px 18px',
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    borderRadius: 16,
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                    e.currentTarget.style.transform = 'translateY(-3px)';
-                    e.currentTarget.style.borderColor = 'rgba(139,92,246,0.2)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
-                  }}
-                >
-                  <h3 style={{ 
-                    color: 'rgba(255,255,255,0.9)', 
-                    fontSize: 15, 
-                    fontWeight: 500, 
-                    marginBottom: 8,
-                    letterSpacing: '-0.01em',
-                  }}>
-                    {cat.title}
-                  </h3>
-                  <p style={{ 
-                    color: 'rgba(255,255,255,0.4)', 
-                    fontSize: 12, 
-                    marginBottom: 12,
-                    lineHeight: 1.4,
-                  }}>
-                    {cat.desc}
-                  </p>
-                  <span style={{ 
-                    color: 'rgba(139,92,246,0.7)', 
-                    fontSize: 11,
-                    letterSpacing: '0.05em',
-                  }}>
-                    {cat.count} tracks
-                  </span>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div>
+              Sleep timer
+            </span>
+            {TIMER_OPTIONS.map((time) => (
               <button
-                onClick={() => setSelectedCategory(null)}
+                key={time}
+                className="timer-btn"
+                onClick={() => setSelectedTimer(time)}
                 style={{
-                  marginBottom: 20,
-                  padding: '8px 16px',
-                  background: 'transparent',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: 20,
-                  color: 'rgba(255,255,255,0.5)',
+                  padding: '7px 12px',
+                  background: selectedTimer === time 
+                    ? 'rgba(139, 92, 246, 0.2)' 
+                    : 'transparent',
+                  border: 'none',
+                  borderRadius: 16,
+                  color: selectedTimer === time 
+                    ? COLORS.text 
+                    : COLORS.textDim,
                   fontSize: 13,
+                  fontWeight: selectedTimer === time ? 600 : 400,
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease',
                 }}
               >
-                ← Back to categories
+                {time}
               </button>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {CONTENT[selectedCategory].map((track) => (
-                  <button
-                    key={track.id}
-                    onClick={() => handlePlayTrack(track.title)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '16px 18px',
-                      background: currentTrack === track.title 
-                        ? 'rgba(139,92,246,0.12)' 
-                        : 'rgba(255,255,255,0.03)',
-                      border: `1px solid ${currentTrack === track.title 
-                        ? 'rgba(139,92,246,0.25)' 
-                        : 'rgba(255,255,255,0.06)'}`,
-                      borderRadius: 14,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                    }}
-                  >
-                    <div style={{ textAlign: 'left' }}>
-                      <div style={{ 
-                        color: 'rgba(255,255,255,0.9)', 
-                        fontSize: 14, 
-                        marginBottom: 4,
-                        fontWeight: 450,
-                      }}>
-                        {track.title}
-                      </div>
-                      <div style={{ 
-                        color: 'rgba(255,255,255,0.4)', 
-                        fontSize: 12,
-                      }}>
-                        {track.duration}
-                      </div>
-                    </div>
-                    <div style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: '50%',
-                      background: currentTrack === track.title && isPlaying
-                        ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)'
-                        : 'rgba(255,255,255,0.06)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 12,
-                      color: currentTrack === track.title && isPlaying 
-                        ? '#fff' 
-                        : 'rgba(255,255,255,0.5)',
-                      transition: 'all 0.2s ease',
-                    }}>
-                      {currentTrack === track.title && isPlaying ? '⏸' : '▶'}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Sleep Timer */}
-        <div style={{
-          position: 'fixed',
-          bottom: 24,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          padding: '10px 18px',
-          background: 'rgba(15,15,25,0.9)',
-          borderRadius: 50,
-          backdropFilter: 'blur(12px)',
-          border: '1px solid rgba(255,255,255,0.06)',
-        }}>
-          <span style={{ 
-            color: 'rgba(255,255,255,0.45)', 
-            fontSize: 12, 
-            marginRight: 8,
-            letterSpacing: '0.02em',
-          }}>
-            Sleep timer
-          </span>
-          {(['15m', '30m', '1h', '∞'] as TimerOption[]).map((time) => (
-            <button
-              key={time}
-              onClick={() => setSelectedTimer(time)}
-              style={{
-                padding: '7px 12px',
-                background: selectedTimer === time ? 'rgba(139,92,246,0.2)' : 'transparent',
-                border: 'none',
-                borderRadius: 16,
-                color: selectedTimer === time ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)',
-                fontSize: 12,
-                fontWeight: selectedTimer === time ? 500 : 400,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              {time}
-            </button>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </>
