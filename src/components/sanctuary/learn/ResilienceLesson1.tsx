@@ -12,82 +12,68 @@ const CONTENT = [
   {
     type: 'title',
     title: 'Building Resilience',
-    subtitle: 'Lesson 4: Post-Traumatic Growth',
+    subtitle: 'Lesson 1: What Is Resilience?',
   },
   {
     type: 'text',
-    title: 'Beyond Survival',
-    content: 'While trauma can cause lasting harm, research shows that many people don\'t just survive difficult experiences — they grow from them. This phenomenon, called post-traumatic growth, represents profound positive change that can emerge from life\'s hardest moments.',
+    title: 'More Than Bouncing Back',
+    content: 'Resilience is often described as the ability to "bounce back" from adversity. But that definition misses something important. True resilience isn\'t about returning to who you were before — it\'s about integrating difficult experiences and continuing to grow.',
   },
   {
     type: 'text',
-    title: 'Not Toxic Positivity',
-    content: 'Let\'s be clear: acknowledging post-traumatic growth doesn\'t mean trauma is good, or that everyone should grow from it, or that pain doesn\'t matter. It simply recognizes that humans have a remarkable capacity to find meaning and transformation even in suffering.',
+    title: 'A Living Quality',
+    content: 'Resilience isn\'t a fixed trait you either have or don\'t. It\'s a dynamic quality that can be developed, strengthened, and nurtured throughout your life. Like a muscle, it grows stronger with use — and like a garden, it needs tending.',
   },
   {
     type: 'visual',
-    visual: 'growth',
-    title: 'Five Areas of Growth',
-    content: 'Research has identified five common domains where post-traumatic growth tends to emerge. Not everyone experiences all of them, and they unfold differently for each person.',
+    visual: 'tree',
+    title: 'The Resilient Tree',
+    content: 'Think of a tree that bends in strong winds rather than breaking. Its flexibility comes from deep roots, a strong trunk, and branches that can move. Resilience works the same way — it\'s built on multiple interconnected strengths.',
   },
   {
     type: 'text',
-    title: 'New Possibilities',
-    content: 'Struggling can open doors you never knew existed. Many people discover new paths, interests, or opportunities that wouldn\'t have emerged without the challenge they faced. Crisis can be a catalyst for change you might never have chosen but come to value.',
-    highlight: '"This opened up a new direction"',
+    title: 'The Three Pillars',
+    content: 'Research shows resilience rests on three main pillars: connection (relationships that support us), competence (skills and abilities we can rely on), and meaning (a sense of purpose that carries us through difficulty).',
   },
   {
     type: 'text',
-    title: 'Deeper Relationships',
-    content: 'Going through difficulty can deepen connections with others. You may discover who truly supports you, develop greater compassion for others\' struggles, and form bonds forged through shared hardship that feel unbreakable.',
-    highlight: '"I know who really matters now"',
+    title: 'Connection',
+    content: 'Humans are wired for connection. Having even one person who truly sees and supports you can make an enormous difference in how you weather life\'s storms. Resilience is rarely a solo journey.',
+    highlight: '"We need each other"',
   },
   {
     type: 'text',
-    title: 'Personal Strength',
-    content: '"I never knew I could handle something like this." Adversity often reveals strengths we didn\'t know we had. Having survived what seemed unsurvivable, we gain confidence that we can face future challenges.',
-    highlight: '"I\'m stronger than I thought"',
+    title: 'Competence',
+    content: 'Knowing you have skills and abilities you can count on builds confidence. This doesn\'t mean being perfect — it means trusting that you can figure things out, ask for help, and take meaningful action.',
   },
   {
     type: 'text',
-    title: 'Appreciation for Life',
-    content: 'When we\'ve nearly lost something — health, relationships, life itself — we often gain a profound appreciation for what we have. Ordinary moments become precious. Small joys feel more vivid. Priorities clarify.',
-    highlight: '"I don\'t take things for granted anymore"',
-  },
-  {
-    type: 'text',
-    title: 'Spiritual Development',
-    content: 'For many, struggling prompts deeper questions about meaning, purpose, and what truly matters. This can lead to significant spiritual or philosophical growth, regardless of religious beliefs — a more examined life, a clearer sense of values.',
-    highlight: '"I understand what really matters now"',
+    title: 'Meaning',
+    content: 'When we understand why something matters, we can endure almost any how. Purpose doesn\'t have to be grand — it can be as simple as being present for your children, creating something beautiful, or helping others.',
   },
   {
     type: 'insight',
-    title: 'Growth and Grief Coexist',
-    content: 'Post-traumatic growth doesn\'t erase pain. Growth and grief can coexist. You can carry both the scar and the wisdom, both the loss and the learning. This isn\'t about silver linings — it\'s about the full, complex truth of human experience.',
-  },
-  {
-    type: 'text',
-    title: 'Growth Takes Time',
-    content: 'Post-traumatic growth rarely happens immediately. It emerges over time, often after the initial crisis has passed and we\'ve had space to process. It can\'t be rushed or forced. Like all growth, it unfolds in its own season.',
+    title: 'Resilience Is Not Numbing',
+    content: 'Being resilient doesn\'t mean not feeling pain. It doesn\'t mean pushing through without stopping, or pretending everything is fine. True resilience includes allowing yourself to feel, to grieve, to rest. It\'s about moving through difficulty, not around it.',
   },
   {
     type: 'practice',
-    title: 'Honoring Your Journey',
-    content: 'Think of a past difficulty you\'ve come through. Without minimizing the pain, can you identify any growth that emerged? New perspectives? Strengths discovered? Relationships deepened? A clearer sense of what matters? Growth doesn\'t invalidate struggle — it honors your journey through it.',
+    title: 'Your Resilience Inventory',
+    content: 'Take a moment to consider: Who are the people in your life who truly support you? What skills or abilities do you trust in yourself? What gives your life meaning, even in small ways? These are the foundations of your resilience.',
   },
   {
     type: 'summary',
     title: 'Key Takeaways',
     points: [
-      'Growth can emerge from trauma without erasing pain',
-      'Five areas: possibilities, relationships, strength, appreciation, meaning',
-      'Growth and grief can coexist — both are true',
-      'Post-traumatic growth takes time and can\'t be forced',
+      'Resilience is about growth, not just recovery',
+      'It can be developed and strengthened over time',
+      'Three pillars: connection, competence, and meaning',
+      'True resilience includes feeling, not numbing',
     ],
   },
 ];
 
-export default function ResilienceLesson4({ onBack, onComplete }: LessonProps) {
+export default function ResilienceLesson1({ onBack, onComplete }: LessonProps) {
   const { isDark, colors } = useTheme();
   const [currentIndex, setCurrentIndex] = useState(0);
   
@@ -117,64 +103,37 @@ export default function ResilienceLesson4({ onBack, onComplete }: LessonProps) {
   const cardBg = colors.cardBg;
 
   const renderVisual = (visual: string) => {
-    if (visual === 'growth') {
+    if (visual === 'tree') {
       return (
-        <div className="relative w-48 h-48 mx-auto mb-6">
-          {/* Center circle */}
-          <div 
-            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full flex items-center justify-center text-xs font-medium"
-            style={{ 
-              backgroundColor: isDark ? `${accentColor}44` : `${accentColor}33`,
-              color: accentColor,
-            }}
-          >
-            Growth
-          </div>
-          {/* Petals */}
-          {[
-            { label: 'Possibilities', angle: -90 },
-            { label: 'Relationships', angle: -18 },
-            { label: 'Strength', angle: 54 },
-            { label: 'Appreciation', angle: 126 },
-            { label: 'Meaning', angle: 198 },
-          ].map((petal, i) => {
-            const radian = (petal.angle * Math.PI) / 180;
-            const x = 50 + 35 * Math.cos(radian);
-            const y = 50 + 35 * Math.sin(radian);
-            return (
-              <div
-                key={i}
-                className="absolute w-16 h-8 flex items-center justify-center text-xs"
-                style={{
-                  left: `${x}%`,
-                  top: `${y}%`,
-                  transform: 'translate(-50%, -50%)',
-                  color: mutedColor,
-                }}
-              >
-                {petal.label}
-              </div>
-            );
-          })}
-          {/* Connecting lines */}
-          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
-            {[0, 1, 2, 3, 4].map(i => {
-              const angle = (-90 + i * 72) * Math.PI / 180;
-              const x = 50 + 25 * Math.cos(angle);
-              const y = 50 + 25 * Math.sin(angle);
-              return (
-                <line 
-                  key={i}
-                  x1="50" y1="50" 
-                  x2={x} y2={y}
-                  stroke={accentColor}
-                  strokeWidth="0.5"
-                  opacity="0.4"
-                />
-              );
-            })}
-          </svg>
-        </div>
+        <svg viewBox="0 0 200 200" className="w-32 h-32 mx-auto mb-4">
+          <defs>
+            <linearGradient id="trunkGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#8B7355" />
+              <stop offset="100%" stopColor="#6B5344" />
+            </linearGradient>
+            <linearGradient id="leavesGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#7BA05B" />
+              <stop offset="100%" stopColor="#5B8B3B" />
+            </linearGradient>
+          </defs>
+          {/* Roots */}
+          <path d="M85 170 Q70 180 60 190" stroke="#6B5344" strokeWidth="4" fill="none" opacity="0.6" />
+          <path d="M100 175 Q100 185 100 195" stroke="#6B5344" strokeWidth="4" fill="none" opacity="0.6" />
+          <path d="M115 170 Q130 180 140 190" stroke="#6B5344" strokeWidth="4" fill="none" opacity="0.6" />
+          {/* Trunk */}
+          <path d="M90 170 Q95 140 100 100 Q105 140 110 170 Z" fill="url(#trunkGrad)" />
+          {/* Branches */}
+          <path d="M100 100 Q70 90 50 70" stroke="#8B7355" strokeWidth="6" fill="none" strokeLinecap="round" />
+          <path d="M100 100 Q130 90 150 70" stroke="#8B7355" strokeWidth="6" fill="none" strokeLinecap="round" />
+          <path d="M100 85 Q85 70 70 50" stroke="#8B7355" strokeWidth="4" fill="none" strokeLinecap="round" />
+          <path d="M100 85 Q115 70 130 50" stroke="#8B7355" strokeWidth="4" fill="none" strokeLinecap="round" />
+          {/* Leaves */}
+          <ellipse cx="50" cy="60" rx="25" ry="20" fill="url(#leavesGrad)" opacity="0.9" />
+          <ellipse cx="150" cy="60" rx="25" ry="20" fill="url(#leavesGrad)" opacity="0.9" />
+          <ellipse cx="70" cy="40" rx="20" ry="18" fill="url(#leavesGrad)" opacity="0.85" />
+          <ellipse cx="130" cy="40" rx="20" ry="18" fill="url(#leavesGrad)" opacity="0.85" />
+          <ellipse cx="100" cy="30" rx="30" ry="25" fill="url(#leavesGrad)" opacity="0.95" />
+        </svg>
       );
     }
     return null;

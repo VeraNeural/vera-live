@@ -12,82 +12,75 @@ const CONTENT = [
   {
     type: 'title',
     title: 'Building Resilience',
-    subtitle: 'Lesson 4: Post-Traumatic Growth',
+    subtitle: 'Lesson 2: The Role of Adversity',
   },
   {
     type: 'text',
-    title: 'Beyond Survival',
-    content: 'While trauma can cause lasting harm, research shows that many people don\'t just survive difficult experiences — they grow from them. This phenomenon, called post-traumatic growth, represents profound positive change that can emerge from life\'s hardest moments.',
+    title: 'The Paradox of Difficulty',
+    content: 'Here\'s a truth that can be hard to accept: we often grow most through our struggles. Not because suffering is good, but because challenge creates the conditions for growth. The question isn\'t whether we\'ll face adversity — it\'s how we\'ll meet it.',
   },
   {
     type: 'text',
-    title: 'Not Toxic Positivity',
-    content: 'Let\'s be clear: acknowledging post-traumatic growth doesn\'t mean trauma is good, or that everyone should grow from it, or that pain doesn\'t matter. It simply recognizes that humans have a remarkable capacity to find meaning and transformation even in suffering.',
+    title: 'Stress and Strength',
+    content: 'Just as muscles grow stronger through the stress of exercise, our psychological resilience develops through manageable challenges. The key word is manageable — too little challenge and we don\'t grow; too much and we become overwhelmed.',
   },
   {
     type: 'visual',
-    visual: 'growth',
-    title: 'Five Areas of Growth',
-    content: 'Research has identified five common domains where post-traumatic growth tends to emerge. Not everyone experiences all of them, and they unfold differently for each person.',
+    visual: 'spectrum',
+    title: 'The Challenge Spectrum',
+    content: 'There\'s a sweet spot between too little and too much challenge — what researchers call the "zone of proximal development." This is where growth happens.',
   },
   {
     type: 'text',
-    title: 'New Possibilities',
-    content: 'Struggling can open doors you never knew existed. Many people discover new paths, interests, or opportunities that wouldn\'t have emerged without the challenge they faced. Crisis can be a catalyst for change you might never have chosen but come to value.',
-    highlight: '"This opened up a new direction"',
+    title: 'Comfort Zone',
+    content: 'In our comfort zone, everything feels safe and familiar. We know what to expect. While this isn\'t bad — we all need rest and safety — staying here permanently means missing opportunities to grow.',
+    highlight: 'Safety without growth',
   },
   {
     type: 'text',
-    title: 'Deeper Relationships',
-    content: 'Going through difficulty can deepen connections with others. You may discover who truly supports you, develop greater compassion for others\' struggles, and form bonds forged through shared hardship that feel unbreakable.',
-    highlight: '"I know who really matters now"',
+    title: 'Growth Zone',
+    content: 'Just beyond comfort lies the growth zone. Things feel challenging but manageable. We\'re stretched, maybe uncomfortable, but not overwhelmed. This is where resilience is built, skill by skill, challenge by challenge.',
+    highlight: 'Challenge with capacity',
   },
   {
     type: 'text',
-    title: 'Personal Strength',
-    content: '"I never knew I could handle something like this." Adversity often reveals strengths we didn\'t know we had. Having survived what seemed unsurvivable, we gain confidence that we can face future challenges.',
-    highlight: '"I\'m stronger than I thought"',
-  },
-  {
-    type: 'text',
-    title: 'Appreciation for Life',
-    content: 'When we\'ve nearly lost something — health, relationships, life itself — we often gain a profound appreciation for what we have. Ordinary moments become precious. Small joys feel more vivid. Priorities clarify.',
-    highlight: '"I don\'t take things for granted anymore"',
-  },
-  {
-    type: 'text',
-    title: 'Spiritual Development',
-    content: 'For many, struggling prompts deeper questions about meaning, purpose, and what truly matters. This can lead to significant spiritual or philosophical growth, regardless of religious beliefs — a more examined life, a clearer sense of values.',
-    highlight: '"I understand what really matters now"',
+    title: 'Overwhelm Zone',
+    content: 'Too far beyond our capacity and we enter overwhelm. Our nervous system goes into survival mode. Learning shuts down. Instead of building resilience, we risk trauma. Recognizing this zone is crucial.',
+    highlight: 'Too much, too fast',
   },
   {
     type: 'insight',
-    title: 'Growth and Grief Coexist',
-    content: 'Post-traumatic growth doesn\'t erase pain. Growth and grief can coexist. You can carry both the scar and the wisdom, both the loss and the learning. This isn\'t about silver linings — it\'s about the full, complex truth of human experience.',
+    title: 'The Window Can Expand',
+    content: 'The beautiful thing about resilience is that your "window of tolerance" — the range of challenges you can handle — can expand over time. What once overwhelmed you may become manageable. What was once your edge becomes your new normal.',
   },
   {
     type: 'text',
-    title: 'Growth Takes Time',
-    content: 'Post-traumatic growth rarely happens immediately. It emerges over time, often after the initial crisis has passed and we\'ve had space to process. It can\'t be rushed or forced. Like all growth, it unfolds in its own season.',
+    title: 'Small Steps Matter',
+    content: 'You don\'t build resilience through one heroic effort. It\'s built through countless small moments of meeting difficulty with presence, making it through, and recognizing that you survived. Each small success builds confidence for the next challenge.',
+  },
+  {
+    type: 'text',
+    title: 'Support Makes the Difference',
+    content: 'Facing challenges with support is completely different from facing them alone. A difficult experience with someone beside you — literally or figuratively — builds resilience. The same experience in isolation can cause harm. Community isn\'t optional.',
   },
   {
     type: 'practice',
-    title: 'Honoring Your Journey',
-    content: 'Think of a past difficulty you\'ve come through. Without minimizing the pain, can you identify any growth that emerged? New perspectives? Strengths discovered? Relationships deepened? A clearer sense of what matters? Growth doesn\'t invalidate struggle — it honors your journey through it.',
+    title: 'Map Your Zones',
+    content: 'Consider a current challenge in your life. Does it feel like comfort zone (too easy), growth zone (challenging but manageable), or overwhelm zone (too much)? If you\'re in overwhelm, what support might help you move back to growth? If you\'re stuck in comfort, what small step might stretch you?',
   },
   {
     type: 'summary',
     title: 'Key Takeaways',
     points: [
-      'Growth can emerge from trauma without erasing pain',
-      'Five areas: possibilities, relationships, strength, appreciation, meaning',
-      'Growth and grief can coexist — both are true',
-      'Post-traumatic growth takes time and can\'t be forced',
+      'Challenge creates conditions for growth',
+      'The growth zone is between comfort and overwhelm',
+      'Your capacity can expand over time',
+      'Support transforms how we experience difficulty',
     ],
   },
 ];
 
-export default function ResilienceLesson4({ onBack, onComplete }: LessonProps) {
+export default function ResilienceLesson2({ onBack, onComplete }: LessonProps) {
   const { isDark, colors } = useTheme();
   const [currentIndex, setCurrentIndex] = useState(0);
   
@@ -117,63 +110,32 @@ export default function ResilienceLesson4({ onBack, onComplete }: LessonProps) {
   const cardBg = colors.cardBg;
 
   const renderVisual = (visual: string) => {
-    if (visual === 'growth') {
+    if (visual === 'spectrum') {
       return (
-        <div className="relative w-48 h-48 mx-auto mb-6">
-          {/* Center circle */}
-          <div 
-            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full flex items-center justify-center text-xs font-medium"
-            style={{ 
-              backgroundColor: isDark ? `${accentColor}44` : `${accentColor}33`,
-              color: accentColor,
+        <div className="w-full max-w-xs mx-auto mb-6">
+          <div className="relative h-16 rounded-full overflow-hidden mb-4"
+            style={{
+              background: `linear-gradient(90deg, 
+                ${isDark ? '#3B5249' : '#90B89B'} 0%, 
+                ${isDark ? '#5B7B4A' : '#7BA05B'} 35%, 
+                ${isDark ? '#7B5B3A' : '#C4956A'} 65%, 
+                ${isDark ? '#6B3B3B' : '#C47070'} 100%)`
             }}
           >
-            Growth
+            <div className="absolute inset-0 flex items-center justify-around text-xs font-medium text-white px-2">
+              <span className="opacity-90">Comfort</span>
+              <span className="opacity-100">Growth</span>
+              <span className="opacity-90">Overwhelm</span>
+            </div>
           </div>
-          {/* Petals */}
-          {[
-            { label: 'Possibilities', angle: -90 },
-            { label: 'Relationships', angle: -18 },
-            { label: 'Strength', angle: 54 },
-            { label: 'Appreciation', angle: 126 },
-            { label: 'Meaning', angle: 198 },
-          ].map((petal, i) => {
-            const radian = (petal.angle * Math.PI) / 180;
-            const x = 50 + 35 * Math.cos(radian);
-            const y = 50 + 35 * Math.sin(radian);
-            return (
-              <div
-                key={i}
-                className="absolute w-16 h-8 flex items-center justify-center text-xs"
-                style={{
-                  left: `${x}%`,
-                  top: `${y}%`,
-                  transform: 'translate(-50%, -50%)',
-                  color: mutedColor,
-                }}
-              >
-                {petal.label}
-              </div>
-            );
-          })}
-          {/* Connecting lines */}
-          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
-            {[0, 1, 2, 3, 4].map(i => {
-              const angle = (-90 + i * 72) * Math.PI / 180;
-              const x = 50 + 25 * Math.cos(angle);
-              const y = 50 + 25 * Math.sin(angle);
-              return (
-                <line 
-                  key={i}
-                  x1="50" y1="50" 
-                  x2={x} y2={y}
-                  stroke={accentColor}
-                  strokeWidth="0.5"
-                  opacity="0.4"
-                />
-              );
-            })}
-          </svg>
+          <div className="flex justify-center">
+            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
+              <path d="M12 5v14M5 12l7 7 7-7" stroke={accentColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <p className="text-center text-sm mt-2" style={{ color: mutedColor }}>
+            Sweet spot for growth
+          </p>
         </div>
       );
     }

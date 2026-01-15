@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useClerk, useUser } from "@clerk/nextjs";
 
 type TrustTransparencySidebarProps = {
   isDark: boolean;
@@ -22,6 +23,8 @@ type SectionId =
   | "memory"
   | "trust";
 
+type AccessTier = "anonymous" | "free" | "sanctuary";
+
 export default function TrustTransparencySidebar({
   isDark,
   colors,
@@ -29,6 +32,27 @@ export default function TrustTransparencySidebar({
   onOpenChange,
 }: TrustTransparencySidebarProps) {
   const [openSection, setOpenSection] = useState<SectionId | null>(null);
+
+  const { isLoaded, isSignedIn, user } = useUser();
+  const clerk = useClerk();
+
+  const accessTier: AccessTier = useMemo(() => {
+    if (!isLoaded) return "anonymous";
+    if (!isSignedIn) return "anonymous";
+
+    // Display-only hint. Not authoritative for access, routing, or feature enablement.
+    const md = (user?.publicMetadata ?? {}) as Record<string, unknown>;
+    const rawTier = md.accessTier as unknown;
+
+    if (typeof rawTier === "string") {
+      const v = rawTier.trim().toLowerCase();
+      if (v === "sanctuary") return "sanctuary";
+      if (v === "free") return "free";
+    }
+
+    // If missing or any unexpected value, default to Free display for signed-in users.
+    return "free";
+  }, [isLoaded, isSignedIn, user?.publicMetadata]);
 
   useEffect(() => {
     if (!open) return;
@@ -53,14 +77,14 @@ export default function TrustTransparencySidebar({
 
   const border = isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.08)";
 
-  const sections: Array<{ id: SectionId; title: string; content: Array<string> }> = useMemo(
-    () => [
+  const sections: Array<{ id: SectionId; title: string; content: Array<string> }> = useMemo(() => {
+    const base: Array<{ id: SectionId; title: string; content: Array<string> }> = [
       {
         id: "what",
         title: "What VERA is",
         content: [
           "VERA works through conversation. It listens for what is actually needed, then helps you move one step at a time.",
-          "You do not need to write perfect prompts. You can start wherever you are, with a feeling, a question, or a half formed thought.",
+          "You do not need to write perfect prompts. You can start wherever you are — with a feeling, a question, or a half formed thought.",
           "When the intent becomes clear, VERA can help you plan, decide, and act with steadiness, not speed.",
         ],
       },
@@ -69,58 +93,123 @@ export default function TrustTransparencySidebar({
         title: "Why VERA feels different",
         content: [
           "VERA adapts to the moment, the context, and your pacing. It can be direct when you want clarity, and quiet when you need space.",
-          "The goal is containment and steadiness. The conversation should feel human, grounded, and not performative.",
+          "The goal is containment and steadiness. The conversation should feel grounded, not performative.",
           "If something does not feel safe or appropriate, VERA should slow down and say so plainly.",
         ],
       },
-      {
-        id: "access",
-        title: "How access works",
+    ];
+
+    const accessSection = (() => {
+      if (accessTier === "anonymous") {
+        return {
+          id: "access" as const,
+          title: "Anonymous conversations",
+          content: [
+            "You can talk with VERA without attaching your identity.",
+            "Anonymous conversations are temporary: they are not saved as an account history, and they are not tied to you as a person.",
+            "If you want continuity later, you can sign up at any time and continue from there.",
+          ],
+        };
+      }
+
+      if (accessTier === "free") {
+        return {
+          id: "access" as const,
+          title: "Free account",
+          content: [
+            "With a free account, basic usage is tracked to prevent abuse and keep the service reliable.",
+            "Conversations are not saved as a long term history.",
+            "Free accounts may have usage limits. If you hit one, you can return later.",
+            "You can delete your account at any time.",
+          ],
+        };
+      }
+
+      return {
+        id: "access" as const,
+        title: "Account access",
         content: [
-          "VERA offers free access with intentional limits. These limits are meant to protect your pace, and to keep the experience reliable.",
-          "If you reach a limit, VERA will tell you calmly, and you can return later without losing your place.",
-          "Sanctuary is a deeper continuity option for people who want more space, more consistency, and longer arcs of support.",
+          "Your account helps keep the experience stable and consistent.",
+          "You can manage or delete your account at any time.",
         ],
-      },
-      {
-        id: "sanctuary",
-        title: "Sanctuary",
+      };
+    })();
+
+    const buildSection = {
+      id: "build" as const,
+      title: "Build (coming soon)",
+      content: [
+        "Build is coming later. It is meant for moments when creation needs more structure than a chat thread.",
+        "Over time, VERA may support more integrated workflows, while keeping the same calm pacing and clear boundaries.",
+      ],
+    };
+
+    const memorySection = (() => {
+      if (accessTier === "sanctuary") {
+        return {
+          id: "memory" as const,
+          title: "Memory and conversation history",
+          content: [
+            "In Sanctuary, memory is optional and only used with explicit consent.",
+            "You can turn memory off, ask to remove specific details, or erase what has been saved.",
+            "Memory is meant for continuity and preference keeping — not diagnosis or clinical use.",
+          ],
+        };
+      }
+
+      return {
+        id: "memory" as const,
+        title: "Conversation privacy",
         content: [
-          "Sanctuary is for people who want depth and continuity. It is a steadier container for ongoing conversation and longer term work.",
-          "It changes the pace of what is possible, not who you are expected to be. You can take your time, and you can set boundaries.",
-          "Consent and readiness matter. If today is not the day for deeper work, that is still a valid choice.",
+          "Conversations are not saved as a long term history.",
+          "If you want continuity, you can choose to sign in or upgrade later — at your pace.",
         ],
-      },
-      {
-        id: "build",
-        title: "Build (coming soon)",
-        content: [
-          "Build is coming later. It is meant for moments when creation needs more structure than a chat thread.",
-          "Over time, VERA may support more integrated workflows, while keeping the same calm pacing and clear boundaries.",
-        ],
-      },
-      {
-        id: "memory",
-        title: "Memory and conversation history",
-        content: [
-          "Memory is intentional and optional. Not every conversation needs to persist, and not every detail should.",
-          "When memory is used, it should support continuity without surprising you. You can correct it, refine it, or choose a lighter touch.",
-          "You stay in control of what becomes part of the ongoing context.",
-        ],
-      },
-      {
-        id: "trust",
+      };
+    })();
+
+    const trustSection = (() => {
+      const common = [
+        "VERA is designed with restraint. It should prioritize safety, clarity, and consent over intensity.",
+        "If something feels off, pause, and ask for a simpler explanation or a slower pace.",
+        "You should be able to understand what is happening in the conversation and what is being asked of you.",
+      ];
+
+      if (accessTier === "free" || accessTier === "sanctuary") {
+        return {
+          id: "trust" as const,
+          title: "Trust, safety, and responsibility",
+          content: [...common, "You can manage or delete your account whenever you choose."],
+        };
+      }
+
+      return {
+        id: "trust" as const,
         title: "Trust, safety, and responsibility",
-        content: [
-          "VERA is designed with restraint. It should prioritize safety, clarity, and consent over intensity.",
-          "If something feels off, pause, and ask for a simpler explanation or a slower pace.",
-          "Privacy and boundaries matter. You should be able to understand what is happening in the conversation, and what is being asked of you.",
-          "VERA is a product name and brand. The name and experience are protected, and you deserve a clear, honest relationship with them.",
-        ],
-      },
-    ],
-    []
-  );
+        content: common,
+      };
+    })();
+
+    const sanctuarySection =
+      accessTier === "sanctuary"
+        ? {
+            id: "sanctuary" as const,
+            title: "Sanctuary",
+            content: [
+              "Sanctuary is active",
+              "You’re in Sanctuary mode. Conversations can go deeper, memory is available with your consent, and usage limits are lifted.",
+            ],
+          }
+        : null;
+
+    return [
+      ...base,
+      accessSection,
+      ...(sanctuarySection ? [sanctuarySection] : []),
+      buildSection,
+      memorySection,
+      trustSection,
+    ];
+  }, [accessTier]);
 
   return (
     <>
@@ -216,8 +305,47 @@ export default function TrustTransparencySidebar({
               paddingBottom: 2,
             }}
           >
-            Informational only. It does not affect chat, gating, or access.
+            Informational only. It does not change chat behavior.
           </div>
+
+          {accessTier !== "anonymous" && (
+            <div style={{ display: "flex", gap: 8, paddingBottom: 4 }}>
+              <button
+                type="button"
+                onClick={() => clerk.openUserProfile()}
+                style={{
+                  flex: 1,
+                  padding: "10px 12px",
+                  borderRadius: 12,
+                  border: `1px solid ${border}`,
+                  background: isDark ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.65)",
+                  color: colors.text,
+                  cursor: "pointer",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              >
+                Manage account
+              </button>
+              <button
+                type="button"
+                onClick={() => clerk.openUserProfile()}
+                style={{
+                  flex: 1,
+                  padding: "10px 12px",
+                  borderRadius: 12,
+                  border: `1px solid ${border}`,
+                  background: isDark ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.55)",
+                  color: colors.text,
+                  cursor: "pointer",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              >
+                Delete account
+              </button>
+            </div>
+          )}
 
           <div
             style={{

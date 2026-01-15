@@ -65,3 +65,9 @@ passing through this function, including:
 - Enforcement decisions, SIM state, and model provenance are logged server-side.
 - Provenance is never exposed to the client.
 - Audit logs must be sufficient to reconstruct decisions without revealing policy code.
+
+## Sanctuary Surface Invariant
+
+Sanctuary is an entitlement-backed capability state, not a navigable surface.
+
+No server response, client route, or UI control may imply that Sanctuary is a separate page, mode switch, or destination. All Sanctuary behavior occurs within the primary chat surface.

@@ -11,83 +11,70 @@ interface LessonProps {
 const CONTENT = [
   {
     type: 'title',
-    title: 'Building Resilience',
-    subtitle: 'Lesson 4: Post-Traumatic Growth',
+    title: 'Your Nervous System',
+    subtitle: 'Lesson 1: The Basics',
   },
   {
     type: 'text',
-    title: 'Beyond Survival',
-    content: 'While trauma can cause lasting harm, research shows that many people don\'t just survive difficult experiences — they grow from them. This phenomenon, called post-traumatic growth, represents profound positive change that can emerge from life\'s hardest moments.',
+    title: 'Your Body\'s Communication Network',
+    content: 'Your nervous system is like the internet of your body — a vast network that carries messages between your brain and every other part of you. It\'s always working, even when you\'re asleep, keeping you alive and helping you respond to the world around you.',
   },
   {
     type: 'text',
-    title: 'Not Toxic Positivity',
-    content: 'Let\'s be clear: acknowledging post-traumatic growth doesn\'t mean trauma is good, or that everyone should grow from it, or that pain doesn\'t matter. It simply recognizes that humans have a remarkable capacity to find meaning and transformation even in suffering.',
+    title: 'Two Main Divisions',
+    content: 'Your nervous system has two main parts: the central nervous system (your brain and spinal cord) and the peripheral nervous system (all the nerves that branch out to the rest of your body). Together, they form an integrated whole.',
   },
   {
     type: 'visual',
-    visual: 'growth',
-    title: 'Five Areas of Growth',
-    content: 'Research has identified five common domains where post-traumatic growth tends to emerge. Not everyone experiences all of them, and they unfold differently for each person.',
+    visual: 'branches',
+    title: 'The Autonomic System',
+    content: 'The part we\'ll focus on is your autonomic nervous system — the "automatic" system that runs without your conscious control. It has two main branches that work like a gas pedal and a brake pedal.',
   },
   {
     type: 'text',
-    title: 'New Possibilities',
-    content: 'Struggling can open doors you never knew existed. Many people discover new paths, interests, or opportunities that wouldn\'t have emerged without the challenge they faced. Crisis can be a catalyst for change you might never have chosen but come to value.',
-    highlight: '"This opened up a new direction"',
+    title: 'The Sympathetic System',
+    content: 'This is your "gas pedal" — it speeds things up when you need to respond to challenges. It triggers your fight-or-flight response, increasing your heart rate, sharpening your focus, and preparing your body for action.',
+    highlight: 'Fight or Flight',
   },
   {
     type: 'text',
-    title: 'Deeper Relationships',
-    content: 'Going through difficulty can deepen connections with others. You may discover who truly supports you, develop greater compassion for others\' struggles, and form bonds forged through shared hardship that feel unbreakable.',
-    highlight: '"I know who really matters now"',
+    title: 'The Parasympathetic System',
+    content: 'This is your "brake pedal" — it slows things down when you\'re safe. It activates your rest-and-digest response, lowering your heart rate, promoting digestion, and helping your body recover and restore.',
+    highlight: 'Rest and Digest',
   },
   {
     type: 'text',
-    title: 'Personal Strength',
-    content: '"I never knew I could handle something like this." Adversity often reveals strengths we didn\'t know we had. Having survived what seemed unsurvivable, we gain confidence that we can face future challenges.',
-    highlight: '"I\'m stronger than I thought"',
-  },
-  {
-    type: 'text',
-    title: 'Appreciation for Life',
-    content: 'When we\'ve nearly lost something — health, relationships, life itself — we often gain a profound appreciation for what we have. Ordinary moments become precious. Small joys feel more vivid. Priorities clarify.',
-    highlight: '"I don\'t take things for granted anymore"',
-  },
-  {
-    type: 'text',
-    title: 'Spiritual Development',
-    content: 'For many, struggling prompts deeper questions about meaning, purpose, and what truly matters. This can lead to significant spiritual or philosophical growth, regardless of religious beliefs — a more examined life, a clearer sense of values.',
-    highlight: '"I understand what really matters now"',
+    title: 'A Constant Dance',
+    content: 'These two systems aren\'t opposites that fight each other — they\'re partners in a constant dance, always adjusting to help you meet life\'s demands. Health isn\'t about one dominating the other; it\'s about flexible, appropriate responses.',
   },
   {
     type: 'insight',
-    title: 'Growth and Grief Coexist',
-    content: 'Post-traumatic growth doesn\'t erase pain. Growth and grief can coexist. You can carry both the scar and the wisdom, both the loss and the learning. This isn\'t about silver linings — it\'s about the full, complex truth of human experience.',
+    title: 'Always On, Always Adapting',
+    content: 'Your autonomic nervous system never turns off. Right now, as you read this, it\'s adjusting your heart rate, your breathing, your digestion. It\'s constantly reading your environment and your internal state, making thousands of micro-adjustments to keep you functioning.',
   },
   {
     type: 'text',
-    title: 'Growth Takes Time',
-    content: 'Post-traumatic growth rarely happens immediately. It emerges over time, often after the initial crisis has passed and we\'ve had space to process. It can\'t be rushed or forced. Like all growth, it unfolds in its own season.',
+    title: 'Why This Matters',
+    content: 'Understanding your nervous system gives you a new lens for understanding yourself. That anxiety before a presentation? That\'s your sympathetic system preparing you. That sleepiness after a big meal? That\'s your parasympathetic system at work.',
   },
   {
     type: 'practice',
-    title: 'Honoring Your Journey',
-    content: 'Think of a past difficulty you\'ve come through. Without minimizing the pain, can you identify any growth that emerged? New perspectives? Strengths discovered? Relationships deepened? A clearer sense of what matters? Growth doesn\'t invalidate struggle — it honors your journey through it.',
+    title: 'Notice Right Now',
+    content: 'Take a moment to tune into your body. Is your breathing fast or slow? Is your heart rate elevated or calm? Do you feel alert or relaxed? You\'re getting a glimpse of which branch of your autonomic nervous system is more active right now.',
   },
   {
     type: 'summary',
     title: 'Key Takeaways',
     points: [
-      'Growth can emerge from trauma without erasing pain',
-      'Five areas: possibilities, relationships, strength, appreciation, meaning',
-      'Growth and grief can coexist — both are true',
-      'Post-traumatic growth takes time and can\'t be forced',
+      'Your nervous system is your body\'s communication network',
+      'The autonomic system runs automatically, without conscious control',
+      'Sympathetic = gas pedal (fight-or-flight)',
+      'Parasympathetic = brake pedal (rest-and-digest)',
     ],
   },
 ];
 
-export default function ResilienceLesson4({ onBack, onComplete }: LessonProps) {
+export default function NervousSystemLesson1({ onBack, onComplete }: LessonProps) {
   const { isDark, colors } = useTheme();
   const [currentIndex, setCurrentIndex] = useState(0);
   
@@ -117,64 +104,34 @@ export default function ResilienceLesson4({ onBack, onComplete }: LessonProps) {
   const cardBg = colors.cardBg;
 
   const renderVisual = (visual: string) => {
-    if (visual === 'growth') {
+    if (visual === 'branches') {
       return (
-        <div className="relative w-48 h-48 mx-auto mb-6">
-          {/* Center circle */}
-          <div 
-            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full flex items-center justify-center text-xs font-medium"
-            style={{ 
-              backgroundColor: isDark ? `${accentColor}44` : `${accentColor}33`,
-              color: accentColor,
-            }}
-          >
-            Growth
-          </div>
-          {/* Petals */}
-          {[
-            { label: 'Possibilities', angle: -90 },
-            { label: 'Relationships', angle: -18 },
-            { label: 'Strength', angle: 54 },
-            { label: 'Appreciation', angle: 126 },
-            { label: 'Meaning', angle: 198 },
-          ].map((petal, i) => {
-            const radian = (petal.angle * Math.PI) / 180;
-            const x = 50 + 35 * Math.cos(radian);
-            const y = 50 + 35 * Math.sin(radian);
-            return (
-              <div
-                key={i}
-                className="absolute w-16 h-8 flex items-center justify-center text-xs"
-                style={{
-                  left: `${x}%`,
-                  top: `${y}%`,
-                  transform: 'translate(-50%, -50%)',
-                  color: mutedColor,
-                }}
-              >
-                {petal.label}
-              </div>
-            );
-          })}
-          {/* Connecting lines */}
-          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
-            {[0, 1, 2, 3, 4].map(i => {
-              const angle = (-90 + i * 72) * Math.PI / 180;
-              const x = 50 + 25 * Math.cos(angle);
-              const y = 50 + 25 * Math.sin(angle);
-              return (
-                <line 
-                  key={i}
-                  x1="50" y1="50" 
-                  x2={x} y2={y}
-                  stroke={accentColor}
-                  strokeWidth="0.5"
-                  opacity="0.4"
-                />
-              );
-            })}
-          </svg>
-        </div>
+        <svg viewBox="0 0 200 160" className="w-48 h-36 mx-auto mb-4">
+          {/* Central line (spine) */}
+          <line x1="100" y1="20" x2="100" y2="140" stroke={accentColor} strokeWidth="4" strokeLinecap="round" />
+          
+          {/* Brain circle */}
+          <circle cx="100" cy="20" r="15" fill={isDark ? '#6B9BC3' : '#89B4D4'} opacity="0.8" />
+          <text x="100" y="24" textAnchor="middle" fontSize="8" fill="white" fontWeight="500">Brain</text>
+          
+          {/* Sympathetic branch (left) */}
+          <path d="M100 50 Q60 50 40 70" stroke="#C47070" strokeWidth="3" fill="none" strokeLinecap="round" />
+          <path d="M100 80 Q60 80 40 100" stroke="#C47070" strokeWidth="3" fill="none" strokeLinecap="round" />
+          <circle cx="35" cy="75" r="12" fill="#C47070" opacity="0.2" />
+          <circle cx="35" cy="105" r="12" fill="#C47070" opacity="0.2" />
+          
+          {/* Parasympathetic branch (right) */}
+          <path d="M100 50 Q140 50 160 70" stroke="#7BA05B" strokeWidth="3" fill="none" strokeLinecap="round" />
+          <path d="M100 80 Q140 80 160 100" stroke="#7BA05B" strokeWidth="3" fill="none" strokeLinecap="round" />
+          <circle cx="165" cy="75" r="12" fill="#7BA05B" opacity="0.2" />
+          <circle cx="165" cy="105" r="12" fill="#7BA05B" opacity="0.2" />
+          
+          {/* Labels */}
+          <text x="30" y="145" textAnchor="middle" fontSize="9" fill="#C47070" fontWeight="500">Sympathetic</text>
+          <text x="30" y="155" textAnchor="middle" fontSize="7" fill={mutedColor}>(Gas Pedal)</text>
+          <text x="170" y="145" textAnchor="middle" fontSize="9" fill="#7BA05B" fontWeight="500">Parasympathetic</text>
+          <text x="170" y="155" textAnchor="middle" fontSize="7" fill={mutedColor}>(Brake)</text>
+        </svg>
       );
     }
     return null;

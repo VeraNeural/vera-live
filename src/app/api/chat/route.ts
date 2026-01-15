@@ -56,7 +56,27 @@ const UNAVAILABLE_CONTENT = 'VERA is temporarily unavailable. Please try again.'
 const CHAT_MODEL_TIMEOUT_MS = 12_000;
 
 function jsonContent(content: string, init?: ResponseInit): NextResponse {
-  return NextResponse.json({ content }, init);
+  const payload: Record<string, unknown> = { content };
+  assertSanctuaryCapabilityOnly(payload);
+  return NextResponse.json(payload, init);
+}
+
+function assertSanctuaryCapabilityOnly(payload: Record<string, unknown>): void {
+  // Guardrail: Sanctuary is a server-enforced capability state, not a client surface.
+  // This assertion is about response *shape/semantics* only (not gating).
+  const sanctuaryTokens = new Set(['sanctuary', '/sanctuary']);
+  const forbiddenKeys = ['destination', 'surface', 'route', 'page', 'mode'];
+
+  for (const key of forbiddenKeys) {
+    const value = payload[key];
+    if (typeof value === 'string' && sanctuaryTokens.has(value.trim().toLowerCase())) {
+      throw new Error(`Sanctuary surface invariant violated: response includes ${key}=${JSON.stringify(value)}`);
+    }
+  }
+
+  if (typeof payload.gate === 'string' && payload.gate.trim().toLowerCase() === 'sanctuary') {
+    throw new Error('Sanctuary surface invariant violated: response includes gate="sanctuary"');
+  }
 }
 
 function finalizeAndReturnText(input: {
@@ -73,10 +93,12 @@ function finalizeAndReturnText(input: {
     });
     const payload: any = { content: finalized.text };
     if (input.gate) payload.gate = input.gate;
+    assertSanctuaryCapabilityOnly(payload);
     return NextResponse.json(payload, input.init);
   } catch {
     const payload: any = { content: typeof input.text === 'string' ? input.text : '' };
     if (input.gate) payload.gate = input.gate;
+    assertSanctuaryCapabilityOnly(payload);
     return NextResponse.json(payload, input.init);
   }
 }

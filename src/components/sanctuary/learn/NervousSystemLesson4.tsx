@@ -11,83 +11,75 @@ interface LessonProps {
 const CONTENT = [
   {
     type: 'title',
-    title: 'Building Resilience',
-    subtitle: 'Lesson 4: Post-Traumatic Growth',
+    title: 'Your Nervous System',
+    subtitle: 'Lesson 3: The Window of Tolerance',
   },
   {
     type: 'text',
-    title: 'Beyond Survival',
-    content: 'While trauma can cause lasting harm, research shows that many people don\'t just survive difficult experiences — they grow from them. This phenomenon, called post-traumatic growth, represents profound positive change that can emerge from life\'s hardest moments.',
+    title: 'Your Optimal Zone',
+    content: 'There\'s a state where you function best — where you can think clearly, feel your emotions without being overwhelmed, and respond flexibly to life\'s demands. Psychologists call this your "window of tolerance."',
   },
   {
     type: 'text',
-    title: 'Not Toxic Positivity',
-    content: 'Let\'s be clear: acknowledging post-traumatic growth doesn\'t mean trauma is good, or that everyone should grow from it, or that pain doesn\'t matter. It simply recognizes that humans have a remarkable capacity to find meaning and transformation even in suffering.',
+    title: 'Inside the Window',
+    content: 'When you\'re inside your window, you feel present and grounded. You can handle stress without shutting down or exploding. You can connect with others. You can learn, create, and problem-solve. This is where healing and growth happen.',
   },
   {
     type: 'visual',
-    visual: 'growth',
-    title: 'Five Areas of Growth',
-    content: 'Research has identified five common domains where post-traumatic growth tends to emerge. Not everyone experiences all of them, and they unfold differently for each person.',
+    visual: 'window',
+    title: 'The Three Zones',
+    content: 'Your nervous system moves between three zones: hyperarousal (too activated), your window of tolerance (optimal), and hypoarousal (too shut down).',
   },
   {
     type: 'text',
-    title: 'New Possibilities',
-    content: 'Struggling can open doors you never knew existed. Many people discover new paths, interests, or opportunities that wouldn\'t have emerged without the challenge they faced. Crisis can be a catalyst for change you might never have chosen but come to value.',
-    highlight: '"This opened up a new direction"',
+    title: 'Hyperarousal',
+    content: 'Above the window is hyperarousal — your sympathetic system in overdrive. Here you might feel anxious, panicked, angry, or overwhelmed. Your thoughts race. You feel on edge, reactive, unable to calm down.',
+    highlight: 'Too much activation',
   },
   {
     type: 'text',
-    title: 'Deeper Relationships',
-    content: 'Going through difficulty can deepen connections with others. You may discover who truly supports you, develop greater compassion for others\' struggles, and form bonds forged through shared hardship that feel unbreakable.',
-    highlight: '"I know who really matters now"',
+    title: 'Signs of Hyperarousal',
+    content: 'Racing heart, rapid breathing, muscle tension, difficulty sleeping, irritability, hypervigilance, intrusive thoughts, feeling "wired but tired." Your system is stuck in fight-or-flight mode.',
   },
   {
     type: 'text',
-    title: 'Personal Strength',
-    content: '"I never knew I could handle something like this." Adversity often reveals strengths we didn\'t know we had. Having survived what seemed unsurvivable, we gain confidence that we can face future challenges.',
-    highlight: '"I\'m stronger than I thought"',
+    title: 'Hypoarousal',
+    content: 'Below the window is hypoarousal — when your system shuts down. Here you might feel numb, disconnected, exhausted, or frozen. You can\'t think clearly. You feel distant from yourself and others.',
+    highlight: 'Too little activation',
   },
   {
     type: 'text',
-    title: 'Appreciation for Life',
-    content: 'When we\'ve nearly lost something — health, relationships, life itself — we often gain a profound appreciation for what we have. Ordinary moments become precious. Small joys feel more vivid. Priorities clarify.',
-    highlight: '"I don\'t take things for granted anymore"',
-  },
-  {
-    type: 'text',
-    title: 'Spiritual Development',
-    content: 'For many, struggling prompts deeper questions about meaning, purpose, and what truly matters. This can lead to significant spiritual or philosophical growth, regardless of religious beliefs — a more examined life, a clearer sense of values.',
-    highlight: '"I understand what really matters now"',
+    title: 'Signs of Hypoarousal',
+    content: 'Feeling numb or empty, difficulty concentrating, fatigue, feeling "spaced out," reduced emotional range, social withdrawal, feeling disconnected from your body. Your system has collapsed into freeze mode.',
   },
   {
     type: 'insight',
-    title: 'Growth and Grief Coexist',
-    content: 'Post-traumatic growth doesn\'t erase pain. Growth and grief can coexist. You can carry both the scar and the wisdom, both the loss and the learning. This isn\'t about silver linings — it\'s about the full, complex truth of human experience.',
+    title: 'Window Size Varies',
+    content: 'Everyone\'s window of tolerance is different, and it changes throughout life. Trauma, chronic stress, and difficult experiences can narrow your window. Safety, healing, and positive experiences can widen it. The goal isn\'t to never leave your window — it\'s to return more easily.',
   },
   {
     type: 'text',
-    title: 'Growth Takes Time',
-    content: 'Post-traumatic growth rarely happens immediately. It emerges over time, often after the initial crisis has passed and we\'ve had space to process. It can\'t be rushed or forced. Like all growth, it unfolds in its own season.',
+    title: 'Recognizing Your Zone',
+    content: 'The first step to regulation is awareness. When you can recognize which zone you\'re in, you can choose appropriate strategies to help yourself return to your window. Different zones need different approaches.',
   },
   {
     type: 'practice',
-    title: 'Honoring Your Journey',
-    content: 'Think of a past difficulty you\'ve come through. Without minimizing the pain, can you identify any growth that emerged? New perspectives? Strengths discovered? Relationships deepened? A clearer sense of what matters? Growth doesn\'t invalidate struggle — it honors your journey through it.',
+    title: 'Map Your Window',
+    content: 'Think about a recent time you felt calm, present, and capable — that\'s inside your window. Now recall a time you felt anxious or overwhelmed (hyperarousal) and a time you felt numb or shut down (hypoarousal). What were the signs in your body for each state?',
   },
   {
     type: 'summary',
     title: 'Key Takeaways',
     points: [
-      'Growth can emerge from trauma without erasing pain',
-      'Five areas: possibilities, relationships, strength, appreciation, meaning',
-      'Growth and grief can coexist — both are true',
-      'Post-traumatic growth takes time and can\'t be forced',
+      'Your window of tolerance is where you function best',
+      'Hyperarousal = too activated (anxiety, panic, anger)',
+      'Hypoarousal = too shut down (numb, disconnected, frozen)',
+      'Awareness of your zone is the first step to regulation',
     ],
   },
 ];
 
-export default function ResilienceLesson4({ onBack, onComplete }: LessonProps) {
+export default function NervousSystemLesson3({ onBack, onComplete }: LessonProps) {
   const { isDark, colors } = useTheme();
   const [currentIndex, setCurrentIndex] = useState(0);
   
@@ -117,63 +109,56 @@ export default function ResilienceLesson4({ onBack, onComplete }: LessonProps) {
   const cardBg = colors.cardBg;
 
   const renderVisual = (visual: string) => {
-    if (visual === 'growth') {
+    if (visual === 'window') {
       return (
-        <div className="relative w-48 h-48 mx-auto mb-6">
-          {/* Center circle */}
+        <div className="w-full max-w-xs mx-auto mb-6">
+          {/* Hyperarousal zone */}
           <div 
-            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full flex items-center justify-center text-xs font-medium"
+            className="h-16 rounded-t-2xl flex items-center justify-center"
+            style={{ backgroundColor: isDark ? '#C4707033' : '#C4707022' }}
+          >
+            <div className="text-center">
+              <div className="text-sm font-medium" style={{ color: '#C47070' }}>
+                Hyperarousal
+              </div>
+              <div className="text-xs" style={{ color: mutedColor }}>
+                Anxious • Overwhelmed • Reactive
+              </div>
+            </div>
+          </div>
+          
+          {/* Window of tolerance */}
+          <div 
+            className="h-20 flex items-center justify-center border-y-2"
             style={{ 
-              backgroundColor: isDark ? `${accentColor}44` : `${accentColor}33`,
-              color: accentColor,
+              backgroundColor: isDark ? '#7BA05B33' : '#7BA05B22',
+              borderColor: '#7BA05B',
             }}
           >
-            Growth
-          </div>
-          {/* Petals */}
-          {[
-            { label: 'Possibilities', angle: -90 },
-            { label: 'Relationships', angle: -18 },
-            { label: 'Strength', angle: 54 },
-            { label: 'Appreciation', angle: 126 },
-            { label: 'Meaning', angle: 198 },
-          ].map((petal, i) => {
-            const radian = (petal.angle * Math.PI) / 180;
-            const x = 50 + 35 * Math.cos(radian);
-            const y = 50 + 35 * Math.sin(radian);
-            return (
-              <div
-                key={i}
-                className="absolute w-16 h-8 flex items-center justify-center text-xs"
-                style={{
-                  left: `${x}%`,
-                  top: `${y}%`,
-                  transform: 'translate(-50%, -50%)',
-                  color: mutedColor,
-                }}
-              >
-                {petal.label}
+            <div className="text-center">
+              <div className="text-sm font-medium" style={{ color: '#7BA05B' }}>
+                Window of Tolerance
               </div>
-            );
-          })}
-          {/* Connecting lines */}
-          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
-            {[0, 1, 2, 3, 4].map(i => {
-              const angle = (-90 + i * 72) * Math.PI / 180;
-              const x = 50 + 25 * Math.cos(angle);
-              const y = 50 + 25 * Math.sin(angle);
-              return (
-                <line 
-                  key={i}
-                  x1="50" y1="50" 
-                  x2={x} y2={y}
-                  stroke={accentColor}
-                  strokeWidth="0.5"
-                  opacity="0.4"
-                />
-              );
-            })}
-          </svg>
+              <div className="text-xs" style={{ color: mutedColor }}>
+                Present • Grounded • Flexible
+              </div>
+            </div>
+          </div>
+          
+          {/* Hypoarousal zone */}
+          <div 
+            className="h-16 rounded-b-2xl flex items-center justify-center"
+            style={{ backgroundColor: isDark ? '#6B9BC333' : '#6B9BC322' }}
+          >
+            <div className="text-center">
+              <div className="text-sm font-medium" style={{ color: '#6B9BC3' }}>
+                Hypoarousal
+              </div>
+              <div className="text-xs" style={{ color: mutedColor }}>
+                Numb • Disconnected • Frozen
+              </div>
+            </div>
+          </div>
         </div>
       );
     }
