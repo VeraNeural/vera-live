@@ -338,11 +338,11 @@ export default function ConnectionStyleAssessment({ onBack, onComplete }: Assess
   const [results, setResults] = useState<AssessmentResults | null>(null);
   const [sliderValue, setSliderValue] = useState(5);
 
-  const bgColor = isDark ? colors.bg.primary : '#FDFBF7';
-  const textColor = isDark ? colors.text.primary : '#2D2A24';
-  const mutedColor = isDark ? colors.text.muted : '#6B6560';
-  const accentColor = isDark ? '#A78B71' : '#8B7355';
-  const cardBg = isDark ? colors.bg.secondary : '#FAF7F2';
+  const bgColor = colors.bg;
+  const textColor = colors.text;
+  const mutedColor = colors.textMuted;
+  const accentColor = colors.accent;
+  const cardBg = colors.cardBg;
 
   const question = QUESTIONS[currentQuestion];
   const progress = ((currentQuestion + 1) / QUESTIONS.length) * 100;

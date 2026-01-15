@@ -661,8 +661,8 @@ export default function LibraryRoom({ onBack, onStartStory, onStartLesson, onSta
               </div>
             )}
 
-            {/* Tabs - only show when not viewing a story */}
-            {!selectedCategory && !selectedStory && !selectedLearnCategory && (
+            {/* Tabs - only show on main views */}
+            {!selectedCategory && !selectedStory && !selectedLearnCategory && !activeAssessment && (
               <div style={{
                 display: 'flex',
                 gap: 8,
@@ -672,7 +672,7 @@ export default function LibraryRoom({ onBack, onStartStory, onStartLesson, onSta
                   <button
                     key={tab}
                     className="tab-btn"
-                    {!selectedCategory && !selectedStory && !selectedLearnCategory && !activeAssessment && (
+                    onClick={() => setActiveTab(tab)}
                     style={{
                       padding: '10px 20px',
                       borderRadius: 50,
