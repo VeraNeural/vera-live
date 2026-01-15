@@ -36,8 +36,7 @@ No model call may occur before steps 1–4.
 
 ## Output Finalization
 
-As of commit `<COMMIT_SHA>`, `finalizeResponse()` is the single
-user-visible exit gate for `/api/chat`.
+`finalizeResponse()` is the single user-visible exit gate for `/api/chat`.
 
 No user-facing natural language content may be returned without
 passing through this function, including:

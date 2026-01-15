@@ -3,6 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useTheme, ThemeToggle } from '@/contexts/ThemeContext';
 
+import OceanWaves from '@/components/rest/OceanWaves';
+import RainOnLeaves from '@/components/rest/RainOnLeaves';
+import NightForest from '@/components/rest/NightForest';
+import TheQuietVillage from '@/components/rest/TheQuietVillage';
+import MoonlitGarden from '@/components/rest/MoonlitGarden';
+import BodyScanForSleep from '@/components/rest/BodyScanFoSleep';
+import LettingGoOfTheDay from '@/components/rest/LettingGoOfTheDay';
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -14,10 +22,11 @@ type Category = 'soundscapes' | 'stories' | 'meditations';
 type TimerOption = '15m' | '30m' | '1h' | '∞';
 
 type Track = {
-  id: number;
+  id: string;
   title: string;
   duration: string;
   icon: string;
+  hasExperience: boolean;
 };
 
 // ============================================================================
@@ -25,17 +34,17 @@ type Track = {
 // ============================================================================
 const CONTENT: Record<Category, Track[]> = {
   soundscapes: [
-    { id: 1, title: 'Ocean Waves', duration: '45 min', icon: '〰' },
-    { id: 2, title: 'Rain on Leaves', duration: '60 min', icon: '⁘' },
-    { id: 3, title: 'Night Forest', duration: '30 min', icon: '❋' },
+    { id: 'ocean-waves', title: 'Ocean Waves', duration: '45 min', icon: '〰', hasExperience: true },
+    { id: 'rain-on-leaves', title: 'Rain on Leaves', duration: '60 min', icon: '⁘', hasExperience: true },
+    { id: 'night-forest', title: 'Night Forest', duration: '30 min', icon: '❋', hasExperience: true },
   ],
   stories: [
-    { id: 1, title: 'The Quiet Village', duration: '20 min', icon: '◇' },
-    { id: 2, title: 'Moonlit Garden', duration: '25 min', icon: '☽' },
+    { id: 'quiet-village', title: 'The Quiet Village', duration: '20 min', icon: '◇', hasExperience: true },
+    { id: 'moonlit-garden', title: 'Moonlit Garden', duration: '25 min', icon: '☽', hasExperience: true },
   ],
   meditations: [
-    { id: 1, title: 'Body Scan for Sleep', duration: '15 min', icon: '◎' },
-    { id: 2, title: 'Letting Go of the Day', duration: '20 min', icon: '○' },
+    { id: 'body-scan', title: 'Body Scan for Sleep', duration: '15 min', icon: '◎', hasExperience: true },
+    { id: 'letting-go', title: 'Letting Go of the Day', duration: '20 min', icon: '○', hasExperience: true },
   ],
 };
 
@@ -129,24 +138,54 @@ export default function RestChamber({ onBack }: RestChamberProps) {
   const [selectedTimer, setSelectedTimer] = useState<TimerOption>('30m');
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrack, setCurrentTrack] = useState<string | null>(null);
+  const [activeTrackId, setActiveTrackId] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     setTimeout(() => setIsLoaded(true), 100);
   }, []);
 
-  const handlePlayTrack = (title: string) => {
-    if (currentTrack === title) {
-      setIsPlaying(!isPlaying);
-    } else {
-      setCurrentTrack(title);
-      setIsPlaying(true);
-    }
+  const handleStartTrack = (track: Track) => {
+    if (!track.hasExperience) return;
+    setCurrentTrack(track.title);
+    setIsPlaying(true);
+    setActiveTrackId(track.id);
   };
 
   const handleBackToCategories = () => {
     setSelectedCategory(null);
+    setActiveTrackId(null);
+    setIsPlaying(false);
+    setCurrentTrack(null);
   };
+
+  const handleExitExperience = () => {
+    setActiveTrackId(null);
+    setIsPlaying(false);
+    setCurrentTrack(null);
+  };
+
+  if (activeTrackId === 'ocean-waves') {
+    return <OceanWaves onBack={handleExitExperience} onComplete={handleExitExperience} />;
+  }
+  if (activeTrackId === 'rain-on-leaves') {
+    return <RainOnLeaves onBack={handleExitExperience} onComplete={handleExitExperience} />;
+  }
+  if (activeTrackId === 'night-forest') {
+    return <NightForest onBack={handleExitExperience} onComplete={handleExitExperience} />;
+  }
+  if (activeTrackId === 'quiet-village') {
+    return <TheQuietVillage onBack={handleExitExperience} onComplete={handleExitExperience} />;
+  }
+  if (activeTrackId === 'moonlit-garden') {
+    return <MoonlitGarden onBack={handleExitExperience} onComplete={handleExitExperience} />;
+  }
+  if (activeTrackId === 'body-scan') {
+    return <BodyScanForSleep onBack={handleExitExperience} onComplete={handleExitExperience} />;
+  }
+  if (activeTrackId === 'letting-go') {
+    return <LettingGoOfTheDay onBack={handleExitExperience} onComplete={handleExitExperience} />;
+  }
 
   // ============================================================================
   // RENDER
@@ -385,7 +424,7 @@ export default function RestChamber({ onBack }: RestChamberProps) {
                     <button
                       key={track.id}
                       className="card-btn"
-                      onClick={() => handlePlayTrack(track.title)}
+                      onClick={() => handleStartTrack(track)}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -398,8 +437,9 @@ export default function RestChamber({ onBack }: RestChamberProps) {
                           ? 'rgba(139, 92, 246, 0.25)' 
                           : COLORS.cardBorder}`,
                         borderRadius: 14,
-                        cursor: 'pointer',
+                        cursor: track.hasExperience ? 'pointer' : 'not-allowed',
                         textAlign: 'left',
+                        opacity: track.hasExperience ? 1 : 0.55,
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>

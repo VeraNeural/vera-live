@@ -561,16 +561,21 @@ export async function POST(req: Request) {
     const incomingConsentScope: ChallengeScope | null =
       incomingChallenge?.scope === 'single_turn' || incomingChallenge?.scope === 'none' ? incomingChallenge.scope : null;
 
-    const incomingConsentTsOk = Boolean(incomingConsentTs && Number.isFinite(Date.parse(incomingConsentTs)));
-
-    if (incomingChoice && incomingConsentTsOk && incomingConsentPolicyId === CHALLENGE_POLICY_ID && incomingConsentScope) {
+    if (
+      incomingChoice &&
+      incomingConsentTs &&
+      Number.isFinite(Date.parse(incomingConsentTs)) &&
+      incomingConsentPolicyId === CHALLENGE_POLICY_ID &&
+      incomingConsentScope
+    ) {
+      const consentTs = incomingConsentTs!;
       chalStateNext = {
         ...chalStateNext,
         consent: {
           policy_id: incomingConsentPolicyId,
           user_choice: incomingChoice,
           scope: incomingConsentScope,
-          consent_ts: incomingConsentTs,
+          consent_ts: consentTs,
         },
       };
     }
