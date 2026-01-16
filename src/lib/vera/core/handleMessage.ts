@@ -16,6 +16,7 @@ import { enforceNoDrift } from '../noDrift';
 import { finalizeResponse } from '../finalizeResponse';
 import { evaluateSignalIntegrity } from '@/lib/sim/evaluateSignalIntegrity';
 import { buildThirdAssistantMessage, classifyUserIntent } from '../thirdAssistantMessage';
+import { extractTopics, getRelevantKnowledge } from '../knowledge/veraKnowledge';
 
 const UNAVAILABLE = 'VERA is temporarily unavailable. Please try again.';
 
@@ -59,9 +60,14 @@ export async function handleMessage(
     current_sim_state: 'stable',
   });
 
+  // Extract topics and get relevant knowledge
+  const topics = extractTopics(userText);
+  const relevantKnowledge = getRelevantKnowledge(topics);
+
   const system = composeSystemPrompt(decision, {
     projectState: context.projectState ?? null,
     sanctuaryState: context.sanctuaryState ?? null,
+    extraSystem: relevantKnowledge,
   });
 
   const model = resolveModelByTier(tier);
