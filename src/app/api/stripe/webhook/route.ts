@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -21,7 +21,7 @@ function getStripe(): Stripe {
 }
 
 async function upsertSanctuaryEntitlement(
-  supabase: typeof supabaseAdmin,
+  supabase: ReturnType<typeof getSupabaseAdmin>,
   input: {
     clerkUserId: string;
     status: string;
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const stripe = getStripe();
-    const supabase = supabaseAdmin;
+    const supabase = getSupabaseAdmin();
 
     switch (event.type) {
       case 'checkout.session.completed': {

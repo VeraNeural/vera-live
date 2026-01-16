@@ -7,16 +7,33 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+let supabase: any = null;
+
+function getSupabase(): any {
+  if (supabase) {
+    return supabase;
+  }
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url) {
+    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL');
+  }
+  if (!serviceRoleKey) {
+    throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY');
+  }
+
+  supabase = createClient(url, serviceRoleKey) as any;
+  return supabase;
+}
 
 // ============================================================================
 // GET - Load user's conversations or check consent
 // ============================================================================
 export async function GET(request: NextRequest) {
   try {
+    const supabase = getSupabase();
     const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -107,6 +124,7 @@ export async function GET(request: NextRequest) {
 // ============================================================================
 export async function POST(request: NextRequest) {
   try {
+    const supabase = getSupabase();
     const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -152,9 +170,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (!prefs?.memory_consent) {
-        return NextResponse.json({ 
-          error: 'Memory consent required' 
-        }, { status: 403 });
+        return NextResponse.json({ error: 'Memory consent required' }, { status: 403 });
       }
 
       // Create conversation
@@ -229,6 +245,7 @@ export async function POST(request: NextRequest) {
 // ============================================================================
 export async function DELETE(request: NextRequest) {
   try {
+    const supabase = getSupabase();
     const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

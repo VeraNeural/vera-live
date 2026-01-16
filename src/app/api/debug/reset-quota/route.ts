@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 // TEMPORARY / DEBUG ONLY:
 // Dev-only endpoint to reset free quota for the signed-in user.
@@ -15,6 +15,7 @@ export async function POST() {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
+  const supabaseAdmin = getSupabaseAdmin();
   const { error } = await supabaseAdmin
     .from("user_entitlements")
     .update({

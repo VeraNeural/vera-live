@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+let anthropic: Anthropic | null = null;
 
 export async function POST(req: NextRequest) {
   try {
@@ -175,7 +173,13 @@ IMPORTANT: For the "icon" field, do NOT use emojis. Instead, use one of these el
 Write in a slow, hypnotic style perfect for sleep or deep relaxation. Use sensory language, gentle imagery, and a gradually descending energy. Each chapter should be 200-400 words. Do NOT use any emojis anywhere in the content.`;
     }
 
-    const message = await anthropic.messages.create({
+    if (!anthropic && process.env.ANTHROPIC_API_KEY) {
+      anthropic = new Anthropic({
+        apiKey: process.env.ANTHROPIC_API_KEY,
+      });
+    }
+
+    const message = await anthropic!.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 8000,
       messages: [

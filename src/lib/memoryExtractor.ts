@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-const anthropic = new Anthropic();
+let anthropic: Anthropic | null = null;
 
 const MEMORY_EXTRACT_TIMEOUT_MS = 6_000;
 const MEMORY_SUMMARY_TIMEOUT_MS = 4_000;
@@ -47,10 +47,14 @@ function extractFirstTextBlock(response: any): string {
 }
 
 async function anthropicCreateWithTimeout(params: any, timeoutMs: number): Promise<any> {
+  if (!anthropic && process.env.ANTHROPIC_API_KEY) {
+    anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  }
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    return await anthropic.messages.create({ ...params, signal: controller.signal } as any);
+    return await anthropic!.messages.create({ ...params, signal: controller.signal } as any);
   } finally {
     clearTimeout(timeout);
   }

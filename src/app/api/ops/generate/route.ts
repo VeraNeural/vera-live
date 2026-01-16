@@ -8,18 +8,35 @@ import OpenAI from 'openai';
 // Modes: single, consensus, specialist, review-chain, compare
 // ============================================================================
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-});
+let anthropic: Anthropic | null = null;
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
+let openai: OpenAI | null = null;
+let grok: OpenAI | null = null;
 
-const grok = new OpenAI({
-  apiKey: process.env.XAI_API_KEY!,
-  baseURL: 'https://api.x.ai/v1',
-});
+function getOpenAI(): OpenAI {
+  if (!openai) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('Missing OPENAI_API_KEY');
+    }
+    openai = new OpenAI({ apiKey });
+  }
+  return openai;
+}
+
+function getGrok(): OpenAI {
+  if (!grok) {
+    const apiKey = process.env.XAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('Missing XAI_API_KEY');
+    }
+    grok = new OpenAI({
+      apiKey,
+      baseURL: 'https://api.x.ai/v1',
+    });
+  }
+  return grok;
+}
 
 // ============================================================================
 // TYPES
@@ -40,7 +57,13 @@ type GenerationRequest = {
 // ============================================================================
 
 async function generateWithClaude(systemPrompt: string, userInput: string): Promise<string> {
-  const response = await anthropic.messages.create({
+  if (!anthropic && process.env.ANTHROPIC_API_KEY) {
+    anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    });
+  }
+
+  const response = await anthropic!.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 8192,
     system: systemPrompt,
@@ -52,7 +75,7 @@ async function generateWithClaude(systemPrompt: string, userInput: string): Prom
 }
 
 async function generateWithGPT4(systemPrompt: string, userInput: string): Promise<string> {
-  const response = await openai.chat.completions.create({
+  const response = await getOpenAI().chat.completions.create({
     model: 'gpt-4o',
     max_tokens: 8192,
     messages: [
@@ -65,7 +88,7 @@ async function generateWithGPT4(systemPrompt: string, userInput: string): Promis
 }
 
 async function generateWithGrok(systemPrompt: string, userInput: string): Promise<string> {
-  const response = await grok.chat.completions.create({
+  const response = await getGrok().chat.completions.create({
     model: 'grok-3-latest',
     max_tokens: 8192,
     messages: [
