@@ -337,8 +337,10 @@ function selectMessagesForModel(
 
 export async function POST(req: Request) {
   try {
+    console.log('CHAT:01 start');
     const startedAt = Date.now();
 
+    console.log('CHAT:02 before req.json');
     const body = (await req.json()) as {
       messages?: IncomingMessageWithImage[];
       conversationId?: string;
@@ -362,6 +364,15 @@ export async function POST(req: Request) {
 
     const { messages, conversationId: conversationIdFromBody, project_state, sanctuary_state } = body;
 
+    console.log('CHAT:03 after parse body', {
+      hasMessages: Array.isArray(messages),
+      messageCount: Array.isArray(messages) ? messages.length : null,
+      hasConversationId: Boolean(conversationIdFromBody),
+      hasProjectState: Boolean(project_state),
+      hasSanctuaryState: Boolean(sanctuary_state),
+    });
+
+    console.log('CHAT:04 before anthropic key check');
     if (!process.env.ANTHROPIC_API_KEY) {
       return finalizeAndReturnText({
         text: UNAVAILABLE_CONTENT,
@@ -370,6 +381,7 @@ export async function POST(req: Request) {
       });
     }
 
+    console.log('CHAT:05 after anthropic key check');
     if (!Array.isArray(messages) || messages.length === 0) {
       return finalizeAndReturnText({
         text: 'Please send at least one message.',
@@ -378,12 +390,16 @@ export async function POST(req: Request) {
       });
     }
 
+    console.log('CHAT:06 before ensureSessionId');
     const { sessionId, shouldSetCookie } = await ensureSessionId();
+    console.log('CHAT:07 after ensureSessionId', { shouldSetCookie: Boolean(shouldSetCookie) });
 
     // Clerk is the only identity source.
+    console.log('CHAT:08 before auth');
     const { userId } = await auth();
+    console.log('CHAT:09 after auth', { hasUserId: Boolean(userId) });
 
-    let entitlementTier: AuthTier = 'free';
+    let entitlementTier: AuthTier = userId ? 'free' : 'anonymous';
 
     // Anonymous 5th response includes a soft invite.
     let anonymousSoftInvite = false;
@@ -395,13 +411,26 @@ export async function POST(req: Request) {
     const userIdForMetering: string | null = userId ?? null;
 
     // Access state is derived server-side from user_entitlements.
-    const access = await getUserAccessState(userId ?? undefined);
-    entitlementTier = access.state;
+    if (userId) {
+      try {
+        console.log('CHAT:10 before getUserAccessState');
+        const access = await getUserAccessState(userId);
+        console.log('CHAT:11 after getUserAccessState', { tier: access.state });
+        entitlementTier = access.state;
+      } catch (e) {
+        console.error('CHAT:11b getUserAccessState failed; falling back to free', e);
+        entitlementTier = 'free';
+      }
+    } else {
+      console.log('CHAT:11 anon: skipping getUserAccessState');
+    }
 
     // Access control MUST happen before governance.
     if (entitlementTier === 'anonymous') {
+      console.log('CHAT:12 anonymous metering start');
       const anonMeteringId = meteringIdFromSessionId(sessionId);
       const limitCheck = await checkMessageLimit({ tier: 'anonymous', meteringId: anonMeteringId });
+      console.log('CHAT:13 anonymous metering result', { allowed: limitCheck.allowed, count: limitCheck.count });
       if (!limitCheck.allowed) {
         return finalizeAndReturnText({
           gate: 'signup_required',
@@ -415,8 +444,10 @@ export async function POST(req: Request) {
     }
 
     if (entitlementTier === 'free' && userIdForMetering) {
+      console.log('CHAT:14 free metering start');
       const freeMeteringId = await resolveMeteringIdForClerkUserId(userIdForMetering);
       const limitCheck = await checkMessageLimit({ tier: 'free', meteringId: freeMeteringId });
+      console.log('CHAT:15 free metering result', { allowed: limitCheck.allowed, count: limitCheck.count });
       if (!limitCheck.allowed) {
         return finalizeAndReturnText({
           gate: 'upgrade_required',
@@ -428,8 +459,10 @@ export async function POST(req: Request) {
     }
 
     if (entitlementTier === 'sanctuary' && userIdForMetering) {
+      console.log('CHAT:16 before getUserMemory');
       memoryContext = await getUserMemory(userIdForMetering);
       memoryPrompt = buildMemoryPrompt(memoryContext);
+      console.log('CHAT:17 after getUserMemory', { hasMemory: Boolean(memoryContext?.memory) });
     }
 
     const incomingChallenge = body.meta?.challenge ??
@@ -448,6 +481,8 @@ export async function POST(req: Request) {
         m.role === 'user' &&
         Boolean(m.image && typeof m.image.base64 === 'string' && typeof m.image.mediaType === 'string')
     );
+
+    console.log('CHAT:18 after image scan', { hasAnyImage });
 
     if (hasAnyImage) {
       // Server enforcement (UI also hides the button).
@@ -1043,15 +1078,11 @@ export async function POST(req: Request) {
     let modelCallFailed = false;
     let outputTokensUsed = 0;
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), CHAT_MODEL_TIMEOUT_MS);
-
-      try {
-        const result = await client.messages.create({
-          model: effectiveExecutedModelVersion,
-          max_tokens: effectiveMaxTokens,
-          system,
-          messages: modelMessages.map((m) => {
+      const result = await client.messages.create({
+        model: effectiveExecutedModelVersion,
+        max_tokens: effectiveMaxTokens,
+        system,
+        messages: modelMessages.map((m) => {
           if (m.role === 'user' && m.image?.base64 && m.image?.mediaType) {
             return {
               role: m.role,
@@ -1073,20 +1104,16 @@ export async function POST(req: Request) {
             role: m.role,
             content: m.content,
           };
-          }) as any,
-          signal: controller.signal,
-        } as any);
+        }) as any,
+      } as any);
 
-        outputTokensUsed = (result as any)?.usage?.output_tokens ?? 0;
+      outputTokensUsed = (result as any)?.usage?.output_tokens ?? 0;
 
-        content = result.content
-          .filter((block) => block.type === 'text')
-          .map((block) => block.text)
-          .join('\n')
-          .trim();
-      } finally {
-        clearTimeout(timeout);
-      }
+      content = result.content
+        .filter((block) => block.type === 'text')
+        .map((block) => block.text)
+        .join('\n')
+        .trim();
     } catch (modelErr) {
       modelCallFailed = true;
       console.error('[MODEL] execution failed', modelErr);
@@ -1457,6 +1484,11 @@ export async function POST(req: Request) {
     });
     return res;
   } catch (err) {
+    const e = err as any;
+    console.error('CHAT_ROUTE_FATAL', {
+      message: e?.message,
+      stack: e?.stack,
+    });
     console.error('Chat route error:', err);
     return finalizeAndReturnText({
       text: UNAVAILABLE_CONTENT,
