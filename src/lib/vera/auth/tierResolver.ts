@@ -58,6 +58,7 @@ export async function resolveTier(sessionId: string): Promise<ResolvedTier> {
 
   try {
     const access = await getUserAccessState(userId);
+    console.log('[TIER DEBUG]', { userId, accessState: access.state });
     // Map anonymous to free for routing purposes
     entitlementTier = access.state === 'anonymous' ? 'free' : access.state;
   } catch (e) {
