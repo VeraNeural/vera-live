@@ -1980,7 +1980,7 @@ if (lessonsData) setDbLessons(lessonsData);
             {/* Dynamic Lesson Viewer (from database) */}
             {activeDynamicLesson && (
               <DynamicLessonViewer
-                lesson={activeDynamicLesson}
+                lesson={activeDynamicLesson as any}
                 onBack={() => setActiveDynamicLesson(null)}
                 onComplete={() => {
                   markLearnLessonComplete(activeDynamicLesson.id);
