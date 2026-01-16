@@ -26,7 +26,7 @@ export function resolveModelByTier(tier: RoutingTier): {
   if (tier === 'build') {
     return { canonical: 'claude-opus', apiModel: 'claude-3-opus-20240229', maxTokens: 2000 };
   }
-  return { canonical: 'claude-sonnet', apiModel: 'claude-3-5-sonnet-20241022', maxTokens: 900 };
+  return { canonical: 'claude-sonnet', apiModel: 'claude-sonnet-4-20250514', maxTokens: 900 };
 }
 
 /**
