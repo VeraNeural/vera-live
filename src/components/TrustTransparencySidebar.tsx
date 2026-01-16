@@ -1,3 +1,8 @@
+// ============================================================================
+// TRUST & TRANSPARENCY SIDEBAR - WITH MEMORY SECTION
+// Save to: src/components/TrustTransparencySidebar.tsx
+// ============================================================================
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -32,6 +37,9 @@ export default function TrustTransparencySidebar({
   onOpenChange,
 }: TrustTransparencySidebarProps) {
   const [openSection, setOpenSection] = useState<SectionId | null>(null);
+  const [memoryEnabled, setMemoryEnabled] = useState<boolean | null>(null);
+  const [isLoadingMemory, setIsLoadingMemory] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { isLoaded, isSignedIn, user } = useUser();
   const clerk = useClerk();
@@ -40,7 +48,6 @@ export default function TrustTransparencySidebar({
     if (!isLoaded) return "anonymous";
     if (!isSignedIn) return "anonymous";
 
-    // Display-only hint. Not authoritative for access, routing, or feature enablement.
     const md = (user?.publicMetadata ?? {}) as Record<string, unknown>;
     const rawTier = md.accessTier as unknown;
 
@@ -50,9 +57,25 @@ export default function TrustTransparencySidebar({
       if (v === "free") return "free";
     }
 
-    // If missing or any unexpected value, default to Free display for signed-in users.
     return "free";
   }, [isLoaded, isSignedIn, user?.publicMetadata]);
+
+  // Fetch memory consent status when sidebar opens
+  useEffect(() => {
+    if (!open || accessTier !== "sanctuary") return;
+
+    const fetchMemoryStatus = async () => {
+      try {
+        const response = await fetch('/api/sanctuary/conversations?action=consent');
+        const data = await response.json();
+        setMemoryEnabled(data.hasConsented ?? null);
+      } catch (error) {
+        console.error('Failed to fetch memory status:', error);
+      }
+    };
+
+    fetchMemoryStatus();
+  }, [open, accessTier]);
 
   useEffect(() => {
     if (!open) return;
@@ -68,6 +91,7 @@ export default function TrustTransparencySidebar({
   useEffect(() => {
     if (open) return;
     setOpenSection(null);
+    setShowDeleteConfirm(false);
   }, [open]);
 
   const panelBg = useMemo(() => {
@@ -76,6 +100,42 @@ export default function TrustTransparencySidebar({
   }, [isDark]);
 
   const border = isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.08)";
+
+  // Toggle memory consent
+  const handleToggleMemory = async () => {
+    if (isLoadingMemory) return;
+    
+    setIsLoadingMemory(true);
+    try {
+      const newValue = !memoryEnabled;
+      await fetch('/api/sanctuary/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'consent', consent: newValue }),
+      });
+      setMemoryEnabled(newValue);
+    } catch (error) {
+      console.error('Failed to toggle memory:', error);
+    } finally {
+      setIsLoadingMemory(false);
+    }
+  };
+
+  // Delete all conversations
+  const handleDeleteAll = async () => {
+    setIsLoadingMemory(true);
+    try {
+      await fetch('/api/sanctuary/conversations?action=all', {
+        method: 'DELETE',
+      });
+      setMemoryEnabled(false);
+      setShowDeleteConfirm(false);
+    } catch (error) {
+      console.error('Failed to delete conversations:', error);
+    } finally {
+      setIsLoadingMemory(false);
+    }
+  };
 
   const sections: Array<{ id: SectionId; title: string; content: Array<string> }> = useMemo(() => {
     const base: Array<{ id: SectionId; title: string; content: Array<string> }> = [
@@ -144,29 +204,6 @@ export default function TrustTransparencySidebar({
       ],
     };
 
-    const memorySection = (() => {
-      if (accessTier === "sanctuary") {
-        return {
-          id: "memory" as const,
-          title: "Memory and conversation history",
-          content: [
-            "In Sanctuary, memory is optional and only used with explicit consent.",
-            "You can turn memory off, ask to remove specific details, or erase what has been saved.",
-            "Memory is meant for continuity and preference keeping — not diagnosis or clinical use.",
-          ],
-        };
-      }
-
-      return {
-        id: "memory" as const,
-        title: "Conversation privacy",
-        content: [
-          "Conversations are not saved as a long term history.",
-          "If you want continuity, you can choose to sign in or upgrade later — at your pace.",
-        ],
-      };
-    })();
-
     const trustSection = (() => {
       const common = [
         "VERA is designed with restraint. It should prioritize safety, clarity, and consent over intensity.",
@@ -196,17 +233,27 @@ export default function TrustTransparencySidebar({
             title: "Sanctuary",
             content: [
               "Sanctuary is active",
-              "You’re in Sanctuary mode. Conversations can go deeper, memory is available with your consent, and usage limits are lifted.",
+              "You're in Sanctuary mode. Conversations can go deeper, memory is available with your consent, and usage limits are lifted.",
             ],
           }
         : null;
+
+    // Memory section only for non-sanctuary (sanctuary gets custom UI)
+    const memorySection = accessTier !== "sanctuary" ? {
+      id: "memory" as const,
+      title: "Conversation privacy",
+      content: [
+        "Conversations are not saved as a long term history.",
+        "If you want continuity, you can choose to sign in or upgrade later — at your pace.",
+      ],
+    } : null;
 
     return [
       ...base,
       accessSection,
       ...(sanctuarySection ? [sanctuarySection] : []),
       buildSection,
-      memorySection,
+      ...(memorySection ? [memorySection] : []),
       trustSection,
     ];
   }, [accessTier]);
@@ -220,7 +267,7 @@ export default function TrustTransparencySidebar({
         style={{
           position: "fixed",
           inset: 0,
-          zIndex: 39,
+          zIndex: 998,
           background: isDark ? "rgba(0,0,0,0.35)" : "rgba(0,0,0,0.18)",
           opacity: open ? 1 : 0,
           transition: "opacity 180ms ease",
@@ -228,19 +275,20 @@ export default function TrustTransparencySidebar({
         }}
       />
 
-      {/* Left slide-in panel (fixed overlay; no layout shift) */}
+      {/* Left slide-in panel */}
       <div
         aria-hidden={!open}
         style={{
           position: "fixed",
           top: 0,
           left: 0,
-          height: "100dvh",
+          bottom: 0,
+          height: "100%",
           width: "min(380px, 92vw)",
           transform: open ? "translateX(0)" : "translateX(-102%)",
           opacity: open ? 1 : 0.98,
           transition: "transform 220ms ease, opacity 180ms ease",
-          zIndex: 40,
+          zIndex: 999,
           pointerEvents: open ? "auto" : "none",
         }}
       >
@@ -377,6 +425,184 @@ export default function TrustTransparencySidebar({
                   </div>
                 </AccordionSection>
               ))}
+
+              {/* Memory Section for Sanctuary Users */}
+              {accessTier === "sanctuary" && (
+                <div
+                  style={{
+                    border: `1px solid ${border}`,
+                    borderRadius: 14,
+                    background: isDark ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.7)",
+                    overflow: "hidden",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOpenSection((current) => (current === "memory" ? null : "memory"))
+                    }
+                    aria-expanded={openSection === "memory"}
+                    style={{
+                      width: "100%",
+                      padding: "12px 12px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 10,
+                      border: "none",
+                      background: "transparent",
+                      cursor: "pointer",
+                      color: colors.text,
+                      textAlign: "left",
+                    }}
+                  >
+                    <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "-0.01em" }}>
+                      Memory & Conversations
+                    </div>
+                    <div style={{ color: colors.textMuted, fontSize: 14, lineHeight: 1 }}>
+                      {openSection === "memory" ? "▾" : "▸"}
+                    </div>
+                  </button>
+
+                  <div
+                    style={{
+                      maxHeight: openSection === "memory" ? 400 : 0,
+                      opacity: openSection === "memory" ? 1 : 0,
+                      transition: "max-height 220ms ease, opacity 180ms ease",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div style={{ padding: "0 12px 12px" }}>
+                      {/* Memory Toggle */}
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "12px 0",
+                          borderBottom: `1px solid ${border}`,
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 500, color: colors.text }}>
+                            VERA remembers
+                          </div>
+                          <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
+                            {memoryEnabled ? "Conversations are saved" : "Conversations are private"}
+                          </div>
+                        </div>
+                        <button
+                          onClick={handleToggleMemory}
+                          disabled={isLoadingMemory}
+                          style={{
+                            width: 48,
+                            height: 28,
+                            borderRadius: 14,
+                            border: "none",
+                            background: memoryEnabled
+                              ? (isDark ? "rgba(200, 170, 120, 0.5)" : "rgba(200, 170, 120, 0.6)")
+                              : (isDark ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.1)"),
+                            cursor: isLoadingMemory ? "wait" : "pointer",
+                            position: "relative",
+                            transition: "background 200ms ease",
+                          }}
+                        >
+                          <div
+                            style={{
+                              position: "absolute",
+                              top: 3,
+                              left: memoryEnabled ? 23 : 3,
+                              width: 22,
+                              height: 22,
+                              borderRadius: "50%",
+                              background: "white",
+                              boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                              transition: "left 200ms ease",
+                            }}
+                          />
+                        </button>
+                      </div>
+
+                      {/* Info text */}
+                      <div style={{ fontSize: 12, color: colors.textMuted, lineHeight: 1.6, marginTop: 12 }}>
+                        {memoryEnabled
+                          ? "VERA remembers your conversations to provide continuity and understand you better over time. You're always in control."
+                          : "Your conversations are private and not saved. Enable memory to let VERA remember and provide continuity."}
+                      </div>
+
+                      {/* Delete all button */}
+                      {memoryEnabled && (
+                        <div style={{ marginTop: 16 }}>
+                          {!showDeleteConfirm ? (
+                            <button
+                              onClick={() => setShowDeleteConfirm(true)}
+                              style={{
+                                width: "100%",
+                                padding: "10px 12px",
+                                borderRadius: 10,
+                                border: `1px solid ${isDark ? "rgba(220, 100, 100, 0.3)" : "rgba(200, 80, 80, 0.3)"}`,
+                                background: "transparent",
+                                color: isDark ? "rgba(220, 140, 140, 1)" : "rgba(180, 80, 80, 1)",
+                                fontSize: 12,
+                                fontWeight: 500,
+                                cursor: "pointer",
+                              }}
+                            >
+                              Delete all conversations
+                            </button>
+                          ) : (
+                            <div style={{
+                              padding: 12,
+                              borderRadius: 10,
+                              background: isDark ? "rgba(220, 100, 100, 0.1)" : "rgba(200, 80, 80, 0.08)",
+                              border: `1px solid ${isDark ? "rgba(220, 100, 100, 0.2)" : "rgba(200, 80, 80, 0.2)"}`,
+                            }}>
+                              <div style={{ fontSize: 12, color: colors.text, marginBottom: 10 }}>
+                                Are you sure? This cannot be undone.
+                              </div>
+                              <div style={{ display: "flex", gap: 8 }}>
+                                <button
+                                  onClick={handleDeleteAll}
+                                  disabled={isLoadingMemory}
+                                  style={{
+                                    flex: 1,
+                                    padding: "8px 12px",
+                                    borderRadius: 8,
+                                    border: "none",
+                                    background: isDark ? "rgba(220, 100, 100, 0.4)" : "rgba(200, 80, 80, 0.2)",
+                                    color: isDark ? "rgba(255, 200, 200, 1)" : "rgba(150, 50, 50, 1)",
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    cursor: isLoadingMemory ? "wait" : "pointer",
+                                  }}
+                                >
+                                  {isLoadingMemory ? "Deleting..." : "Yes, delete all"}
+                                </button>
+                                <button
+                                  onClick={() => setShowDeleteConfirm(false)}
+                                  style={{
+                                    flex: 1,
+                                    padding: "8px 12px",
+                                    borderRadius: 8,
+                                    border: `1px solid ${border}`,
+                                    background: "transparent",
+                                    color: colors.textMuted,
+                                    fontSize: 12,
+                                    fontWeight: 500,
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

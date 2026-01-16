@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import BedroomRoom from '@/components/sanctuary/BedroomRoom';
+import RestChamber from '@/components/sanctuary/RestChamber';
 
 export default function RestRoomPage() {
   const router = useRouter();
@@ -11,5 +11,5 @@ export default function RestRoomPage() {
     router.push('/sanctuary');
   }, [router]);
 
-  return <BedroomRoom onBack={onBack} />;
+  return <RestChamber onBack={onBack} />;
 }

@@ -54,7 +54,7 @@ const QUESTIONS: Question[] = [
       { value: 1, label: 'Feel anxious or abandoned — need reassurance' },
       { value: 2, label: 'Feel hurt but try not to show it' },
       { value: 3, label: 'Feel disappointed but manage okay' },
-      { value: 4, label: 'Feel fine — trust they\'ll be back' },
+      { value: 4, label: "Feel fine — trust they'll be back" },
     ],
     category: 'attachment',
   },
@@ -76,7 +76,7 @@ const QUESTIONS: Question[] = [
     type: 'choice',
     options: [
       { value: 1, label: 'People usually let me down eventually' },
-      { value: 2, label: 'I\'m not sure — it varies a lot' },
+      { value: 2, label: "I'm not sure — it varies a lot" },
       { value: 3, label: 'Most people are reliable if I choose well' },
       { value: 4, label: 'I trust that people who love me will show up' },
     ],
@@ -99,7 +99,7 @@ const QUESTIONS: Question[] = [
     text: 'How clear are you about your own boundaries?',
     type: 'scale',
     options: [
-      { value: 1, label: 'Unclear', description: 'I\'m not sure what my limits are' },
+      { value: 1, label: 'Unclear', description: "I'm not sure what my limits are" },
       { value: 2, label: 'Somewhat clear', description: 'I know some but not all' },
       { value: 3, label: 'Mostly clear', description: 'I generally know my limits' },
       { value: 4, label: 'Very clear', description: 'I have a strong sense of my boundaries' },
@@ -130,7 +130,7 @@ const QUESTIONS: Question[] = [
   },
   {
     id: 'boundaries_4',
-    text: 'How often do you feel responsible for other people\'s emotions?',
+    text: "How often do you feel responsible for other people's emotions?",
     type: 'scale',
     options: [
       { value: 1, label: 'Almost always', description: 'I feel I need to fix their feelings' },
@@ -172,7 +172,7 @@ const QUESTIONS: Question[] = [
       { value: 1, label: 'Very little', description: 'I keep most things private' },
       { value: 2, label: 'Some things', description: 'Surface level mostly' },
       { value: 3, label: 'A fair amount', description: 'The important things' },
-      { value: 4, label: 'Most everything', description: 'I\'m an open book with trusted people' },
+      { value: 4, label: 'Most everything', description: "I'm an open book with trusted people" },
     ],
     category: 'intimacy',
   },
@@ -181,7 +181,7 @@ const QUESTIONS: Question[] = [
     text: 'Physical affection in close relationships feels:',
     type: 'choice',
     options: [
-      { value: 1, label: 'Uncomfortable — I\'m not very physical' },
+      { value: 1, label: "Uncomfortable — I'm not very physical" },
       { value: 2, label: 'Okay in small doses — but not too much' },
       { value: 3, label: 'Good — I enjoy appropriate affection' },
       { value: 4, label: 'Essential — touch is important to me' },
@@ -208,7 +208,7 @@ const QUESTIONS: Question[] = [
       { value: 4, label: 'Merge — we become "we"' },
       { value: 3, label: 'Stay close — but maintain some separateness' },
       { value: 2, label: 'Keep space — togetherness can feel suffocating' },
-      { value: 1, label: 'Stay independent — relationships shouldn\'t change who I am' },
+      { value: 1, label: "Stay independent — relationships shouldn't change who I am" },
     ],
     category: 'independence',
   },
@@ -245,7 +245,7 @@ const QUESTIONS: Question[] = [
     options: [
       { value: 1, label: 'Avoid — hope it goes away' },
       { value: 2, label: 'Accommodate — give in to keep peace' },
-      { value: 3, label: 'Discuss — when I\'ve calmed down' },
+      { value: 3, label: "Discuss — when I've calmed down" },
       { value: 4, label: 'Address — talk it through directly' },
     ],
     category: 'conflict',
@@ -265,7 +265,7 @@ const QUESTIONS: Question[] = [
     text: 'After an argument with someone close, you typically:',
     type: 'scale',
     options: [
-      { value: 1, label: 'Ruminate', description: 'Can\'t stop thinking about it' },
+      { value: 1, label: 'Ruminate', description: "Can't stop thinking about it" },
       { value: 2, label: 'Withdraw', description: 'Need significant time alone' },
       { value: 3, label: 'Process', description: 'Think it through, then reconnect' },
       { value: 4, label: 'Repair quickly', description: 'Want to resolve and reconnect' },
@@ -290,51 +290,136 @@ const CONNECTION_STYLES = {
   secure: {
     name: 'The Secure Connector',
     description: 'You approach relationships from a foundation of trust and worthiness. You can be close without losing yourself, and independent without pushing others away.',
+    signs: ['Comfortable with closeness', 'Steady communication', 'Healthy boundaries', 'Trust in repair'],
     strengths: ['Comfortable with intimacy and independence', 'Clear communication', 'Healthy boundaries', 'Trust in self and others'],
-    challenges: ['May not understand others\' attachment struggles', 'Could be thrown by very anxious or avoidant partners'],
+    challenges: ["May not understand others' attachment struggles", 'Could be thrown by very anxious or avoidant partners'],
+    shadow: 'May overlook how dysregulating inconsistency can feel for others',
     needsFromOthers: 'Consistency, honesty, mutual respect, and shared vulnerability',
+    tools: ['Direct communication', 'Repair after rupture', 'Boundary maintenance', 'Mutual vulnerability'],
     color: '#7BA05B',
   },
   anxious: {
     name: 'The Seeking Connector',
-    description: 'You crave closeness and connection deeply. You\'re attuned to relationships and highly responsive to others, though you may worry about abandonment or not being enough.',
+    description: "You crave closeness and connection deeply. You're attuned to relationships and highly responsive to others, though you may worry about abandonment or not being enough.",
+    signs: ['High attunement to shifts', 'Strong desire for closeness', 'Needs reassurance', 'Sensitive to distance'],
     strengths: ['Deeply caring', 'Emotionally attuned', 'Committed to relationships', 'Willing to work on connection'],
     challenges: ['Fear of abandonment', 'May need frequent reassurance', 'Can lose yourself in relationships'],
+    shadow: 'May interpret distance as rejection, creating protest cycles',
     needsFromOthers: 'Consistent reassurance, reliability, clear communication about feelings, patience with your needs',
+    tools: ['Self-soothing', 'Naming needs clearly', 'Reality-checking stories', 'Secure supports'],
     color: '#E8B86D',
   },
   avoidant: {
     name: 'The Independent Connector',
-    description: 'You value your autonomy and self-sufficiency. You connect best when you don\'t feel pressured, and you need significant space to feel like yourself.',
-    strengths: ['Self-reliant', 'Calm under pressure', 'Respects others\' space', 'Emotionally stable'],
+    description: "You value your autonomy and self-sufficiency. You connect best when you don't feel pressured, and you need significant space to feel like yourself.",
+    signs: ['Needs space to regulate', 'Slow to trust vulnerability', 'Values autonomy', 'Withdraws under pressure'],
+    strengths: ['Self-reliant', 'Calm under pressure', "Respects others' space", 'Emotionally stable'],
     challenges: ['May seem distant or unavailable', 'Difficulty with vulnerability', 'Can push people away when they get close'],
+    shadow: 'May confuse independence with disconnection, missing support',
     needsFromOthers: 'Space and patience, respect for your independence, low-pressure invitations to connect',
+    tools: ['Small vulnerability reps', 'Stay present in discomfort', 'Warm re-connection rituals', 'Gentle bids for closeness'],
     color: '#6B9BC3',
   },
   anxiousAvoidant: {
     name: 'The Conflicted Connector',
     description: 'You experience a push-pull in relationships — wanting closeness but fearing it too. This can create confusion for you and others as you move toward and away.',
+    signs: ['Push-pull dynamics', 'Mixed signals', 'Closeness feels unsafe', 'Distance feels unsafe'],
     strengths: ['Deep capacity for connection', 'Self-awareness about patterns', 'Resilience through difficulty'],
     challenges: ['Mixed signals', 'Fear of both abandonment and engulfment', 'Relationships can feel chaotic'],
+    shadow: 'May repeat intensity cycles that mimic early attachment wounds',
     needsFromOthers: 'Extraordinary patience, consistent safety, slow building of trust, acceptance of your complexity',
+    tools: ['Track triggers', 'Slow the pace', 'Clear agreements', 'Repair and reflection'],
     color: '#A78BB3',
   },
   boundaried: {
     name: 'The Boundaried Connector',
     description: 'You have strong clarity about where you end and others begin. You connect meaningfully while maintaining a clear sense of self.',
-    strengths: ['Clear boundaries', 'Healthy self-concept', 'Can say no', 'Doesn\'t lose self in relationships'],
+    signs: ['Clear limits', 'Strong self-definition', 'Says no when needed', 'Protects energy'],
+    strengths: ['Clear boundaries', 'Healthy self-concept', 'Can say no', "Doesn't lose self in relationships"],
     challenges: ['May seem guarded', 'Others might want more access', 'Can prioritize boundaries over connection'],
+    shadow: 'May protect so well that intimacy can feel out of reach',
     needsFromOthers: 'Respect for your limits, no pressure to merge, appreciation of your clarity',
+    tools: ['Boundaries + warmth', 'Selective intimacy', 'Values-based yes/no', 'Reassurance through consistency'],
     color: '#C4956A',
   },
 };
+
+// ============================================================================
+// STYLES
+// ============================================================================
+const STYLES = `
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  @keyframes fadeInScale {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  .assess-option {
+    transition: all 0.2s ease;
+  }
+  .assess-option:hover {
+    transform: translateY(-2px);
+  }
+  .assess-option:active {
+    transform: scale(0.98);
+  }
+
+  .assess-scroll::-webkit-scrollbar {
+    width: 4px;
+  }
+  .assess-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .assess-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+  }
+
+  .progress-bar {
+    transition: width 0.4s ease;
+  }
+
+  .slider-input {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 3px;
+    outline: none;
+  }
+  .slider-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+  .slider-input::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+`;
 
 export default function ConnectionStyleAssessment({ onBack, onComplete }: AssessmentProps) {
   const { isDark, colors } = useTheme();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [showIntro, setShowIntro] = useState(true);
-  const [showReport, setShowReport] = useState(false);
+  const [phase, setPhase] = useState<'intro' | 'questions' | 'report'>('intro');
   const [results, setResults] = useState<AssessmentResults | null>(null);
   const [sliderValue, setSliderValue] = useState(5);
 
@@ -343,6 +428,7 @@ export default function ConnectionStyleAssessment({ onBack, onComplete }: Assess
   const mutedColor = colors.textMuted;
   const accentColor = colors.accent;
   const cardBg = colors.cardBg;
+  const cardBorder = colors.cardBorder;
 
   const question = QUESTIONS[currentQuestion];
   const progress = ((currentQuestion + 1) / QUESTIONS.length) * 100;
@@ -355,12 +441,12 @@ export default function ConnectionStyleAssessment({ onBack, onComplete }: Assess
       setTimeout(() => {
         setCurrentQuestion(currentQuestion + 1);
         setSliderValue(5);
-      }, 300);
+      }, 250);
     } else {
-      const calculatedResults = calculateResults(newAnswers);
-      setResults(calculatedResults);
-      setShowReport(true);
-      onComplete?.(calculatedResults);
+      const calculated = calculateResults(newAnswers);
+      setResults(calculated);
+      setPhase('report');
+      onComplete?.(calculated);
     }
   };
 
@@ -398,7 +484,7 @@ export default function ConnectionStyleAssessment({ onBack, onComplete }: Assess
       conflictStyle: normalize(categories.conflict),
     };
 
-    const { connectionStyle, secondaryStyle } = determineConnectionStyle(scores, allAnswers);
+    const { connectionStyle, secondaryStyle } = determineConnectionStyle(scores);
     const insights = generateInsights(scores, connectionStyle);
     const recommendations = generateRecommendations(scores, connectionStyle);
     const relationshipStrengths = CONNECTION_STYLES[connectionStyle as keyof typeof CONNECTION_STYLES]?.strengths || [];
@@ -413,39 +499,28 @@ export default function ConnectionStyleAssessment({ onBack, onComplete }: Assess
     };
   };
 
-  const determineConnectionStyle = (scores: Record<string, number>, answers: Record<string, number>) => {
+  const determineConnectionStyle = (scores: Record<string, number>) => {
     let connectionStyle = 'secure';
     let secondaryStyle = 'boundaried';
 
     const { attachmentSecurity, boundaryClarity, intimacyComfort, independenceNeed } = scores;
 
-    // High security across the board = Secure
     if (attachmentSecurity > 65 && boundaryClarity > 60 && intimacyComfort > 55) {
       connectionStyle = 'secure';
       secondaryStyle = boundaryClarity > 70 ? 'boundaried' : 'anxious';
-    }
-    // Low attachment security + high intimacy desire = Anxious
-    else if (attachmentSecurity < 50 && intimacyComfort > 50 && independenceNeed < 60) {
+    } else if (attachmentSecurity < 50 && intimacyComfort > 50 && independenceNeed < 60) {
       connectionStyle = 'anxious';
       secondaryStyle = boundaryClarity < 50 ? 'anxiousAvoidant' : 'secure';
-    }
-    // Low intimacy comfort + high independence = Avoidant
-    else if (intimacyComfort < 50 && independenceNeed > 60) {
+    } else if (intimacyComfort < 50 && independenceNeed > 60) {
       connectionStyle = 'avoidant';
       secondaryStyle = attachmentSecurity < 50 ? 'anxiousAvoidant' : 'boundaried';
-    }
-    // Low attachment + mixed intimacy/independence = Anxious-Avoidant
-    else if (attachmentSecurity < 45 && ((intimacyComfort < 50 && independenceNeed < 50) || (intimacyComfort > 50 && independenceNeed > 50))) {
+    } else if (attachmentSecurity < 45 && ((intimacyComfort < 50 && independenceNeed < 50) || (intimacyComfort > 50 && independenceNeed > 50))) {
       connectionStyle = 'anxiousAvoidant';
       secondaryStyle = intimacyComfort > independenceNeed ? 'anxious' : 'avoidant';
-    }
-    // High boundaries = Boundaried
-    else if (boundaryClarity > 70) {
+    } else if (boundaryClarity > 70) {
       connectionStyle = 'boundaried';
       secondaryStyle = attachmentSecurity > 60 ? 'secure' : 'avoidant';
-    }
-    // Default based on strongest trait
-    else {
+    } else {
       if (independenceNeed > intimacyComfort) {
         connectionStyle = 'avoidant';
         secondaryStyle = 'boundaried';
@@ -467,13 +542,13 @@ export default function ConnectionStyleAssessment({ onBack, onComplete }: Assess
     }
 
     if (scores.attachmentSecurity < 45) {
-      insights.push('Your attachment security is an area for growth. Past experiences may have taught you that relationships aren\'t safe, but this can change with awareness and the right connections.');
+      insights.push("Your attachment security is an area for growth. Past experiences may have taught you that relationships aren't safe, but this can change with awareness and the right connections.");
     } else if (scores.attachmentSecurity > 70) {
       insights.push('You have a strong foundation of attachment security. This allows you to navigate relationships with confidence and resilience.');
     }
 
     if (scores.boundaryClarity < 45) {
-      insights.push('Clarifying your boundaries is essential for healthier relationships. When you don\'t know your limits, others can\'t respect them.');
+      insights.push("Clarifying your boundaries is essential for healthier relationships. When you don't know your limits, others can't respect them.");
     } else if (scores.boundaryClarity > 70) {
       insights.push('Your boundary clarity is a significant strength. You know where you end and others begin, which protects your wellbeing.');
     }
@@ -487,7 +562,7 @@ export default function ConnectionStyleAssessment({ onBack, onComplete }: Assess
     }
 
     if (scores.conflictStyle < 45) {
-      insights.push('Your relationship with conflict is an edge for growth. Avoiding disagreement doesn\'t make it disappear — it often makes things worse over time.');
+      insights.push("Your relationship with conflict is an edge for growth. Avoiding disagreement doesn't make it disappear — it often makes things worse over time.");
     }
 
     return insights.slice(0, 4);
@@ -509,11 +584,11 @@ export default function ConnectionStyleAssessment({ onBack, onComplete }: Assess
       case 'avoidant':
         recs.push('Practice staying present when intimacy increases, even when you feel the urge to pull away. Notice the discomfort without acting on it.');
         recs.push('Share something vulnerable with a trusted person this week. Small acts of openness can gradually expand your comfort zone.');
-        recs.push('Recognize that needing others isn\'t weakness. Interdependence is healthy and human.');
+        recs.push("Recognize that needing others isn't weakness. Interdependence is healthy and human.");
         break;
       case 'anxiousAvoidant':
         recs.push('Therapy or coaching can be especially valuable for your pattern. The push-pull dynamic often has roots that benefit from professional support.');
-        recs.push('Practice noticing when you\'re moving toward or away from connection. Awareness is the first step to choice.');
+        recs.push("Practice noticing when you're moving toward or away from connection. Awareness is the first step to choice.");
         recs.push('Seek extraordinarily patient, secure partners who can hold steady while you learn to trust.');
         break;
       case 'boundaried':
@@ -527,402 +602,706 @@ export default function ConnectionStyleAssessment({ onBack, onComplete }: Assess
     }
 
     if (scores.boundaryClarity < 50) {
-      recs.push('Spend time clarifying your boundaries. Journal about what feels okay and not okay in relationships. Clarity precedes communication.');
+      recs.push("Spend time clarifying your boundaries. Journal about what feels okay and not okay in relationships. Clarity precedes communication.");
     }
 
     return recs.slice(0, 4);
   };
 
+  // ============================================================================
   // INTRO SCREEN
-  if (showIntro) {
+  // ============================================================================
+  if (phase === 'intro') {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: bgColor }}>
-        <div className="flex items-center justify-between p-4">
-          <button onClick={onBack} className="p-2 rounded-full" style={{ color: mutedColor }}>
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+      <>
+        <style>{STYLES}</style>
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: bgColor,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}>
+          {/* Header */}
+          <header style={{
+            padding: '16px',
+            paddingTop: 'max(16px, env(safe-area-inset-top))',
+            display: 'flex',
+            alignItems: 'center',
+          }}>
+            <button
+              onClick={onBack}
+              style={{
+                padding: '10px 18px',
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 50,
+                cursor: 'pointer',
+                fontSize: 14,
+                color: mutedColor,
+              }}
+            >
+              ← Back
+            </button>
+          </header>
 
-        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
-          <div 
-            className="w-24 h-24 rounded-full mb-8 flex items-center justify-center"
-            style={{ backgroundColor: `${accentColor}22` }}
-          >
-            <svg viewBox="0 0 48 48" className="w-12 h-12">
-              <circle cx="16" cy="20" r="8" fill="none" stroke={accentColor} strokeWidth="1.5" />
-              <circle cx="32" cy="20" r="8" fill="none" stroke={accentColor} strokeWidth="1.5" />
-              <path d="M16 28 C16 34 24 38 24 38 C24 38 32 34 32 28" fill="none" stroke={accentColor} strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
+          {/* Content */}
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+            textAlign: 'center',
+            animation: 'fadeIn 0.5s ease',
+          }}>
+            {/* Icon */}
+            <div style={{
+              width: 80,
+              height: 80,
+              borderRadius: '50%',
+              background: `linear-gradient(135deg, ${accentColor}22 0%, ${accentColor}11 100%)`,
+              border: `1px solid ${accentColor}33`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 24,
+            }}>
+              <svg viewBox="0 0 48 48" style={{ width: 40, height: 40 }}>
+                <circle cx="18" cy="20" r="8" fill="none" stroke={accentColor} strokeWidth="1.5" />
+                <circle cx="30" cy="20" r="8" fill="none" stroke={accentColor} strokeWidth="1.5" />
+                <path d="M24 14 L24 26" stroke={accentColor} strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
+                <path d="M18 32 C18 36 24 40 24 40 C24 40 30 36 30 32" stroke={accentColor} strokeWidth="1.5" fill="none" strokeLinecap="round" />
+              </svg>
+            </div>
+
+            <h1 style={{
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: 32,
+              fontWeight: 300,
+              color: textColor,
+              marginBottom: 8,
+            }}>
+              Connection Style
+            </h1>
+
+            <p style={{
+              fontSize: 16,
+              color: accentColor,
+              marginBottom: 16,
+            }}>
+              Relationships & Boundaries
+            </p>
+
+            <p style={{
+              fontSize: 15,
+              color: mutedColor,
+              maxWidth: 320,
+              lineHeight: 1.6,
+              marginBottom: 32,
+            }}>
+              Explore how you connect with others — your needs, your patterns, and what helps you thrive in relationships.
+            </p>
+
+            {/* Info Cards */}
+            <div style={{
+              display: 'flex',
+              gap: 12,
+              marginBottom: 40,
+            }}>
+              <div style={{
+                padding: '12px 20px',
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 12,
+              }}>
+                <div style={{ fontSize: 13, color: mutedColor }}>Duration</div>
+                <div style={{ fontSize: 15, color: textColor, fontWeight: 500 }}>~12 min</div>
+              </div>
+              <div style={{
+                padding: '12px 20px',
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 12,
+              }}>
+                <div style={{ fontSize: 13, color: mutedColor }}>Questions</div>
+                <div style={{ fontSize: 15, color: textColor, fontWeight: 500 }}>{QUESTIONS.length}</div>
+              </div>
+            </div>
+
+            {/* Start Button */}
+            <button
+              onClick={() => setPhase('questions')}
+              style={{
+                padding: '16px 48px',
+                background: `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}dd 100%)`,
+                border: 'none',
+                borderRadius: 50,
+                color: '#fff',
+                fontSize: 16,
+                fontWeight: 500,
+                cursor: 'pointer',
+                boxShadow: `0 4px 20px ${accentColor}44`,
+              }}
+            >
+              Begin Assessment
+            </button>
           </div>
-
-          <h1 className="text-3xl font-light mb-3" style={{ color: textColor }}>
-            Connection Style
-          </h1>
-          <p className="text-lg mb-2" style={{ color: accentColor }}>
-            Relationships & Boundaries
-          </p>
-          <p className="text-base mb-8 max-w-md" style={{ color: mutedColor }}>
-            Explore how you connect with others — your needs, your patterns, and what helps you thrive in relationships.
-          </p>
-
-          <div 
-            className="w-full max-w-sm p-5 rounded-2xl mb-8"
-            style={{ backgroundColor: cardBg }}
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke={accentColor} strokeWidth="1.5">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 6v6l4 2" />
-              </svg>
-              <span style={{ color: textColor }}>About 12 minutes</span>
-            </div>
-            <div className="flex items-center gap-3 mb-3">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke={accentColor} strokeWidth="1.5">
-                <path d="M9 12l2 2 4-4" />
-                <circle cx="12" cy="12" r="10" />
-              </svg>
-              <span style={{ color: textColor }}>21 relationship questions</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke={accentColor} strokeWidth="1.5">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-              </svg>
-              <span style={{ color: textColor }}>Your connection profile</span>
-            </div>
-          </div>
-
-          <p className="text-sm mb-8 max-w-md" style={{ color: mutedColor }}>
-            Think about your closest relationships — romantic, friendships, family. Answer based on your patterns, not just one relationship.
-          </p>
-
-          <button
-            onClick={() => setShowIntro(false)}
-            className="px-8 py-4 rounded-2xl font-medium text-white"
-            style={{ backgroundColor: accentColor }}
-          >
-            Begin Exploration
-          </button>
         </div>
-      </div>
+      </>
     );
   }
 
-  // REPORT SCREEN
-  if (showReport && results) {
-    const styleData = CONNECTION_STYLES[results.connectionStyle as keyof typeof CONNECTION_STYLES];
-    const secondaryData = CONNECTION_STYLES[results.secondaryStyle as keyof typeof CONNECTION_STYLES];
-
+  // ============================================================================
+  // QUESTIONS SCREEN
+  // ============================================================================
+  if (phase === 'questions') {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: bgColor }}>
-        <div className="flex items-center justify-between p-4">
-          <button onClick={onBack} className="p-2 rounded-full" style={{ color: mutedColor }}>
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-          <span className="text-sm" style={{ color: mutedColor }}>Your Connection Profile</span>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          <div className="max-w-lg mx-auto">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <h1 className="text-2xl font-light mb-2" style={{ color: textColor }}>
-                Your Connection Style
-              </h1>
-              <p className="text-sm" style={{ color: mutedColor }}>
-                How you relate and what you need from others
-              </p>
-            </div>
-
-            {/* Primary Style */}
-            <div 
-              className="p-6 rounded-2xl mb-6"
-              style={{ 
-                backgroundColor: isDark ? `${styleData.color}22` : `${styleData.color}15`,
-                borderLeft: `4px solid ${styleData.color}`,
+      <>
+        <style>{STYLES}</style>
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: bgColor,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}>
+          {/* Header */}
+          <header style={{
+            padding: '16px',
+            paddingTop: 'max(16px, env(safe-area-inset-top))',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <button
+              onClick={onBack}
+              style={{
+                padding: '8px 14px',
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 50,
+                cursor: 'pointer',
+                fontSize: 13,
+                color: mutedColor,
               }}
             >
-              <div className="text-sm uppercase tracking-wide mb-1" style={{ color: styleData.color }}>
-                Your Connection Style
-              </div>
-              <h2 className="text-2xl font-medium mb-3" style={{ color: textColor }}>
-                {styleData.name}
+              ✕
+            </button>
+            <span style={{ fontSize: 13, color: mutedColor }}>
+              {currentQuestion + 1} of {QUESTIONS.length}
+            </span>
+            <div style={{ width: 50 }} />
+          </header>
+
+          {/* Progress Bar */}
+          <div style={{ padding: '0 20px', marginBottom: 24 }}>
+            <div style={{
+              height: 4,
+              background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+              borderRadius: 4,
+              overflow: 'hidden',
+            }}>
+              <div
+                className="progress-bar"
+                style={{
+                  height: '100%',
+                  width: `${progress}%`,
+                  background: accentColor,
+                  borderRadius: 4,
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Question */}
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '0 24px',
+            animation: 'fadeIn 0.3s ease',
+          }}>
+            <div style={{ marginBottom: 32 }}>
+              <h2 style={{
+                fontSize: 22,
+                fontWeight: 500,
+                color: textColor,
+                lineHeight: 1.4,
+                marginBottom: question.subtext ? 8 : 0,
+              }}>
+                {question.text}
               </h2>
-              <p className="text-base leading-relaxed" style={{ color: mutedColor }}>
-                {styleData.description}
-              </p>
+              {question.subtext && (
+                <p style={{ fontSize: 14, color: mutedColor }}>
+                  {question.subtext}
+                </p>
+              )}
             </div>
 
-            {/* Connection Scores */}
-            <div className="p-5 rounded-2xl mb-6" style={{ backgroundColor: cardBg }}>
-              <h3 className="text-lg font-medium mb-4" style={{ color: textColor }}>
-                Your Relationship Profile
-              </h3>
-              
-              {[
-                { label: 'Attachment Security', value: results.attachmentSecurity, color: '#7BA05B' },
-                { label: 'Boundary Clarity', value: results.boundaryClarity, color: '#C4956A' },
-                { label: 'Intimacy Comfort', value: results.intimacyComfort, color: '#A78BB3' },
-                { label: 'Independence Need', value: results.independenceNeed, color: '#6B9BC3' },
-                { label: 'Conflict Capacity', value: results.conflictStyle, color: '#E8B86D' },
-              ].map((item, i) => (
-                <div key={i} className="mb-4 last:mb-0">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm" style={{ color: textColor }}>{item.label}</span>
-                    <span className="text-sm font-medium" style={{ color: item.color }}>
-                      {item.value}%
-                    </span>
-                  </div>
-                  <div 
-                    className="h-2 rounded-full overflow-hidden"
-                    style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }}
-                  >
-                    <div 
-                      className="h-full rounded-full transition-all duration-1000"
-                      style={{ width: `${item.value}%`, backgroundColor: item.color }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Strengths */}
-            <div className="p-5 rounded-2xl mb-6" style={{ backgroundColor: cardBg }}>
-              <h3 className="text-lg font-medium mb-3" style={{ color: textColor }}>
-                Your Relationship Strengths
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {results.relationshipStrengths.map((strength, i) => (
-                  <span 
+            {/* Scale/Choice Options */}
+            {(question.type === 'scale' || question.type === 'choice') && question.options && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {question.options.map((option, i) => (
+                  <button
                     key={i}
-                    className="px-3 py-1.5 rounded-full text-sm"
-                    style={{ 
-                      backgroundColor: isDark ? `${styleData.color}33` : `${styleData.color}22`,
-                      color: styleData.color,
+                    className="assess-option"
+                    onClick={() => handleAnswer(option.value)}
+                    style={{
+                      padding: '18px 20px',
+                      background: cardBg,
+                      border: `1px solid ${cardBorder}`,
+                      borderRadius: 16,
+                      cursor: 'pointer',
+                      textAlign: 'left',
                     }}
                   >
-                    {strength}
-                  </span>
+                    <div style={{
+                      fontSize: 16,
+                      fontWeight: 500,
+                      color: textColor,
+                      marginBottom: option.description ? 4 : 0,
+                    }}>
+                      {option.label}
+                    </div>
+                    {option.description && (
+                      <div style={{ fontSize: 13, color: mutedColor }}>
+                        {option.description}
+                      </div>
+                    )}
+                  </button>
                 ))}
               </div>
-            </div>
+            )}
 
-            {/* Challenges */}
-            <div className="p-5 rounded-2xl mb-6" style={{ backgroundColor: cardBg }}>
-              <h3 className="text-lg font-medium mb-3" style={{ color: textColor }}>
-                Growth Edges
-              </h3>
-              <div className="space-y-2">
-                {styleData.challenges.map((challenge, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <div 
-                      className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
-                      style={{ backgroundColor: mutedColor }}
-                    />
-                    <span className="text-sm" style={{ color: mutedColor }}>{challenge}</span>
+            {/* Slider */}
+            {question.type === 'slider' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                <div style={{ padding: '0 8px' }}>
+                  <input
+                    type="range"
+                    min={question.min || 1}
+                    max={question.max || 10}
+                    value={sliderValue}
+                    onChange={(e) => setSliderValue(parseInt(e.target.value))}
+                    className="slider-input"
+                    style={{
+                      width: '100%',
+                      background: `linear-gradient(to right, ${accentColor} 0%, ${accentColor} ${((sliderValue - 1) / 9) * 100}%, ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)'} ${((sliderValue - 1) / 9) * 100}%, ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)'} 100%)`,
+                      cursor: 'pointer',
+                    }}
+                  />
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    marginTop: 16,
+                  }}>
+                    <span style={{ fontSize: 12, color: mutedColor, maxWidth: '35%' }}>
+                      {question.minLabel}
+                    </span>
+                    <span style={{
+                      fontSize: 32,
+                      fontWeight: 300,
+                      color: accentColor,
+                      lineHeight: 1,
+                    }}>
+                      {sliderValue}
+                    </span>
+                    <span style={{ fontSize: 12, color: mutedColor, maxWidth: '35%', textAlign: 'right' }}>
+                      {question.maxLabel}
+                    </span>
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
 
-            {/* What You Need */}
-            <div 
-              className="p-5 rounded-2xl mb-6"
-              style={{ 
-                backgroundColor: isDark ? `${styleData.color}15` : `${styleData.color}10`,
+                <button
+                  onClick={handleSliderSubmit}
+                  style={{
+                    padding: '16px',
+                    background: `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}dd 100%)`,
+                    border: 'none',
+                    borderRadius: 50,
+                    color: '#fff',
+                    fontSize: 16,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Continue
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // ============================================================================
+  // REPORT SCREEN
+  // ============================================================================
+  if (phase === 'report' && results) {
+    const primary = CONNECTION_STYLES[results.connectionStyle as keyof typeof CONNECTION_STYLES];
+    const secondary = CONNECTION_STYLES[results.secondaryStyle as keyof typeof CONNECTION_STYLES];
+
+    return (
+      <>
+        <style>{STYLES}</style>
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: bgColor,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}>
+          {/* Header */}
+          <header style={{
+            padding: '16px',
+            paddingTop: 'max(16px, env(safe-area-inset-top))',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <button
+              onClick={onBack}
+              style={{
+                padding: '10px 18px',
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 50,
+                cursor: 'pointer',
+                fontSize: 14,
+                color: mutedColor,
               }}
             >
-              <h3 className="text-lg font-medium mb-2" style={{ color: textColor }}>
-                What You Need From Others
-              </h3>
-              <p className="text-sm leading-relaxed" style={{ color: mutedColor }}>
-                {styleData.needsFromOthers}
-              </p>
-            </div>
+              ← Back
+            </button>
+            <span style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: mutedColor,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+            }}>
+              Your Results
+            </span>
+            <div style={{ width: 80 }} />
+          </header>
 
-            {/* Secondary Style */}
-            <div className="p-5 rounded-2xl mb-6" style={{ backgroundColor: cardBg }}>
-              <div className="text-sm uppercase tracking-wide mb-1" style={{ color: secondaryData.color }}>
-                Secondary Influence
-              </div>
-              <h3 className="text-lg font-medium mb-2" style={{ color: textColor }}>
-                {secondaryData.name}
-              </h3>
-              <p className="text-sm" style={{ color: mutedColor }}>
-                This style also shapes how you connect, especially under stress or in certain relationships.
-              </p>
-            </div>
-
-            {/* Insights */}
-            <div className="p-5 rounded-2xl mb-6" style={{ backgroundColor: cardBg }}>
-              <h3 className="text-lg font-medium mb-4" style={{ color: textColor }}>
-                Insights
-              </h3>
-              <div className="space-y-4">
-                {results.insights.map((insight, i) => (
-                  <div key={i} className="flex gap-3">
-                    <div 
-                      className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
-                      style={{ backgroundColor: `${accentColor}22` }}
-                    >
-                      <span className="text-xs" style={{ color: accentColor }}>{i + 1}</span>
+          {/* Scrollable Content */}
+          <div
+            className="assess-scroll"
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '20px 24px',
+              paddingBottom: 'max(40px, env(safe-area-inset-bottom))',
+            }}
+          >
+            <div style={{ maxWidth: 500, margin: '0 auto' }}>
+              {/* Primary Style Card */}
+              <div style={{
+                padding: 24,
+                background: `linear-gradient(135deg, ${primary.color}15 0%, ${primary.color}08 100%)`,
+                border: `1px solid ${primary.color}33`,
+                borderRadius: 20,
+                marginBottom: 20,
+                animation: 'fadeInScale 0.5s ease',
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 16,
+                  marginBottom: 16,
+                }}>
+                  <div style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: '50%',
+                    background: `${primary.color}22`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <svg viewBox="0 0 32 32" style={{ width: 28, height: 28 }}>
+                      <circle cx="12" cy="14" r="5" fill="none" stroke={primary.color} strokeWidth="1.5" />
+                      <circle cx="20" cy="14" r="5" fill="none" stroke={primary.color} strokeWidth="1.5" />
+                      <path d="M12 22 C12 25 16 28 16 28 C16 28 20 25 20 22" stroke={primary.color} strokeWidth="1.5" fill="none" strokeLinecap="round" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, color: primary.color, marginBottom: 2 }}>
+                      Your Primary Style
                     </div>
-                    <p className="text-sm leading-relaxed" style={{ color: mutedColor }}>
-                      {insight}
-                    </p>
+                    <div style={{
+                      fontFamily: "'Cormorant Garamond', Georgia, serif",
+                      fontSize: 26,
+                      fontWeight: 400,
+                      color: textColor,
+                    }}>
+                      {primary.name}
+                    </div>
+                  </div>
+                </div>
+                <p style={{ fontSize: 15, color: mutedColor, lineHeight: 1.6 }}>
+                  {primary.description}
+                </p>
+              </div>
+
+              {/* What You Need */}
+              <div style={{
+                padding: 16,
+                background: `${primary.color}15`,
+                border: `1px solid ${primary.color}25`,
+                borderRadius: 12,
+                marginBottom: 16,
+              }}>
+                <div style={{ fontSize: 12, color: primary.color, marginBottom: 4, fontWeight: 600 }}>What You Need From Others</div>
+                <div style={{ fontSize: 14, color: textColor, lineHeight: 1.5 }}>{primary.needsFromOthers}</div>
+              </div>
+
+              {/* Signs */}
+              <div style={{
+                padding: 20,
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 16,
+                marginBottom: 16,
+              }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: textColor, marginBottom: 12 }}>
+                  Signs of Your Style
+                </h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {primary.signs.map((sign, i) => (
+                    <span key={i} style={{
+                      padding: '8px 14px',
+                      background: `${primary.color}15`,
+                      border: `1px solid ${primary.color}25`,
+                      borderRadius: 20,
+                      fontSize: 13,
+                      color: textColor,
+                    }}>
+                      {sign}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Strengths */}
+              <div style={{
+                padding: 20,
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 16,
+                marginBottom: 16,
+              }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: textColor, marginBottom: 12 }}>
+                  Your Strengths
+                </h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {primary.strengths.map((s, i) => (
+                    <span key={i} style={{
+                      padding: '8px 14px',
+                      background: '#7BA05B15',
+                      border: '1px solid #7BA05B25',
+                      borderRadius: 20,
+                      fontSize: 13,
+                      color: textColor,
+                    }}>
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Profile Scores */}
+              <div style={{
+                padding: 20,
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 16,
+                marginBottom: 16,
+              }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: textColor, marginBottom: 16 }}>
+                  Your Relationship Profile
+                </h3>
+                {[
+                  { label: 'Attachment Security', value: results.attachmentSecurity, color: '#7BA05B' },
+                  { label: 'Boundary Clarity', value: results.boundaryClarity, color: '#C4956A' },
+                  { label: 'Intimacy Comfort', value: results.intimacyComfort, color: '#A78BB3' },
+                  { label: 'Independence Need', value: results.independenceNeed, color: '#6B9BC3' },
+                  { label: 'Conflict Capacity', value: results.conflictStyle, color: '#E8B86D' },
+                ].map((item, i) => (
+                  <div key={i} style={{ marginBottom: i < 4 ? 16 : 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <span style={{ fontSize: 14, color: textColor }}>{item.label}</span>
+                      <span style={{ fontSize: 14, color: item.value < 50 ? '#C47070' : item.color }}>
+                        {item.value}%
+                      </span>
+                    </div>
+                    <div style={{
+                      height: 6,
+                      background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+                      borderRadius: 3,
+                      overflow: 'hidden',
+                    }}>
+                      <div style={{
+                        height: '100%',
+                        width: `${item.value}%`,
+                        background: item.value < 50 ? '#C47070' : item.color,
+                        borderRadius: 3,
+                        transition: 'width 1s ease',
+                      }} />
+                    </div>
                   </div>
                 ))}
               </div>
-            </div>
 
-            {/* Recommendations */}
-            <div className="p-5 rounded-2xl mb-6" style={{ backgroundColor: cardBg }}>
-              <h3 className="text-lg font-medium mb-4" style={{ color: textColor }}>
-                Pathways for Growth
-              </h3>
-              <div className="space-y-4">
-                {results.recommendations.map((rec, i) => (
-                  <div key={i} className="flex gap-3">
-                    <div 
-                      className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
-                      style={{ backgroundColor: `${accentColor}22` }}
-                    >
-                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke={accentColor} strokeWidth="3">
-                        <path d="M5 12h14M12 5l7 7-7 7" />
-                      </svg>
+              {/* Insights */}
+              <div style={{
+                padding: 20,
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 16,
+                marginBottom: 16,
+              }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: textColor, marginBottom: 16 }}>
+                  Key Insights
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {results.insights.map((insight, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 12 }}>
+                      <div style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        background: `${accentColor}22`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        marginTop: 2,
+                      }}>
+                        <span style={{ fontSize: 12, color: accentColor }}>{i + 1}</span>
+                      </div>
+                      <p style={{ fontSize: 14, color: mutedColor, lineHeight: 1.6 }}>
+                        {insight}
+                      </p>
                     </div>
-                    <p className="text-sm leading-relaxed" style={{ color: mutedColor }}>
-                      {rec}
-                    </p>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* Closing */}
-            <div className="text-center py-6">
-              <p className="text-sm mb-6" style={{ color: mutedColor }}>
-                Your connection style isn't fixed — it can evolve with awareness, healing, and relationships that help you grow.
-              </p>
+              {/* Recommendations */}
+              <div style={{
+                padding: 20,
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 16,
+                marginBottom: 16,
+              }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: textColor, marginBottom: 16 }}>
+                  Your Growth Path
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {results.recommendations.map((rec, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 12 }}>
+                      <div style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        background: `${primary.color}22`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        marginTop: 2,
+                      }}>
+                        <span style={{ fontSize: 14, color: primary.color }}>→</span>
+                      </div>
+                      <p style={{ fontSize: 14, color: mutedColor, lineHeight: 1.6 }}>
+                        {rec}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Toolkit */}
+              <div style={{
+                padding: 20,
+                background: `linear-gradient(135deg, ${primary.color}10 0%, transparent 100%)`,
+                border: `1px solid ${primary.color}25`,
+                borderRadius: 16,
+                marginBottom: 16,
+              }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: textColor, marginBottom: 12 }}>
+                  Your Connection Toolkit
+                </h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {primary.tools.map((tool, i) => (
+                    <span key={i} style={{
+                      padding: '10px 16px',
+                      background: `${primary.color}20`,
+                      border: `1px solid ${primary.color}30`,
+                      borderRadius: 20,
+                      fontSize: 14,
+                      color: textColor,
+                    }}>
+                      {tool}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Secondary Style */}
+              {secondary && (
+                <div style={{
+                  padding: 20,
+                  background: cardBg,
+                  border: `1px solid ${cardBorder}`,
+                  borderRadius: 16,
+                  marginBottom: 24,
+                }}>
+                  <div style={{ fontSize: 12, color: secondary.color, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Secondary Influence
+                  </div>
+                  <h3 style={{ fontSize: 18, fontWeight: 500, color: textColor, marginBottom: 8 }}>
+                    {secondary.name}
+                  </h3>
+                  <p style={{ fontSize: 14, color: mutedColor, lineHeight: 1.6 }}>
+                    This style also shapes how you connect. Draw on its strengths when your primary pattern needs balance.
+                  </p>
+                </div>
+              )}
+
+              {/* Close Button */}
               <button
                 onClick={onBack}
-                className="px-8 py-4 rounded-2xl font-medium text-white"
-                style={{ backgroundColor: accentColor }}
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  background: `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}dd 100%)`,
+                  border: 'none',
+                  borderRadius: 50,
+                  color: '#fff',
+                  fontSize: 16,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
               >
                 Return to Library
               </button>
             </div>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
-  // QUESTION SCREEN
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: bgColor }}>
-      <div className="flex items-center justify-between p-4">
-        <button onClick={onBack} className="p-2 rounded-full" style={{ color: mutedColor }}>
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-        <span className="text-sm" style={{ color: mutedColor }}>
-          {currentQuestion + 1} of {QUESTIONS.length}
-        </span>
-      </div>
-
-      <div className="px-4">
-        <div 
-          className="h-1 rounded-full overflow-hidden"
-          style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}
-        >
-          <div 
-            className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${progress}%`, backgroundColor: accentColor }}
-          />
-        </div>
-      </div>
-
-      <div className="flex-1 flex flex-col justify-center px-6 py-8">
-        <div className="max-w-lg mx-auto w-full">
-          <h2 className="text-xl font-medium mb-2 leading-relaxed" style={{ color: textColor }}>
-            {question.text}
-          </h2>
-          {question.subtext && (
-            <p className="text-sm mb-8" style={{ color: mutedColor }}>
-              {question.subtext}
-            </p>
-          )}
-          {!question.subtext && <div className="mb-8" />}
-
-          {(question.type === 'scale' || question.type === 'choice') && question.options && (
-            <div className="space-y-3">
-              {question.options.map((option, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleAnswer(option.value)}
-                  className="w-full p-4 rounded-xl text-left transition-all hover:scale-[1.02]"
-                  style={{ 
-                    backgroundColor: cardBg,
-                    borderWidth: 1,
-                    borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-                  }}
-                >
-                  <div className="font-medium mb-1" style={{ color: textColor }}>
-                    {option.label}
-                  </div>
-                  {option.description && (
-                    <div className="text-sm" style={{ color: mutedColor }}>
-                      {option.description}
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {question.type === 'slider' && (
-            <div className="space-y-6">
-              <div className="px-2">
-                <input
-                  type="range"
-                  min={question.min || 1}
-                  max={question.max || 10}
-                  value={sliderValue}
-                  onChange={(e) => setSliderValue(parseInt(e.target.value))}
-                  className="w-full h-2 rounded-full appearance-none cursor-pointer"
-                  style={{ 
-                    background: `linear-gradient(to right, ${accentColor} 0%, ${accentColor} ${((sliderValue - 1) / 9) * 100}%, ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)'} ${((sliderValue - 1) / 9) * 100}%, ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)'} 100%)`,
-                  }}
-                />
-                <div className="flex justify-between mt-3">
-                  <span className="text-xs max-w-[40%]" style={{ color: mutedColor }}>
-                    {question.minLabel}
-                  </span>
-                  <span className="text-2xl font-light" style={{ color: accentColor }}>
-                    {sliderValue}
-                  </span>
-                  <span className="text-xs max-w-[40%] text-right" style={{ color: mutedColor }}>
-                    {question.maxLabel}
-                  </span>
-                </div>
-              </div>
-              
-              <button
-                onClick={handleSliderSubmit}
-                className="w-full py-4 rounded-2xl font-medium text-white"
-                style={{ backgroundColor: accentColor }}
-              >
-                Continue
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+  return null;
 }

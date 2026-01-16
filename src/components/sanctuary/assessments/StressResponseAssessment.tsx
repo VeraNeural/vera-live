@@ -25,22 +25,15 @@ interface Question {
   id: string;
   text: string;
   subtext?: string;
-  type: 'scale' | 'choice' | 'slider';
-  options?: { value: number; label: string; description?: string }[];
+  options: { value: number; label: string; description?: string }[];
   category: 'activation' | 'recovery' | 'triggers' | 'coping' | 'window';
-  min?: number;
-  max?: number;
-  minLabel?: string;
-  maxLabel?: string;
 }
 
 const QUESTIONS: Question[] = [
-  // Activation Level (5 questions)
   {
     id: 'activation_1',
     text: 'What is your baseline state most days?',
     subtext: 'Before anything stressful happens',
-    type: 'scale',
     options: [
       { value: 1, label: 'Already activated', description: 'Tense, alert, on edge' },
       { value: 2, label: 'Slightly elevated', description: 'A background hum of stress' },
@@ -51,60 +44,34 @@ const QUESTIONS: Question[] = [
   },
   {
     id: 'activation_2',
-    text: 'How quickly does your body react to stressful situations?',
-    type: 'slider',
+    text: 'How quickly does your body react to stress?',
+    options: [
+      { value: 1, label: 'Instant', description: '0 to 100 immediately' },
+      { value: 2, label: 'Fast', description: 'Within seconds' },
+      { value: 3, label: 'Moderate', description: 'Builds over minutes' },
+      { value: 4, label: 'Gradual', description: 'Slow to activate' },
+    ],
     category: 'activation',
-    min: 1,
-    max: 10,
-    minLabel: 'Instant — 0 to 100 immediately',
-    maxLabel: 'Gradual — slow to activate',
   },
   {
     id: 'activation_3',
-    text: 'When stressed, what happens in your body? (Choose the most prominent)',
-    type: 'choice',
+    text: 'When stressed, what happens in your body?',
+    subtext: 'Choose the most prominent',
     options: [
-      { value: 1, label: 'Racing heart, rapid breathing, sweating' },
-      { value: 2, label: 'Muscle tension, clenched jaw, tight shoulders' },
-      { value: 3, label: 'Stomach issues, nausea, appetite changes' },
-      { value: 4, label: 'Fatigue, heaviness, wanting to shut down' },
+      { value: 1, label: 'Racing heart & rapid breathing', description: 'Panic-like symptoms' },
+      { value: 2, label: 'Muscle tension', description: 'Clenched jaw, tight shoulders' },
+      { value: 3, label: 'Stomach issues', description: 'Nausea, appetite changes' },
+      { value: 4, label: 'Fatigue & heaviness', description: 'Wanting to shut down' },
     ],
     category: 'activation',
   },
-  {
-    id: 'activation_4',
-    text: 'How often do you feel your heart racing or have trouble breathing when not exercising?',
-    type: 'scale',
-    options: [
-      { value: 1, label: 'Daily', description: 'It\'s a regular occurrence' },
-      { value: 2, label: 'Several times a week', description: 'Quite often' },
-      { value: 3, label: 'Occasionally', description: 'In stressful periods' },
-      { value: 4, label: 'Rarely', description: 'Almost never' },
-    ],
-    category: 'activation',
-  },
-  {
-    id: 'activation_5',
-    text: 'Your nervous system right now feels:',
-    type: 'choice',
-    options: [
-      { value: 1, label: 'Wired and exhausted — running on fumes' },
-      { value: 2, label: 'On alert — scanning for problems' },
-      { value: 3, label: 'Variable — depends on the day' },
-      { value: 4, label: 'Settled — generally at ease' },
-    ],
-    category: 'activation',
-  },
-
-  // Recovery Capacity (5 questions)
   {
     id: 'recovery_1',
-    text: 'After a stressful event, how long does it take your body to calm down?',
-    type: 'scale',
+    text: 'After stress, how long to calm down?',
     options: [
-      { value: 1, label: 'Hours or days', description: 'I stay activated for a long time' },
+      { value: 1, label: 'Hours or days', description: 'I stay activated a long time' },
       { value: 2, label: 'An hour or more', description: 'Takes significant time' },
-      { value: 3, label: '15-30 minutes', description: 'Moderate recovery time' },
+      { value: 3, label: '15-30 minutes', description: 'Moderate recovery' },
       { value: 4, label: 'Minutes', description: 'I settle quickly' },
     ],
     category: 'recovery',
@@ -112,53 +79,28 @@ const QUESTIONS: Question[] = [
   {
     id: 'recovery_2',
     text: 'How well can you sleep after a stressful day?',
-    type: 'slider',
+    options: [
+      { value: 1, label: 'Very poorly', description: 'Mind races for hours' },
+      { value: 2, label: 'With difficulty', description: 'Takes a long time' },
+      { value: 3, label: 'Usually okay', description: 'Some delay but manageable' },
+      { value: 4, label: 'Well', description: 'I can let go' },
+    ],
     category: 'recovery',
-    min: 1,
-    max: 10,
-    minLabel: 'Very poorly — mind races',
-    maxLabel: 'Well — I can let go',
   },
   {
     id: 'recovery_3',
     text: 'When the stressor is removed, your body:',
-    type: 'choice',
     options: [
-      { value: 1, label: 'Stays tense — like it\'s waiting for the next threat' },
-      { value: 2, label: 'Slowly unwinds — but holds residual tension' },
-      { value: 3, label: 'Gradually relaxes — over time' },
-      { value: 4, label: 'Releases quickly — returns to baseline' },
+      { value: 1, label: 'Stays tense', description: 'Like waiting for the next threat' },
+      { value: 2, label: 'Slowly unwinds', description: 'Holds residual tension' },
+      { value: 3, label: 'Gradually relaxes', description: 'Over time' },
+      { value: 4, label: 'Releases quickly', description: 'Returns to baseline' },
     ],
     category: 'recovery',
   },
-  {
-    id: 'recovery_4',
-    text: 'How refreshed do you feel after rest or relaxation activities?',
-    type: 'scale',
-    options: [
-      { value: 1, label: 'Not much different', description: 'Rest doesn\'t seem to help' },
-      { value: 2, label: 'Slightly better', description: 'Minor improvement' },
-      { value: 3, label: 'Noticeably restored', description: 'Real benefit' },
-      { value: 4, label: 'Significantly renewed', description: 'Deep restoration' },
-    ],
-    category: 'recovery',
-  },
-  {
-    id: 'recovery_5',
-    text: 'Your body\'s ability to "complete" stress cycles (fully discharge activation) is:',
-    type: 'slider',
-    category: 'recovery',
-    min: 1,
-    max: 10,
-    minLabel: 'Poor — stress gets stuck',
-    maxLabel: 'Good — I process fully',
-  },
-
-  // Trigger Awareness (4 questions)
   {
     id: 'triggers_1',
     text: 'How well do you know your stress triggers?',
-    type: 'scale',
     options: [
       { value: 1, label: 'Not well', description: 'Stress seems random' },
       { value: 2, label: 'Somewhat', description: 'I know the obvious ones' },
@@ -169,44 +111,18 @@ const QUESTIONS: Question[] = [
   },
   {
     id: 'triggers_2',
-    text: 'How early do you notice when stress is building?',
-    type: 'slider',
-    category: 'triggers',
-    min: 1,
-    max: 10,
-    minLabel: 'Only when overwhelmed',
-    maxLabel: 'At the first signs',
-  },
-  {
-    id: 'triggers_3',
-    text: 'Are there situations that trigger you more than seems reasonable?',
-    subtext: 'Reactions that feel bigger than the situation warrants',
-    type: 'scale',
+    text: 'How early do you notice stress building?',
     options: [
-      { value: 1, label: 'Frequently', description: 'Many things set me off' },
-      { value: 2, label: 'Sometimes', description: 'Certain situations' },
-      { value: 3, label: 'Occasionally', description: 'Rare but I notice it' },
-      { value: 4, label: 'Rarely', description: 'My reactions match situations' },
+      { value: 1, label: 'Only when overwhelmed', description: 'Too late to intervene' },
+      { value: 2, label: 'When it\'s strong', description: 'Mid-activation' },
+      { value: 3, label: 'Fairly early', description: 'With some buildup' },
+      { value: 4, label: 'At the first signs', description: 'Very attuned' },
     ],
     category: 'triggers',
   },
   {
-    id: 'triggers_4',
-    text: 'How connected are you to your body\'s stress signals?',
-    subtext: 'Noticing physical cues like tension, breathing changes, gut feelings',
-    type: 'slider',
-    category: 'triggers',
-    min: 1,
-    max: 10,
-    minLabel: 'Disconnected — miss the signs',
-    maxLabel: 'Very attuned — feel everything',
-  },
-
-  // Coping Flexibility (4 questions)
-  {
     id: 'coping_1',
-    text: 'How many different strategies do you have for managing stress?',
-    type: 'scale',
+    text: 'How many strategies do you have for stress?',
     options: [
       { value: 1, label: 'Very few', description: 'I mostly just endure' },
       { value: 2, label: 'A couple', description: 'One or two go-tos' },
@@ -217,66 +133,30 @@ const QUESTIONS: Question[] = [
   },
   {
     id: 'coping_2',
-    text: 'When your usual coping methods don\'t work, you:',
-    type: 'choice',
+    text: 'When your usual coping methods don\'t work:',
     options: [
-      { value: 1, label: 'Feel stuck — don\'t know what else to try' },
-      { value: 2, label: 'Push harder — do more of the same' },
-      { value: 3, label: 'Eventually try something different' },
-      { value: 4, label: 'Adapt flexibly — have backup strategies' },
+      { value: 1, label: 'Feel stuck', description: 'Don\'t know what else to try' },
+      { value: 2, label: 'Push harder', description: 'Do more of the same' },
+      { value: 3, label: 'Eventually adapt', description: 'Try something different' },
+      { value: 4, label: 'Flexibly adjust', description: 'Have backup strategies' },
     ],
     category: 'coping',
   },
-  {
-    id: 'coping_3',
-    text: 'How effective are your current stress management approaches?',
-    type: 'slider',
-    category: 'coping',
-    min: 1,
-    max: 10,
-    minLabel: 'Not very — I still struggle',
-    maxLabel: 'Very — they work well',
-  },
-  {
-    id: 'coping_4',
-    text: 'Your coping strategies tend to be:',
-    type: 'choice',
-    options: [
-      { value: 1, label: 'Avoidance-based — distraction, numbing, escaping' },
-      { value: 2, label: 'Control-based — overworking, perfectionism, planning' },
-      { value: 3, label: 'Mixed — some helpful, some less so' },
-      { value: 4, label: 'Regulation-based — presence, processing, body-based' },
-    ],
-    category: 'coping',
-  },
-
-  // Window of Tolerance (5 questions)
   {
     id: 'window_1',
-    text: 'How much stress can you handle before feeling overwhelmed?',
-    type: 'slider',
+    text: 'How much stress before feeling overwhelmed?',
+    options: [
+      { value: 1, label: 'Very little', description: 'Low threshold' },
+      { value: 2, label: 'Moderate amount', description: 'Average capacity' },
+      { value: 3, label: 'Quite a bit', description: 'Good tolerance' },
+      { value: 4, label: 'A lot', description: 'High capacity' },
+    ],
     category: 'window',
-    min: 1,
-    max: 10,
-    minLabel: 'Very little — low threshold',
-    maxLabel: 'A lot — high capacity',
   },
   {
     id: 'window_2',
-    text: 'When you\'re outside your comfort zone, you typically:',
-    type: 'choice',
-    options: [
-      { value: 1, label: 'Panic or shut down quickly' },
-      { value: 2, label: 'Get very uncomfortable, struggle to function' },
-      { value: 3, label: 'Feel stressed but manage' },
-      { value: 4, label: 'Adapt fairly well, stay functional' },
-    ],
-    category: 'window',
-  },
-  {
-    id: 'window_3',
-    text: 'How often do you feel emotionally dysregulated (overwhelmed, numb, or out of control)?',
-    type: 'scale',
+    text: 'How often do you feel emotionally dysregulated?',
+    subtext: 'Overwhelmed, numb, or out of control',
     options: [
       { value: 1, label: 'Daily', description: 'It\'s my normal state' },
       { value: 2, label: 'Several times a week', description: 'Quite frequently' },
@@ -285,87 +165,119 @@ const QUESTIONS: Question[] = [
     ],
     category: 'window',
   },
-  {
-    id: 'window_4',
-    text: 'Your capacity to stay present during difficult conversations or conflict:',
-    type: 'slider',
-    category: 'window',
-    min: 1,
-    max: 10,
-    minLabel: 'Very low — I check out or explode',
-    maxLabel: 'High — I can stay engaged',
-  },
-  {
-    id: 'window_5',
-    text: 'Over the past year, your stress tolerance has:',
-    type: 'scale',
-    options: [
-      { value: 1, label: 'Decreased significantly', description: 'I handle less than before' },
-      { value: 2, label: 'Decreased somewhat', description: 'Slightly lower capacity' },
-      { value: 3, label: 'Stayed about the same', description: 'No major change' },
-      { value: 4, label: 'Increased', description: 'I\'ve grown my capacity' },
-    ],
-    category: 'window',
-  },
 ];
 
 const STRESS_RESPONSES = {
   fight: {
     name: 'The Fighter',
-    description: 'Your nervous system responds to stress with activation and action. You meet challenges head-on, sometimes with intensity that can overwhelm yourself or others.',
+    emoji: '⚔️',
+    description: 'Your nervous system responds to stress with activation and action. You meet challenges head-on, sometimes with intensity.',
     signs: ['Irritability under stress', 'Urge to take action', 'Frustration with obstacles', 'Tension and restlessness'],
     shadow: 'May become aggressive, controlling, or burn out from constant pushing',
-    tools: ['Physical discharge (exercise, movement)', 'Healthy anger expression', 'Channel energy into productive action', 'Cool-down practices'],
+    strengths: ['Takes initiative', 'Protective of others', 'Gets things done', 'Doesn\'t avoid problems'],
+    tools: ['Physical exercise', 'Healthy anger expression', 'Channel energy productively', 'Cool-down practices'],
     color: '#C47070',
   },
   flight: {
     name: 'The Flyer',
-    description: 'Your nervous system responds to stress with urgency to escape or avoid. You\'re highly attuned to threats and skilled at anticipating problems before they arrive.',
+    emoji: '🦋',
+    description: 'Your nervous system responds with urgency to escape or avoid. You\'re highly attuned to threats and skilled at anticipating problems.',
     signs: ['Anxiety and worry', 'Avoidance of conflict', 'Busy-ness and overthinking', 'Difficulty being still'],
     shadow: 'May become anxious, avoidant, or exhaust yourself running from perceived threats',
-    tools: ['Grounding practices', 'Anxiety-reducing breathwork', 'Gradual exposure to fears', 'Settling the nervous system'],
+    strengths: ['Anticipates problems', 'Plans ahead', 'Quick thinking', 'Highly aware'],
+    tools: ['Grounding practices', 'Calming breathwork', 'Gradual exposure', 'Settling techniques'],
     color: '#E8B86D',
   },
   freeze: {
     name: 'The Freezer',
-    description: 'Your nervous system responds to stress by shutting down and conserving energy. This ancient survival response protects you by reducing your visibility to threats.',
-    signs: ['Numbing out under stress', 'Difficulty taking action', 'Feeling stuck or paralyzed', 'Dissociation or spacing out'],
+    emoji: '🧊',
+    description: 'Your nervous system responds by shutting down and conserving energy. This protects you by reducing visibility to threats.',
+    signs: ['Numbing out under stress', 'Difficulty taking action', 'Feeling stuck or paralyzed', 'Spacing out'],
     shadow: 'May become depressed, disconnected, or unable to engage with life fully',
-    tools: ['Gentle activation (tiny movements)', 'Warmth and safety', 'Pendulation between stillness and movement', 'Connection with safe others'],
+    strengths: ['Can endure difficult situations', 'Observant', 'Patient', 'Non-reactive'],
+    tools: ['Gentle movement', 'Warmth and safety', 'Small activating steps', 'Connection with safe people'],
     color: '#6B9BC3',
   },
   fawn: {
-    name: 'The Fawner',
-    description: 'Your nervous system responds to stress by appeasing and prioritizing others\' needs. You\'ve learned that safety comes through connection and accommodation.',
-    signs: ['People-pleasing under stress', 'Difficulty saying no', 'Hypervigilance to others\' moods', 'Losing yourself in relationships'],
+    name: 'The Connector',
+    emoji: '🤝',
+    description: 'Your nervous system responds by prioritizing others\' needs. You\'ve learned that safety comes through connection and accommodation.',
+    signs: ['People-pleasing under stress', 'Difficulty saying no', 'Hypervigilance to moods', 'Losing yourself'],
     shadow: 'May lose sense of self, enable harmful dynamics, or exhaust yourself caring for others',
-    tools: ['Boundary setting practice', 'Self-connection exercises', 'Learning to tolerate others\' discomfort', 'Validating your own needs'],
+    strengths: ['Empathetic', 'Builds relationships', 'Reads people well', 'Creates harmony'],
+    tools: ['Boundary setting', 'Self-connection', 'Tolerating others\' discomfort', 'Validating your needs'],
     color: '#A78BB3',
   },
   regulated: {
-    name: 'The Regulator',
-    description: 'Your nervous system has developed good capacity to move through stress responses and return to balance. You experience activation but don\'t get stuck.',
-    signs: ['Flexible responses to stress', 'Quick recovery time', 'Awareness of internal states', 'Access to multiple strategies'],
+    name: 'The Balanced',
+    emoji: '⚖️',
+    description: 'Your nervous system has developed good capacity to move through stress and return to balance. You experience activation but don\'t get stuck.',
+    signs: ['Flexible responses', 'Quick recovery', 'Awareness of states', 'Multiple strategies'],
     shadow: 'May still have specific triggers; regulation is a practice, not a destination',
-    tools: ['Continue building your toolkit', 'Support others in regulation', 'Maintain practices that keep you balanced', 'Stay curious about growth edges'],
+    strengths: ['Resilient', 'Adaptable', 'Self-aware', 'Emotionally intelligent'],
+    tools: ['Continue practices', 'Support others', 'Maintain balance', 'Explore growth edges'],
     color: '#7BA05B',
   },
 };
+
+// ============================================================================
+// STYLES
+// ============================================================================
+const STYLES = `
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  @keyframes fadeInScale {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  .assess-option {
+    transition: all 0.2s ease;
+  }
+  .assess-option:hover {
+    transform: translateY(-2px);
+  }
+  .assess-option:active {
+    transform: scale(0.98);
+  }
+
+  .assess-scroll::-webkit-scrollbar {
+    width: 4px;
+  }
+  .assess-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .assess-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+  }
+
+  .progress-bar {
+    transition: width 0.4s ease;
+  }
+`;
 
 export default function StressResponseAssessment({ onBack, onComplete }: AssessmentProps) {
   const { isDark, colors } = useTheme();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [showIntro, setShowIntro] = useState(true);
-  const [showReport, setShowReport] = useState(false);
+  const [phase, setPhase] = useState<'intro' | 'questions' | 'report'>('intro');
   const [results, setResults] = useState<AssessmentResults | null>(null);
-  const [sliderValue, setSliderValue] = useState(5);
 
   const bgColor = colors.bg;
   const textColor = colors.text;
   const mutedColor = colors.textMuted;
   const accentColor = colors.accent;
   const cardBg = colors.cardBg;
+  const cardBorder = colors.cardBorder;
 
   const question = QUESTIONS[currentQuestion];
   const progress = ((currentQuestion + 1) / QUESTIONS.length) * 100;
@@ -375,20 +287,13 @@ export default function StressResponseAssessment({ onBack, onComplete }: Assessm
     setAnswers(newAnswers);
 
     if (currentQuestion < QUESTIONS.length - 1) {
-      setTimeout(() => {
-        setCurrentQuestion(currentQuestion + 1);
-        setSliderValue(5);
-      }, 300);
+      setTimeout(() => setCurrentQuestion(currentQuestion + 1), 250);
     } else {
-      const calculatedResults = calculateResults(newAnswers);
-      setResults(calculatedResults);
-      setShowReport(true);
-      onComplete?.(calculatedResults);
+      const calculated = calculateResults(newAnswers);
+      setResults(calculated);
+      setPhase('report');
+      onComplete?.(calculated);
     }
-  };
-
-  const handleSliderSubmit = () => {
-    handleAnswer(sliderValue);
   };
 
   const calculateResults = (allAnswers: Record<string, number>): AssessmentResults => {
@@ -409,8 +314,7 @@ export default function StressResponseAssessment({ onBack, onComplete }: Assessm
     const normalize = (arr: number[]) => {
       if (arr.length === 0) return 50;
       const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
-      const maxPossible = arr.some((v) => v > 4) ? 10 : 4;
-      return Math.round((avg / maxPossible) * 100);
+      return Math.round((avg / 4) * 100);
     };
 
     const scores = {
@@ -422,94 +326,62 @@ export default function StressResponseAssessment({ onBack, onComplete }: Assessm
     };
 
     const { stressResponse, secondaryResponse } = determineStressResponse(scores, allAnswers);
-    const insights = generateInsights(scores, stressResponse, allAnswers);
+    const insights = generateInsights(scores, stressResponse);
     const recommendations = generateRecommendations(scores, stressResponse);
     const regulationTools = STRESS_RESPONSES[stressResponse as keyof typeof STRESS_RESPONSES]?.tools || [];
 
-    return {
-      ...scores,
-      stressResponse,
-      secondaryResponse,
-      insights,
-      recommendations,
-      regulationTools,
-    };
+    return { ...scores, stressResponse, secondaryResponse, insights, recommendations, regulationTools };
   };
 
-  const determineStressResponse = (scores: Record<string, number>, answers: Record<string, number>) => {
+  const determineStressResponse = (scores: Record<string, number>, ans: Record<string, number>) => {
     let stressResponse = 'regulated';
     let secondaryResponse = 'flight';
 
-    const bodyResponse = answers['activation_3'] || 1;
-    const copingStyle = answers['coping_4'] || 3;
-    const windowSize = scores.windowOfTolerance;
-    const activationLevel = scores.activationLevel;
+    const bodyResponse = ans['activation_3'] || 1;
+    const avgScore = (scores.activationLevel + scores.recoveryCapacity + scores.windowOfTolerance) / 3;
 
-    // Determine primary response based on body response and patterns
-    if (bodyResponse === 1 && activationLevel < 50) {
-      // Racing heart, rapid breathing = Flight
-      stressResponse = 'flight';
-    } else if (bodyResponse === 2 && activationLevel < 50) {
-      // Muscle tension = Fight
-      stressResponse = 'fight';
-    } else if (bodyResponse === 4 || (activationLevel < 30 && scores.recoveryCapacity < 40)) {
-      // Fatigue, shutdown = Freeze
-      stressResponse = 'freeze';
-    } else if (copingStyle === 1 && scores.copingFlexibility < 50) {
-      // Avoidance-based coping = could be Flight or Freeze
-      stressResponse = activationLevel < 40 ? 'freeze' : 'flight';
-    } else if (copingStyle === 2) {
-      // Control-based = Fight
-      stressResponse = 'fight';
-    } else if (windowSize > 65 && scores.copingFlexibility > 60 && scores.recoveryCapacity > 60) {
-      // Good regulation
+    if (avgScore > 70) {
       stressResponse = 'regulated';
-    }
-
-    // Check for fawn response
-    if (copingStyle === 1 && scores.triggerAwareness > 60) {
-      // High awareness of others + avoidance might indicate fawn
+    } else if (bodyResponse === 1) {
+      stressResponse = 'flight';
+    } else if (bodyResponse === 2) {
+      stressResponse = 'fight';
+    } else if (bodyResponse === 4 || avgScore < 35) {
+      stressResponse = 'freeze';
+    } else if (scores.copingFlexibility < 40) {
       stressResponse = 'fawn';
+    } else {
+      stressResponse = 'flight';
     }
 
-    // Determine secondary
-    if (stressResponse === 'fight') secondaryResponse = activationLevel < 50 ? 'flight' : 'freeze';
-    else if (stressResponse === 'flight') secondaryResponse = 'freeze';
-    else if (stressResponse === 'freeze') secondaryResponse = 'fawn';
-    else if (stressResponse === 'fawn') secondaryResponse = 'freeze';
-    else secondaryResponse = 'flight';
+    const responses = ['fight', 'flight', 'freeze', 'fawn'];
+    secondaryResponse = responses.find(r => r !== stressResponse) || 'flight';
 
     return { stressResponse, secondaryResponse };
   };
 
-  const generateInsights = (scores: Record<string, number>, response: string, answers: Record<string, number>): string[] => {
+  const generateInsights = (scores: Record<string, number>, response: string): string[] => {
     const insights: string[] = [];
-
-    const responseData = STRESS_RESPONSES[response as keyof typeof STRESS_RESPONSES];
-    if (responseData) {
-      insights.push(`Your primary stress response is ${responseData.name}. ${responseData.description}`);
+    const data = STRESS_RESPONSES[response as keyof typeof STRESS_RESPONSES];
+    
+    if (data) {
+      insights.push(`Your primary stress response is ${data.name}. ${data.description}`);
     }
 
     if (scores.activationLevel < 40) {
-      insights.push('Your baseline nervous system state is elevated. You may be living with chronic activation that feels "normal" but is actually taxing your system.');
+      insights.push('Your baseline nervous system state is elevated. You may be living with chronic activation that feels "normal" but is taxing your system.');
+    } else if (scores.activationLevel > 70) {
+      insights.push('You have a calm baseline state. Your nervous system starts from a regulated place, which gives you more capacity to handle stress.');
     }
 
     if (scores.recoveryCapacity < 40) {
-      insights.push('Your recovery capacity is compromised. Your nervous system has difficulty completing stress cycles, which means activation accumulates over time.');
+      insights.push('Your recovery capacity needs attention. Your system has difficulty completing stress cycles, which means activation accumulates.');
+    } else if (scores.recoveryCapacity > 70) {
+      insights.push('You recover well from stress. Your nervous system knows how to return to baseline, which is a significant strength.');
     }
 
     if (scores.windowOfTolerance < 40) {
-      insights.push('Your window of tolerance is narrower than ideal. This means you may move into overwhelm or shutdown more easily than you\'d like.');
-    }
-
-    if (scores.triggerAwareness > 70) {
-      insights.push('You have strong awareness of your triggers and body signals. This self-knowledge is a powerful foundation for regulation.');
-    } else if (scores.triggerAwareness < 40) {
-      insights.push('Building awareness of your stress triggers and body signals would help you catch activation earlier, when it\'s easier to regulate.');
-    }
-
-    if (scores.copingFlexibility < 40) {
-      insights.push('Expanding your coping toolkit would give you more options when stress hits. Different situations call for different strategies.');
+      insights.push('Your window of tolerance is narrower than ideal. You may move into overwhelm or shutdown more easily than you\'d like.');
     }
 
     return insights.slice(0, 4);
@@ -517,436 +389,625 @@ export default function StressResponseAssessment({ onBack, onComplete }: Assessm
 
   const generateRecommendations = (scores: Record<string, number>, response: string): string[] => {
     const recs: string[] = [];
+    const data = STRESS_RESPONSES[response as keyof typeof STRESS_RESPONSES];
 
-    // Response-specific recommendations
-    switch (response) {
-      case 'fight':
-        recs.push('Channel your activation energy through physical exercise, especially activities that feel like "fighting" (boxing, intense workouts, competitive sports).');
-        recs.push('Practice the pause — when you notice anger rising, take 3 breaths before responding. The space between trigger and response is where choice lives.');
-        break;
-      case 'flight':
-        recs.push('Ground yourself when anxiety rises: feel your feet, notice 5 things you can see, breathe slowly. These practices tell your nervous system you\'re safe.');
-        recs.push('Practice staying present with discomfort in small doses. Your system needs to learn that you can handle stress without running.');
-        break;
-      case 'freeze':
-        recs.push('Start with the smallest possible movements when you notice shutdown — wiggle your fingers, roll your shoulders. Tiny activation can unthaw freeze.');
-        recs.push('Seek warmth and connection. Your nervous system froze to survive; it needs safety signals to come back online.');
-        break;
-      case 'fawn':
-        recs.push('Practice noticing your own needs before attending to others. Ask yourself "What do I want?" multiple times daily.');
-        recs.push('Start setting small boundaries and tolerate the discomfort of others\' reactions. Your needs matter as much as theirs.');
-        break;
-      case 'regulated':
-        recs.push('Continue your practices — regulation is maintained through consistent effort. Notice what\'s working and do more of it.');
-        recs.push('Consider how you might support others in their regulation. Teaching and modeling can deepen your own skills.');
-        break;
+    if (data) {
+      recs.push(`As ${data.name}, focus on: ${data.tools.slice(0, 2).join(' and ')}.`);
     }
 
-    // Score-based recommendations
     if (scores.recoveryCapacity < 50) {
-      recs.push('Build recovery rituals into your daily life — transition practices between activities, wind-down routines, and completion rituals for stressful tasks.');
+      recs.push('Build recovery rituals into your day — transition practices, wind-down routines, and completion rituals for stressful tasks.');
     }
 
     if (scores.windowOfTolerance < 50) {
-      recs.push('Work on gradually expanding your window of tolerance through titrated exposure — small challenges followed by successful regulation.');
+      recs.push('Work on expanding your window of tolerance through small challenges followed by successful regulation.');
+    }
+
+    if (scores.triggerAwareness < 50) {
+      recs.push('Practice noticing your body\'s early warning signs. Catching stress early gives you more options.');
+    }
+
+    if (scores.copingFlexibility < 50) {
+      recs.push('Expand your coping toolkit. Different situations call for different strategies.');
     }
 
     return recs.slice(0, 4);
   };
 
+  // ============================================================================
   // INTRO SCREEN
-  if (showIntro) {
+  // ============================================================================
+  if (phase === 'intro') {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: bgColor }}>
-        <div className="flex items-center justify-between p-4">
-          <button onClick={onBack} className="p-2 rounded-full" style={{ color: mutedColor }}>
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
-          <div 
-            className="w-24 h-24 rounded-full mb-8 flex items-center justify-center"
-            style={{ backgroundColor: `${accentColor}22` }}
-          >
-            <svg viewBox="0 0 48 48" className="w-12 h-12">
-              <path d="M24 8 L24 24 L36 32" fill="none" stroke={accentColor} strokeWidth="1.5" strokeLinecap="round" />
-              <circle cx="24" cy="24" r="18" fill="none" stroke={accentColor} strokeWidth="1.5" />
-              <circle cx="24" cy="24" r="3" fill={accentColor} opacity="0.6" />
-            </svg>
-          </div>
-
-          <h1 className="text-3xl font-light mb-3" style={{ color: textColor }}>
-            Stress Response
-          </h1>
-          <p className="text-lg mb-2" style={{ color: accentColor }}>
-            Your Body's Patterns
-          </p>
-          <p className="text-base mb-8 max-w-md" style={{ color: mutedColor }}>
-            Understand how your nervous system responds to pressure — and discover the regulation strategies that will work best for you.
-          </p>
-
-          <div 
-            className="w-full max-w-sm p-5 rounded-2xl mb-8"
-            style={{ backgroundColor: cardBg }}
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke={accentColor} strokeWidth="1.5">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 6v6l4 2" />
-              </svg>
-              <span style={{ color: textColor }}>About 15 minutes</span>
-            </div>
-            <div className="flex items-center gap-3 mb-3">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke={accentColor} strokeWidth="1.5">
-                <path d="M9 12l2 2 4-4" />
-                <circle cx="12" cy="12" r="10" />
-              </svg>
-              <span style={{ color: textColor }}>23 body-based questions</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke={accentColor} strokeWidth="1.5">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-              </svg>
-              <span style={{ color: textColor }}>Your personalized regulation toolkit</span>
-            </div>
-          </div>
-
-          <p className="text-sm mb-8 max-w-md" style={{ color: mutedColor }}>
-            Your body has wisdom. Answer based on what you actually experience, not what you think you should feel.
-          </p>
-
-          <button
-            onClick={() => setShowIntro(false)}
-            className="px-8 py-4 rounded-2xl font-medium text-white"
-            style={{ backgroundColor: accentColor }}
-          >
-            Begin Assessment
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // REPORT SCREEN
-  if (showReport && results) {
-    const responseData = STRESS_RESPONSES[results.stressResponse as keyof typeof STRESS_RESPONSES];
-    const secondaryData = STRESS_RESPONSES[results.secondaryResponse as keyof typeof STRESS_RESPONSES];
-
-    return (
-      <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: bgColor }}>
-        <div className="flex items-center justify-between p-4">
-          <button onClick={onBack} className="p-2 rounded-full" style={{ color: mutedColor }}>
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-          <span className="text-sm" style={{ color: mutedColor }}>Your Stress Profile</span>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          <div className="max-w-lg mx-auto">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <h1 className="text-2xl font-light mb-2" style={{ color: textColor }}>
-                Your Stress Response Map
-              </h1>
-              <p className="text-sm" style={{ color: mutedColor }}>
-                Understanding how your body navigates pressure
-              </p>
-            </div>
-
-            {/* Primary Response */}
-            <div 
-              className="p-6 rounded-2xl mb-6"
-              style={{ 
-                backgroundColor: isDark ? `${responseData.color}22` : `${responseData.color}15`,
-                borderLeft: `4px solid ${responseData.color}`,
+      <>
+        <style>{STYLES}</style>
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: bgColor,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}>
+          {/* Header */}
+          <header style={{
+            padding: '16px',
+            paddingTop: 'max(16px, env(safe-area-inset-top))',
+            display: 'flex',
+            alignItems: 'center',
+          }}>
+            <button
+              onClick={onBack}
+              style={{
+                padding: '10px 18px',
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 50,
+                cursor: 'pointer',
+                fontSize: 14,
+                color: mutedColor,
               }}
             >
-              <div className="text-sm uppercase tracking-wide mb-1" style={{ color: responseData.color }}>
-                Your Primary Response
-              </div>
-              <h2 className="text-2xl font-medium mb-3" style={{ color: textColor }}>
-                {responseData.name}
-              </h2>
-              <p className="text-base leading-relaxed" style={{ color: mutedColor }}>
-                {responseData.description}
-              </p>
+              ← Back
+            </button>
+          </header>
+
+          {/* Content */}
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+            textAlign: 'center',
+            animation: 'fadeIn 0.5s ease',
+          }}>
+            {/* Icon */}
+            <div style={{
+              width: 80,
+              height: 80,
+              borderRadius: '50%',
+              background: `linear-gradient(135deg, ${accentColor}22 0%, ${accentColor}11 100%)`,
+              border: `1px solid ${accentColor}33`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 24,
+              fontSize: 36,
+            }}>
+              ⚡
             </div>
 
-            {/* Response Signs */}
-            <div className="p-5 rounded-2xl mb-6" style={{ backgroundColor: cardBg }}>
-              <h3 className="text-lg font-medium mb-3" style={{ color: textColor }}>
-                Signs of Your Response
-              </h3>
-              <div className="space-y-2">
-                {responseData.signs.map((sign, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <div 
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: responseData.color }}
-                    />
-                    <span className="text-sm" style={{ color: mutedColor }}>{sign}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <h1 style={{
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: 32,
+              fontWeight: 300,
+              color: textColor,
+              marginBottom: 8,
+            }}>
+              Stress Response
+            </h1>
 
-            {/* Nervous System Scores */}
-            <div className="p-5 rounded-2xl mb-6" style={{ backgroundColor: cardBg }}>
-              <h3 className="text-lg font-medium mb-4" style={{ color: textColor }}>
-                Your Nervous System Profile
-              </h3>
-              
-              {[
-                { label: 'Baseline Regulation', value: results.activationLevel, color: '#7BA05B', lowLabel: 'Chronically activated' },
-                { label: 'Recovery Capacity', value: results.recoveryCapacity, color: '#6B9BC3', lowLabel: 'Slow to recover' },
-                { label: 'Trigger Awareness', value: results.triggerAwareness, color: '#E8B86D', lowLabel: 'Limited awareness' },
-                { label: 'Coping Flexibility', value: results.copingFlexibility, color: '#A78BB3', lowLabel: 'Limited strategies' },
-                { label: 'Window of Tolerance', value: results.windowOfTolerance, color: '#C4956A', lowLabel: 'Narrow window' },
-              ].map((item, i) => (
-                <div key={i} className="mb-4 last:mb-0">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm" style={{ color: textColor }}>{item.label}</span>
-                    <span className="text-sm" style={{ color: item.value < 50 ? '#C47070' : item.color }}>
-                      {item.value < 40 ? item.lowLabel : item.value < 60 ? 'Developing' : item.value < 75 ? 'Good' : 'Strong'}
-                    </span>
-                  </div>
-                  <div 
-                    className="h-2 rounded-full overflow-hidden"
-                    style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }}
-                  >
-                    <div 
-                      className="h-full rounded-full transition-all duration-1000"
-                      style={{ width: `${item.value}%`, backgroundColor: item.value < 50 ? '#C47070' : item.color }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Shadow Side */}
-            <div 
-              className="p-5 rounded-2xl mb-6"
-              style={{ 
-                backgroundColor: isDark ? 'rgba(196, 112, 112, 0.15)' : 'rgba(196, 112, 112, 0.1)',
-              }}
-            >
-              <h3 className="text-lg font-medium mb-2" style={{ color: textColor }}>
-                The Shadow Side
-              </h3>
-              <p className="text-sm" style={{ color: mutedColor }}>
-                {responseData.shadow}
-              </p>
-            </div>
-
-            {/* Secondary Response */}
-            <div className="p-5 rounded-2xl mb-6" style={{ backgroundColor: cardBg }}>
-              <div className="text-sm uppercase tracking-wide mb-1" style={{ color: secondaryData.color }}>
-                Secondary Response
-              </div>
-              <h3 className="text-lg font-medium mb-2" style={{ color: textColor }}>
-                {secondaryData.name}
-              </h3>
-              <p className="text-sm" style={{ color: mutedColor }}>
-                When your primary response doesn't work or isn't available, you may shift to this pattern.
-              </p>
-            </div>
-
-            {/* Regulation Tools */}
-            <div className="p-5 rounded-2xl mb-6" style={{ backgroundColor: cardBg }}>
-              <h3 className="text-lg font-medium mb-3" style={{ color: textColor }}>
-                Your Regulation Toolkit
-              </h3>
-              <p className="text-xs mb-3" style={{ color: mutedColor }}>
-                Tools specifically matched to your stress response pattern
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {results.regulationTools.map((tool, i) => (
-                  <span 
-                    key={i}
-                    className="px-3 py-1.5 rounded-full text-sm"
-                    style={{ 
-                      backgroundColor: isDark ? `${responseData.color}33` : `${responseData.color}22`,
-                      color: responseData.color,
-                    }}
-                  >
-                    {tool}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Insights */}
-            <div className="p-5 rounded-2xl mb-6" style={{ backgroundColor: cardBg }}>
-              <h3 className="text-lg font-medium mb-4" style={{ color: textColor }}>
-                Insights
-              </h3>
-              <div className="space-y-4">
-                {results.insights.map((insight, i) => (
-                  <div key={i} className="flex gap-3">
-                    <div 
-                      className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
-                      style={{ backgroundColor: `${accentColor}22` }}
-                    >
-                      <span className="text-xs" style={{ color: accentColor }}>{i + 1}</span>
-                    </div>
-                    <p className="text-sm leading-relaxed" style={{ color: mutedColor }}>
-                      {insight}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Recommendations */}
-            <div className="p-5 rounded-2xl mb-6" style={{ backgroundColor: cardBg }}>
-              <h3 className="text-lg font-medium mb-4" style={{ color: textColor }}>
-                Your Regulation Path
-              </h3>
-              <div className="space-y-4">
-                {results.recommendations.map((rec, i) => (
-                  <div key={i} className="flex gap-3">
-                    <div 
-                      className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
-                      style={{ backgroundColor: `${accentColor}22` }}
-                    >
-                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke={accentColor} strokeWidth="3">
-                        <path d="M5 12h14M12 5l7 7-7 7" />
-                      </svg>
-                    </div>
-                    <p className="text-sm leading-relaxed" style={{ color: mutedColor }}>
-                      {rec}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Closing */}
-            <div className="text-center py-6">
-              <p className="text-sm mb-6" style={{ color: mutedColor }}>
-                Your stress response isn't a flaw — it's how your nervous system learned to protect you. Now you can work with it, not against it.
-              </p>
-              <button
-                onClick={onBack}
-                className="px-8 py-4 rounded-2xl font-medium text-white"
-                style={{ backgroundColor: accentColor }}
-              >
-                Return to Library
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // QUESTION SCREEN
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: bgColor }}>
-      <div className="flex items-center justify-between p-4">
-        <button onClick={onBack} className="p-2 rounded-full" style={{ color: mutedColor }}>
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-        <span className="text-sm" style={{ color: mutedColor }}>
-          {currentQuestion + 1} of {QUESTIONS.length}
-        </span>
-      </div>
-
-      <div className="px-4">
-        <div 
-          className="h-1 rounded-full overflow-hidden"
-          style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}
-        >
-          <div 
-            className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${progress}%`, backgroundColor: accentColor }}
-          />
-        </div>
-      </div>
-
-      <div className="flex-1 flex flex-col justify-center px-6 py-8">
-        <div className="max-w-lg mx-auto w-full">
-          <h2 className="text-xl font-medium mb-2 leading-relaxed" style={{ color: textColor }}>
-            {question.text}
-          </h2>
-          {question.subtext && (
-            <p className="text-sm mb-8" style={{ color: mutedColor }}>
-              {question.subtext}
+            <p style={{
+              fontSize: 16,
+              color: accentColor,
+              marginBottom: 16,
+            }}>
+              Your Body's Patterns
             </p>
-          )}
-          {!question.subtext && <div className="mb-8" />}
 
-          {(question.type === 'scale' || question.type === 'choice') && question.options && (
-            <div className="space-y-3">
+            <p style={{
+              fontSize: 15,
+              color: mutedColor,
+              maxWidth: 320,
+              lineHeight: 1.6,
+              marginBottom: 32,
+            }}>
+              Understand how your nervous system responds to pressure — and discover regulation strategies that work for you.
+            </p>
+
+            {/* Info Cards */}
+            <div style={{
+              display: 'flex',
+              gap: 12,
+              marginBottom: 40,
+            }}>
+              <div style={{
+                padding: '12px 20px',
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 12,
+              }}>
+                <div style={{ fontSize: 13, color: mutedColor }}>Duration</div>
+                <div style={{ fontSize: 15, color: textColor, fontWeight: 500 }}>~5 min</div>
+              </div>
+              <div style={{
+                padding: '12px 20px',
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 12,
+              }}>
+                <div style={{ fontSize: 13, color: mutedColor }}>Questions</div>
+                <div style={{ fontSize: 15, color: textColor, fontWeight: 500 }}>{QUESTIONS.length}</div>
+              </div>
+            </div>
+
+            {/* Start Button */}
+            <button
+              onClick={() => setPhase('questions')}
+              style={{
+                padding: '16px 48px',
+                background: `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}dd 100%)`,
+                border: 'none',
+                borderRadius: 50,
+                color: '#fff',
+                fontSize: 16,
+                fontWeight: 500,
+                cursor: 'pointer',
+                boxShadow: `0 4px 20px ${accentColor}44`,
+              }}
+            >
+              Begin Assessment
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // ============================================================================
+  // QUESTIONS SCREEN
+  // ============================================================================
+  if (phase === 'questions') {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: bgColor,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}>
+          {/* Header */}
+          <header style={{
+            padding: '16px',
+            paddingTop: 'max(16px, env(safe-area-inset-top))',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <button
+              onClick={onBack}
+              style={{
+                padding: '8px 14px',
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 50,
+                cursor: 'pointer',
+                fontSize: 13,
+                color: mutedColor,
+              }}
+            >
+              ✕
+            </button>
+            <span style={{ fontSize: 13, color: mutedColor }}>
+              {currentQuestion + 1} of {QUESTIONS.length}
+            </span>
+            <div style={{ width: 50 }} />
+          </header>
+
+          {/* Progress Bar */}
+          <div style={{ padding: '0 20px', marginBottom: 24 }}>
+            <div style={{
+              height: 4,
+              background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+              borderRadius: 4,
+              overflow: 'hidden',
+            }}>
+              <div
+                className="progress-bar"
+                style={{
+                  height: '100%',
+                  width: `${progress}%`,
+                  background: accentColor,
+                  borderRadius: 4,
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Question */}
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '0 24px',
+            animation: 'fadeIn 0.3s ease',
+          }}>
+            <div style={{ marginBottom: 32 }}>
+              <h2 style={{
+                fontSize: 22,
+                fontWeight: 500,
+                color: textColor,
+                lineHeight: 1.4,
+                marginBottom: question.subtext ? 8 : 0,
+              }}>
+                {question.text}
+              </h2>
+              {question.subtext && (
+                <p style={{ fontSize: 14, color: mutedColor }}>
+                  {question.subtext}
+                </p>
+              )}
+            </div>
+
+            {/* Options */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {question.options.map((option, i) => (
                 <button
                   key={i}
+                  className="assess-option"
                   onClick={() => handleAnswer(option.value)}
-                  className="w-full p-4 rounded-xl text-left transition-all hover:scale-[1.02]"
-                  style={{ 
-                    backgroundColor: cardBg,
-                    borderWidth: 1,
-                    borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+                  style={{
+                    padding: '18px 20px',
+                    background: cardBg,
+                    border: `1px solid ${cardBorder}`,
+                    borderRadius: 16,
+                    cursor: 'pointer',
+                    textAlign: 'left',
                   }}
                 >
-                  <div className="font-medium mb-1" style={{ color: textColor }}>
+                  <div style={{
+                    fontSize: 16,
+                    fontWeight: 500,
+                    color: textColor,
+                    marginBottom: option.description ? 4 : 0,
+                  }}>
                     {option.label}
                   </div>
                   {option.description && (
-                    <div className="text-sm" style={{ color: mutedColor }}>
+                    <div style={{ fontSize: 13, color: mutedColor }}>
                       {option.description}
                     </div>
                   )}
                 </button>
               ))}
             </div>
-          )}
+          </div>
+        </div>
+      </>
+    );
+  }
 
-          {question.type === 'slider' && (
-            <div className="space-y-6">
-              <div className="px-2">
-                <input
-                  type="range"
-                  min={question.min || 1}
-                  max={question.max || 10}
-                  value={sliderValue}
-                  onChange={(e) => setSliderValue(parseInt(e.target.value))}
-                  className="w-full h-2 rounded-full appearance-none cursor-pointer"
-                  style={{ 
-                    background: `linear-gradient(to right, ${accentColor} 0%, ${accentColor} ${((sliderValue - 1) / 9) * 100}%, ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)'} ${((sliderValue - 1) / 9) * 100}%, ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)'} 100%)`,
-                  }}
-                />
-                <div className="flex justify-between mt-3">
-                  <span className="text-xs max-w-[40%]" style={{ color: mutedColor }}>
-                    {question.minLabel}
-                  </span>
-                  <span className="text-2xl font-light" style={{ color: accentColor }}>
-                    {sliderValue}
-                  </span>
-                  <span className="text-xs max-w-[40%] text-right" style={{ color: mutedColor }}>
-                    {question.maxLabel}
-                  </span>
+  // ============================================================================
+  // REPORT SCREEN
+  // ============================================================================
+  if (phase === 'report' && results) {
+    const primary = STRESS_RESPONSES[results.stressResponse as keyof typeof STRESS_RESPONSES];
+    const secondary = STRESS_RESPONSES[results.secondaryResponse as keyof typeof STRESS_RESPONSES];
+
+    return (
+      <>
+        <style>{STYLES}</style>
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: bgColor,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}>
+          {/* Header */}
+          <header style={{
+            padding: '16px',
+            paddingTop: 'max(16px, env(safe-area-inset-top))',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <button
+              onClick={onBack}
+              style={{
+                padding: '10px 18px',
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 50,
+                cursor: 'pointer',
+                fontSize: 14,
+                color: mutedColor,
+              }}
+            >
+              ← Back
+            </button>
+            <span style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: mutedColor,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+            }}>
+              Your Results
+            </span>
+            <div style={{ width: 80 }} />
+          </header>
+
+          {/* Scrollable Content */}
+          <div
+            className="assess-scroll"
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '20px 24px',
+              paddingBottom: 'max(40px, env(safe-area-inset-bottom))',
+            }}
+          >
+            <div style={{ maxWidth: 500, margin: '0 auto' }}>
+              {/* Primary Response Card */}
+              <div style={{
+                padding: 24,
+                background: `linear-gradient(135deg, ${primary.color}15 0%, ${primary.color}08 100%)`,
+                border: `1px solid ${primary.color}33`,
+                borderRadius: 20,
+                marginBottom: 20,
+                animation: 'fadeInScale 0.5s ease',
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 16,
+                  marginBottom: 16,
+                }}>
+                  <div style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: '50%',
+                    background: `${primary.color}22`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 28,
+                  }}>
+                    {primary.emoji}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, color: primary.color, marginBottom: 2 }}>
+                      Your Primary Response
+                    </div>
+                    <div style={{
+                      fontFamily: "'Cormorant Garamond', Georgia, serif",
+                      fontSize: 26,
+                      fontWeight: 400,
+                      color: textColor,
+                    }}>
+                      {primary.name}
+                    </div>
+                  </div>
+                </div>
+                <p style={{ fontSize: 15, color: mutedColor, lineHeight: 1.6 }}>
+                  {primary.description}
+                </p>
+              </div>
+
+              {/* Signs */}
+              <div style={{
+                padding: 20,
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 16,
+                marginBottom: 16,
+              }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: textColor, marginBottom: 12 }}>
+                  Signs of Your Response
+                </h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {primary.signs.map((sign, i) => (
+                    <span key={i} style={{
+                      padding: '8px 14px',
+                      background: `${primary.color}15`,
+                      border: `1px solid ${primary.color}25`,
+                      borderRadius: 20,
+                      fontSize: 13,
+                      color: textColor,
+                    }}>
+                      {sign}
+                    </span>
+                  ))}
                 </div>
               </div>
-              
+
+              {/* Strengths */}
+              <div style={{
+                padding: 20,
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 16,
+                marginBottom: 16,
+              }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: textColor, marginBottom: 12 }}>
+                  Your Strengths
+                </h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {primary.strengths.map((s, i) => (
+                    <span key={i} style={{
+                      padding: '8px 14px',
+                      background: '#7BA05B15',
+                      border: '1px solid #7BA05B25',
+                      borderRadius: 20,
+                      fontSize: 13,
+                      color: textColor,
+                    }}>
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Nervous System Scores */}
+              <div style={{
+                padding: 20,
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 16,
+                marginBottom: 16,
+              }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: textColor, marginBottom: 16 }}>
+                  Your Nervous System Profile
+                </h3>
+                {[
+                  { label: 'Baseline Regulation', value: results.activationLevel, color: '#7BA05B' },
+                  { label: 'Recovery Capacity', value: results.recoveryCapacity, color: '#6B9BC3' },
+                  { label: 'Trigger Awareness', value: results.triggerAwareness, color: '#E8B86D' },
+                  { label: 'Coping Flexibility', value: results.copingFlexibility, color: '#A78BB3' },
+                  { label: 'Window of Tolerance', value: results.windowOfTolerance, color: '#C4956A' },
+                ].map((item, i) => (
+                  <div key={i} style={{ marginBottom: i < 4 ? 16 : 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <span style={{ fontSize: 14, color: textColor }}>{item.label}</span>
+                      <span style={{ fontSize: 14, color: item.value < 50 ? '#C47070' : item.color }}>
+                        {item.value}%
+                      </span>
+                    </div>
+                    <div style={{
+                      height: 6,
+                      background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+                      borderRadius: 3,
+                      overflow: 'hidden',
+                    }}>
+                      <div style={{
+                        height: '100%',
+                        width: `${item.value}%`,
+                        background: item.value < 50 ? '#C47070' : item.color,
+                        borderRadius: 3,
+                        transition: 'width 1s ease',
+                      }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Insights */}
+              <div style={{
+                padding: 20,
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 16,
+                marginBottom: 16,
+              }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: textColor, marginBottom: 16 }}>
+                  Key Insights
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {results.insights.map((insight, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 12 }}>
+                      <div style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        background: `${accentColor}22`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        marginTop: 2,
+                      }}>
+                        <span style={{ fontSize: 12, color: accentColor }}>{i + 1}</span>
+                      </div>
+                      <p style={{ fontSize: 14, color: mutedColor, lineHeight: 1.6 }}>
+                        {insight}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recommendations */}
+              <div style={{
+                padding: 20,
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 16,
+                marginBottom: 16,
+              }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: textColor, marginBottom: 16 }}>
+                  Your Regulation Path
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {results.recommendations.map((rec, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 12 }}>
+                      <div style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        background: `${primary.color}22`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        marginTop: 2,
+                      }}>
+                        <span style={{ fontSize: 14, color: primary.color }}>→</span>
+                      </div>
+                      <p style={{ fontSize: 14, color: mutedColor, lineHeight: 1.6 }}>
+                        {rec}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Tools */}
+              <div style={{
+                padding: 20,
+                background: `linear-gradient(135deg, ${primary.color}10 0%, transparent 100%)`,
+                border: `1px solid ${primary.color}25`,
+                borderRadius: 16,
+                marginBottom: 24,
+              }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: textColor, marginBottom: 12 }}>
+                  Your Regulation Toolkit
+                </h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {primary.tools.map((tool, i) => (
+                    <span key={i} style={{
+                      padding: '10px 16px',
+                      background: `${primary.color}20`,
+                      border: `1px solid ${primary.color}30`,
+                      borderRadius: 20,
+                      fontSize: 14,
+                      color: textColor,
+                    }}>
+                      {tool}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Close Button */}
               <button
-                onClick={handleSliderSubmit}
-                className="w-full py-4 rounded-2xl font-medium text-white"
-                style={{ backgroundColor: accentColor }}
+                onClick={onBack}
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  background: `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}dd 100%)`,
+                  border: 'none',
+                  borderRadius: 50,
+                  color: '#fff',
+                  fontSize: 16,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
               >
-                Continue
+                Return to Library
               </button>
             </div>
-          )}
+          </div>
         </div>
-      </div>
-    </div>
-  );
+      </>
+    );
+  }
+
+  return null;
 }

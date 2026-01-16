@@ -1,19 +1,110 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useUser } from '@clerk/nextjs';
+import TrustTransparencySidebar from '@/components/TrustTransparencySidebar';
 
 // ============================================================================
 // TYPES
 // ============================================================================
 type TimeOfDay = 'morning' | 'afternoon' | 'evening' | 'night';
+type ThemeMode = 'light' | 'dark' | 'auto';
+type ConsentStatus = 'unknown' | 'pending' | 'granted' | 'denied';
 
 type Room = {
   id: string;
   name: string;
+  shortName: string;
   essence: string;
-  icon: string;
-  gradient: string;
+  icon: React.ReactNode;
+};
+
+type Message = {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: Date;
+  isConsentPrompt?: boolean;
+};
+
+type QuickPrompt = {
+  text: string;
+  category: 'emotional' | 'practical' | 'explore';
+};
+
+// ============================================================================
+// SVG ICONS
+// ============================================================================
+const RoomIcon = ({ type, color, size = 18 }: { type: string; color: string; size?: number }) => {
+  const icons: Record<string, React.ReactNode> = {
+    'zen': (
+      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+      </svg>
+    ),
+    'library': (
+      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
+        <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+        <line x1="8" y1="6" x2="16" y2="6" />
+        <line x1="8" y1="10" x2="14" y2="10" />
+      </svg>
+    ),
+    'rest': (
+      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
+        <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+      </svg>
+    ),
+    'studio': (
+      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+      </svg>
+    ),
+    'journal': (
+      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <line x1="8" y1="8" x2="16" y2="8" />
+        <line x1="8" y1="12" x2="16" y2="12" />
+        <line x1="8" y1="16" x2="12" y2="16" />
+      </svg>
+    ),
+    'ops': (
+      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 8v4l2 2" />
+      </svg>
+    ),
+    'headphones': (
+      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
+        <path d="M3 18v-6a9 9 0 0118 0v6" />
+        <path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3v5zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3v5z" />
+      </svg>
+    ),
+    'mic': (
+      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
+        <path d="M12 1a4 4 0 00-4 4v7a4 4 0 008 0V5a4 4 0 00-4-4z" />
+        <path d="M19 10v2a7 7 0 01-14 0v-2" />
+        <line x1="12" y1="19" x2="12" y2="23" />
+        <line x1="8" y1="23" x2="16" y2="23" />
+      </svg>
+    ),
+    'send': (
+      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
+        <line x1="22" y1="2" x2="11" y2="13" />
+        <polygon points="22 2 15 22 11 13 2 9 22 2" />
+      </svg>
+    ),
+    'more': (
+      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
+        <circle cx="12" cy="12" r="1" fill={color} />
+        <circle cx="19" cy="12" r="1" fill={color} />
+        <circle cx="5" cy="12" r="1" fill={color} />
+      </svg>
+    ),
+  };
+  return icons[type] || null;
 };
 
 // ============================================================================
@@ -21,46 +112,46 @@ type Room = {
 // ============================================================================
 const ROOMS: Room[] = [
   { 
-    id: 'recalibration', 
-    name: 'Recalibration', 
-    essence: 'Find your center', 
-    icon: '◎',
-    gradient: 'linear-gradient(135deg, rgba(120, 100, 180, 0.15) 0%, rgba(100, 120, 160, 0.1) 100%)',
-  },
-  { 
-    id: 'zen', 
-    name: 'Zen Garden', 
-    essence: 'Embrace stillness', 
-    icon: '❋',
-    gradient: 'linear-gradient(135deg, rgba(100, 140, 120, 0.15) 0%, rgba(120, 150, 130, 0.1) 100%)',
+    id: 'ops', 
+    name: 'Ops', 
+    shortName: 'Ops',
+    essence: 'Get things moving', 
+    icon: <RoomIcon type="ops" color="currentColor" />,
   },
   { 
     id: 'library', 
     name: 'Library', 
+    shortName: 'Library',
     essence: 'Discover wisdom', 
-    icon: '▤',
-    gradient: 'linear-gradient(135deg, rgba(160, 130, 100, 0.15) 0%, rgba(140, 120, 100, 0.1) 100%)',
-  },
-  { 
-    id: 'rest', 
-    name: 'Rest Chamber', 
-    essence: 'Surrender to sleep', 
-    icon: '☽',
-    gradient: 'linear-gradient(135deg, rgba(100, 110, 140, 0.15) 0%, rgba(90, 100, 130, 0.1) 100%)',
+    icon: <RoomIcon type="library" color="currentColor" />,
   },
   { 
     id: 'studio', 
     name: 'Design Studio', 
+    shortName: 'Studio',
     essence: 'Create beauty', 
-    icon: '◈',
-    gradient: 'linear-gradient(135deg, rgba(180, 120, 140, 0.15) 0%, rgba(160, 130, 150, 0.1) 100%)',
+    icon: <RoomIcon type="studio" color="currentColor" />,
+  },
+  { 
+    id: 'zen', 
+    name: 'Zen Garden', 
+    shortName: 'Zen',
+    essence: 'Embrace stillness', 
+    icon: <RoomIcon type="zen" color="currentColor" />,
   },
   { 
     id: 'journal', 
     name: 'Journal Nook', 
+    shortName: 'Journal',
     essence: 'Reflect deeply', 
-    icon: '▢',
-    gradient: 'linear-gradient(135deg, rgba(200, 170, 120, 0.15) 0%, rgba(180, 160, 130, 0.1) 100%)',
+    icon: <RoomIcon type="journal" color="currentColor" />,
+  },
+  { 
+    id: 'rest', 
+    name: 'Rest Chamber', 
+    shortName: 'Rest',
+    essence: 'Surrender to sleep', 
+    icon: <RoomIcon type="rest" color="currentColor" />,
   },
 ];
 
@@ -73,6 +164,7 @@ const TIME_COLORS = {
     cardBg: 'rgba(255, 255, 255, 0.75)',
     cardBorder: 'rgba(0, 0, 0, 0.06)',
     glow: 'rgba(255, 200, 120, 0.2)',
+    inputBg: 'rgba(255, 255, 255, 0.8)',
   },
   afternoon: {
     bg: 'linear-gradient(180deg, #f5f2ed 0%, #ebe3d5 30%, #dfd5c2 100%)',
@@ -82,6 +174,7 @@ const TIME_COLORS = {
     cardBg: 'rgba(255, 255, 255, 0.7)',
     cardBorder: 'rgba(0, 0, 0, 0.05)',
     glow: 'rgba(255, 180, 100, 0.15)',
+    inputBg: 'rgba(255, 255, 255, 0.75)',
   },
   evening: {
     bg: 'linear-gradient(180deg, #1e1a28 0%, #15121c 50%, #0e0b14 100%)',
@@ -91,6 +184,7 @@ const TIME_COLORS = {
     cardBg: 'rgba(255, 255, 255, 0.06)',
     cardBorder: 'rgba(255, 255, 255, 0.08)',
     glow: 'rgba(255, 180, 100, 0.08)',
+    inputBg: 'rgba(255, 255, 255, 0.08)',
   },
   night: {
     bg: 'linear-gradient(180deg, #0a0810 0%, #06050a 50%, #030305 100%)',
@@ -100,7 +194,38 @@ const TIME_COLORS = {
     cardBg: 'rgba(255, 255, 255, 0.04)',
     cardBorder: 'rgba(255, 255, 255, 0.06)',
     glow: 'rgba(255, 200, 120, 0.05)',
+    inputBg: 'rgba(255, 255, 255, 0.06)',
   },
+};
+
+const getQuickPrompts = (timeOfDay: TimeOfDay): QuickPrompt[] => {
+  // Time-specific prompts - only 3, kept short
+  if (timeOfDay === 'morning') {
+    return [
+      { text: "Set my intentions", category: 'practical' },
+      { text: "Feeling anxious", category: 'emotional' },
+      { text: "Motivate me", category: 'emotional' },
+    ];
+  }
+  if (timeOfDay === 'afternoon') {
+    return [
+      { text: "I'm overwhelmed", category: 'emotional' },
+      { text: "Need to focus", category: 'practical' },
+      { text: "Talk through something", category: 'emotional' },
+    ];
+  }
+  if (timeOfDay === 'evening' || timeOfDay === 'night') {
+    return [
+      { text: "Help me wind down", category: 'emotional' },
+      { text: "Can't stop thinking", category: 'emotional' },
+      { text: "Reflect on my day", category: 'practical' },
+    ];
+  }
+  return [
+    { text: "I need support", category: 'emotional' },
+    { text: "Talk to me", category: 'emotional' },
+    { text: "Help me think", category: 'practical' },
+  ];
 };
 
 // ============================================================================
@@ -116,49 +241,22 @@ const GLOBAL_STYLES = `
     -webkit-tap-highlight-color: transparent;
   }
   
-  html {
-    font-size: 16px;
-    -webkit-text-size-adjust: 100%;
-  }
-  
-  body {
+  html, body {
     font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
     overflow: hidden;
-    overscroll-behavior: none;
-    touch-action: pan-y;
     position: fixed;
     inset: 0;
   }
 
-  /* Scrollbar styling */
-  .sanctuary-scroll::-webkit-scrollbar {
-    width: 4px;
-  }
-  .sanctuary-scroll::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .sanctuary-scroll::-webkit-scrollbar-thumb {
-    background: rgba(150, 140, 130, 0.3);
-    border-radius: 4px;
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
-  /* Animations */
   @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-6px); }
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   @keyframes gentlePulse {
@@ -166,49 +264,78 @@ const GLOBAL_STYLES = `
     50% { opacity: 0.9; transform: scale(1.02); }
   }
 
-  @keyframes twinkle {
-    0%, 100% { opacity: 0.2; }
-    50% { opacity: 0.9; }
+  @keyframes typing {
+    0%, 60%, 100% { opacity: 0.3; }
+    30% { opacity: 1; }
   }
 
-  @keyframes flicker {
-    0%, 100% { opacity: 0.85; transform: scaleY(1); }
-    25% { opacity: 1; transform: scaleY(1.04); }
-    50% { opacity: 0.9; transform: scaleY(0.98); }
-    75% { opacity: 0.95; transform: scaleY(1.02); }
+  .message-appear {
+    animation: fadeIn 0.3s ease-out;
   }
 
-  /* Room card interactions */
-  .room-card {
-    transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-    transform: translateZ(0);
-    will-change: transform;
+  .prompt-btn {
+    transition: all 0.2s ease;
   }
-  
-  .room-card:hover {
-    transform: translateY(-3px) scale(1.02);
+  .prompt-btn:hover {
+    transform: translateY(-2px);
   }
-  
-  .room-card:active {
-    transform: translateY(0) scale(0.98);
+  .prompt-btn:active {
+    transform: scale(0.98);
   }
 
-  /* Touch device optimizations */
-  @media (hover: none) and (pointer: coarse) {
-    .room-card:hover {
-      transform: none;
-    }
-    .room-card:active {
-      transform: scale(0.97);
-    }
+  .prompt-scroll {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  .prompt-scroll::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
   }
 
-  /* Safe area handling */
-  .safe-area-top {
-    padding-top: max(env(safe-area-inset-top, 0px), 12px);
+  .hide-scrollbar {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+    overflow: -moz-scrollbars-none;
   }
-  .safe-area-bottom {
-    padding-bottom: max(env(safe-area-inset-bottom, 0px), 20px);
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+    -webkit-appearance: none !important;
+  }
+  .hide-scrollbar::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+  .hide-scrollbar::-webkit-scrollbar-thumb {
+    background: transparent !important;
+  }
+
+  .room-pill {
+    transition: all 0.2s ease;
+  }
+  .room-pill:hover {
+    transform: translateY(-2px);
+  }
+  .room-pill:active {
+    transform: scale(0.96);
+  }
+
+  .chat-scroll::-webkit-scrollbar {
+    width: 4px;
+  }
+  .chat-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .chat-scroll::-webkit-scrollbar-thumb {
+    background: rgba(150, 140, 130, 0.3);
+    border-radius: 4px;
+  }
+
+  .input-field:focus {
+    outline: none;
   }
 `;
 
@@ -232,56 +359,296 @@ const getGreeting = (time: TimeOfDay): string => {
   }
 };
 
+const getVeraGreeting = (time: TimeOfDay): string => {
+  const greetings = {
+    morning: [
+      "Ready to start fresh?",
+      "What's on your mind today?",
+      "Let's make today count.",
+      "How can I help you this morning?",
+      "A new day awaits.",
+    ],
+    afternoon: [
+      "How's your day unfolding?",
+      "Taking a moment for yourself?",
+      "What's on your mind?",
+      "Need a thought partner?",
+      "I'm here when you need me.",
+    ],
+    evening: [
+      "How was your day?",
+      "Time to decompress?",
+      "What's lingering on your mind?",
+      "Ready to wind down?",
+      "Let's reflect together.",
+    ],
+    night: [
+      "Can't sleep?",
+      "I'm here with you.",
+      "What's keeping you up?",
+      "Need some quiet company?",
+      "Let's talk it through.",
+    ],
+  };
+  
+  const options = greetings[time];
+  return options[Math.floor(Math.random() * options.length)];
+};
+
 // ============================================================================
 // COMPONENT
 // ============================================================================
-export default function SanctuaryHub() {
+export default function VeraSanctuary() {
   const router = useRouter();
+  const { user, isLoaded: userLoaded } = useUser();
   const [mounted, setMounted] = useState(false);
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('afternoon');
-  const [hoveredRoom, setHoveredRoom] = useState<string | null>(null);
-  const [manualTheme, setManualTheme] = useState<'light' | 'dark' | 'auto'>('auto');
+  const [manualTheme, setManualTheme] = useState<ThemeMode>('auto');
+  
+  // Chat state
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputValue, setInputValue] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [showAllRooms, setShowAllRooms] = useState(false);
+  
+  // Consent & conversation state
+  const [consentStatus, setConsentStatus] = useState<ConsentStatus>('unknown');
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [isFirstMessage, setIsFirstMessage] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  const chatRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Check consent status on mount
   useEffect(() => {
     setMounted(true);
     setTimeOfDay(getTimeOfDay());
-    
-    // Update time periodically
-    const interval = setInterval(() => {
-      setTimeOfDay(getTimeOfDay());
-    }, 60000);
-    
+    const interval = setInterval(() => setTimeOfDay(getTimeOfDay()), 60000);
     return () => clearInterval(interval);
   }, []);
 
-  const handleRoomClick = useCallback((roomId: string) => {
-    router.push(`/sanctuary/${roomId}`);
-  }, [router]);
+  // Check consent when user is loaded
+  useEffect(() => {
+    if (!userLoaded || !user) return;
+    
+    const checkConsent = async () => {
+      try {
+        const response = await fetch('/api/sanctuary/conversations?action=consent');
+        const data = await response.json();
+        
+        if (data.hasConsented === true) {
+          setConsentStatus('granted');
+        } else if (data.hasConsented === false) {
+          setConsentStatus('denied');
+        } else {
+          setConsentStatus('unknown'); // Never asked
+        }
+      } catch (error) {
+        console.error('Failed to check consent:', error);
+        setConsentStatus('unknown');
+      }
+    };
+    
+    checkConsent();
+  }, [userLoaded, user]);
 
-  // Determine if dark mode based on manual override or auto time
-  const isDark = manualTheme === 'dark' 
-    ? true 
-    : manualTheme === 'light' 
-      ? false 
-      : (timeOfDay === 'evening' || timeOfDay === 'night');
-  
-  // Use appropriate colors based on dark mode
+  useEffect(() => {
+    if (chatRef.current) {
+      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const isDark = manualTheme === 'dark' ? true : manualTheme === 'light' ? false : (timeOfDay === 'evening' || timeOfDay === 'night');
   const colors = isDark ? TIME_COLORS.evening : TIME_COLORS[timeOfDay];
+  const quickPrompts = getQuickPrompts(timeOfDay);
 
-  // Loading state
+  // Handle consent response
+  const handleConsent = async (consent: boolean) => {
+    try {
+      await fetch('/api/sanctuary/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'consent', consent }),
+      });
+      
+      setConsentStatus(consent ? 'granted' : 'denied');
+      
+      // Remove the consent prompt message
+      setMessages(prev => prev.filter(m => !m.isConsentPrompt));
+      
+      // Add VERA's acknowledgment
+      const ackMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: consent 
+          ? "I'll remember our conversations. Now, tell me more about what brought you here today."
+          : "That's completely fine. Our conversations will stay private. Now, tell me more about what brought you here today.",
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, ackMessage]);
+      
+    } catch (error) {
+      console.error('Failed to save consent:', error);
+    }
+  };
+
+  // Save message to database
+  const saveMessage = async (conversationId: string, role: string, content: string) => {
+    if (consentStatus !== 'granted') return;
+    
+    try {
+      await fetch('/api/sanctuary/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'message',
+          conversationId,
+          role,
+          content,
+        }),
+      });
+    } catch (error) {
+      console.error('Failed to save message:', error);
+    }
+  };
+
+  // Create new conversation
+  const createConversation = async (firstMessage: string): Promise<string | null> => {
+    if (consentStatus !== 'granted') return null;
+    
+    try {
+      const response = await fetch('/api/sanctuary/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create',
+          firstMessage,
+        }),
+      });
+      
+      const data = await response.json();
+      return data.conversation?.id || null;
+    } catch (error) {
+      console.error('Failed to create conversation:', error);
+      return null;
+    }
+  };
+
+  const handleSend = async (text?: string) => {
+  const messageText = text || inputValue.trim();
+  if (!messageText) return;
+
+  const userMessage: Message = {
+    id: Date.now().toString(),
+    role: 'user',
+    content: messageText,
+    timestamp: new Date(),
+  };
+
+  setMessages(prev => [...prev, userMessage]);
+  setInputValue('');
+  setIsTyping(true);
+
+  // Check if we need to ask for consent (first message, never asked)
+  const shouldAskConsent = isFirstMessage && consentStatus === 'unknown' && user;
+  setIsFirstMessage(false);
+
+  // Call VERA API - format messages for /api/chat
+  try {
+    const formattedMessages = [
+      ...messages
+        .filter(m => !m.isConsentPrompt && m.role !== 'system')
+        .map(m => ({
+          role: m.role as 'user' | 'assistant',
+          content: m.content,
+        })),
+      { role: 'user' as const, content: messageText }
+    ];
+
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: formattedMessages,
+      }),
+    });
+
+    const data = await response.json();
+    
+    const assistantMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant',
+      content: data.content || "I'm here with you. Take your time.",
+      timestamp: new Date(),
+    };
+
+    setMessages(prev => [...prev, assistantMessage]);
+
+    // If consent granted, save messages
+    if (consentStatus === 'granted') {
+      let convId = currentConversationId;
+      
+      // Create conversation if needed
+      if (!convId) {
+        convId = await createConversation(messageText);
+        if (convId) setCurrentConversationId(convId);
+      }
+      
+      // Save both messages
+      if (convId) {
+        await saveMessage(convId, 'user', messageText);
+        await saveMessage(convId, 'assistant', assistantMessage.content);
+      }
+    }
+
+    // Ask for consent after first exchange if never asked
+    if (shouldAskConsent) {
+      setTimeout(() => {
+        const consentPrompt: Message = {
+          id: (Date.now() + 2).toString(),
+          role: 'system',
+          content: 'consent_prompt',
+          timestamp: new Date(),
+          isConsentPrompt: true,
+        };
+        setMessages(prev => [...prev, consentPrompt]);
+        setConsentStatus('pending');
+      }, 1000);
+    }
+
+  } catch (error) {
+    const errorMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant',
+      content: "I'm here with you. Sometimes connections falter, but I'm not going anywhere.",
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, errorMessage]);
+  } finally {
+    setIsTyping(false);
+  }
+};
+
+  const handleRoomClick = (roomId: string) => {
+    router.push(`/sanctuary/${roomId}`);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
   if (!mounted) {
     return (
       <div style={{
-        position: 'fixed',
-        inset: 0,
-        background: '#f5f2ed',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        position: 'fixed', inset: 0, background: '#f5f2ed',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         <div style={{
-          width: 32,
-          height: 32,
+          width: 32, height: 32,
           border: '2px solid rgba(150, 130, 110, 0.2)',
           borderTopColor: 'rgba(150, 130, 110, 0.7)',
           borderRadius: '50%',
@@ -291,6 +658,8 @@ export default function SanctuaryHub() {
       </div>
     );
   }
+
+  const hasMessages = messages.length > 0;
 
   return (
     <>
@@ -304,17 +673,8 @@ export default function SanctuaryHub() {
         flexDirection: 'column',
         overflow: 'hidden',
       }}>
-        
-        {/* ================================================================ */}
-        {/* AMBIENT BACKGROUND - Warm light effects */}
-        {/* ================================================================ */}
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          pointerEvents: 'none',
-          overflow: 'hidden',
-        }}>
-          {/* Primary warm glow - center top */}
+        {/* Ambient Background */}
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
           <div style={{
             position: 'absolute',
             top: '-10%',
@@ -323,294 +683,567 @@ export default function SanctuaryHub() {
             width: 'min(120vw, 700px)',
             height: 'min(80vh, 500px)',
             background: isDark
-              ? 'radial-gradient(ellipse at 50% 30%, rgba(255, 180, 100, 0.08) 0%, rgba(255, 150, 80, 0.03) 40%, transparent 70%)'
-              : 'radial-gradient(ellipse at 50% 30%, rgba(255, 220, 180, 0.4) 0%, rgba(255, 200, 150, 0.15) 40%, transparent 70%)',
+              ? 'radial-gradient(ellipse at 50% 30%, rgba(255, 180, 100, 0.08) 0%, transparent 70%)'
+              : 'radial-gradient(ellipse at 50% 30%, rgba(255, 220, 180, 0.4) 0%, transparent 70%)',
             borderRadius: '50%',
             animation: 'gentlePulse 10s ease-in-out infinite',
           }} />
-
-          {/* Secondary warm glow - bottom left */}
-          <div style={{
-            position: 'absolute',
-            bottom: '5%',
-            left: '-15%',
-            width: 'min(60vw, 350px)',
-            height: 'min(60vw, 350px)',
-            background: isDark
-              ? 'radial-gradient(circle, rgba(255, 160, 100, 0.06) 0%, transparent 60%)'
-              : 'radial-gradient(circle, rgba(255, 200, 150, 0.25) 0%, transparent 60%)',
-            borderRadius: '50%',
-            animation: 'gentlePulse 12s ease-in-out infinite 2s',
-          }} />
-
-          {/* Tertiary warm glow - bottom right */}
-          <div style={{
-            position: 'absolute',
-            bottom: '10%',
-            right: '-10%',
-            width: 'min(50vw, 300px)',
-            height: 'min(50vw, 300px)',
-            background: isDark
-              ? 'radial-gradient(circle, rgba(200, 150, 100, 0.05) 0%, transparent 60%)'
-              : 'radial-gradient(circle, rgba(255, 210, 170, 0.2) 0%, transparent 60%)',
-            borderRadius: '50%',
-            animation: 'gentlePulse 14s ease-in-out infinite 4s',
-          }} />
-
-          {/* Floating light particles */}
-          {[...Array(6)].map((_, i) => (
-            <div
-              key={i}
-              style={{
-                position: 'absolute',
-                top: `${15 + (i * 13) % 60}%`,
-                left: `${10 + (i * 17) % 80}%`,
-                width: isDark ? 'clamp(2px, 0.5vw, 4px)' : 'clamp(3px, 0.8vw, 6px)',
-                height: isDark ? 'clamp(2px, 0.5vw, 4px)' : 'clamp(3px, 0.8vw, 6px)',
-                background: isDark
-                  ? 'rgba(255, 200, 150, 0.3)'
-                  : 'rgba(255, 220, 180, 0.6)',
-                borderRadius: '50%',
-                boxShadow: isDark
-                  ? '0 0 8px rgba(255, 180, 120, 0.3)'
-                  : '0 0 12px rgba(255, 200, 150, 0.5)',
-                animation: `float ${6 + i * 1.5}s ease-in-out infinite, twinkle ${4 + i}s ease-in-out infinite`,
-                animationDelay: `${i * 0.8}s`,
-              }}
-            />
-          ))}
-
-          {/* Subtle grain texture overlay */}
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            opacity: isDark ? 0.03 : 0.02,
-            background: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-          }} />
         </div>
 
-        {/* ================================================================ */}
-        {/* MAIN SCROLLABLE CONTENT */}
-        {/* ================================================================ */}
-        <div 
-          className="sanctuary-scroll safe-area-top"
-          style={{
-            flex: 1,
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            WebkitOverflowScrolling: 'touch',
-            position: 'relative',
-            zIndex: 10,
-          }}
-        >
-          <div style={{
-            minHeight: '100%',
-            padding: 'clamp(16px, 4vw, 24px)',
-            paddingTop: 'clamp(20px, 5vh, 40px)',
-            paddingBottom: 'clamp(40px, 10vh, 80px)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-            
-            {/* ============================================================ */}
-            {/* GREETING SECTION */}
-            {/* ============================================================ */}
-            <header style={{
-              textAlign: 'center',
-              marginBottom: 'clamp(20px, 4vh, 32px)',
-              animation: 'fadeInUp 0.6s ease-out',
-            }}>
-              <h1 style={{
-                fontFamily: "'Cormorant Garamond', Georgia, serif",
-                fontSize: 'clamp(2rem, 8vw, 3.2rem)',
-                fontWeight: 300,
-                color: colors.text,
-                marginBottom: 'clamp(6px, 1.5vw, 10px)',
-                letterSpacing: '-0.02em',
-                lineHeight: 1.1,
-              }}>
-                {getGreeting(timeOfDay)}
-              </h1>
-              <p style={{
-                fontSize: 'clamp(0.65rem, 2.8vw, 0.8rem)',
-                fontWeight: 500,
-                letterSpacing: '0.18em',
-                textTransform: 'uppercase',
-                color: colors.textMuted,
-              }}>
-                Your sanctuary awaits
-              </p>
-            </header>
-
-            {/* ============================================================ */}
-            {/* THEME TOGGLE */}
-            {/* ============================================================ */}
-            <div style={{
+        {/* Header */}
+        <header style={{
+          padding: '12px 16px',
+          paddingTop: 'max(12px, env(safe-area-inset-top))',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          zIndex: 50,
+        }}>
+          {/* Orb - Sidebar Trigger */}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: '50%',
+              border: 'none',
+              background: isDark
+                ? 'linear-gradient(145deg, rgba(140, 120, 200, 0.5) 0%, rgba(100, 80, 160, 0.4) 100%)'
+                : 'linear-gradient(145deg, rgba(140, 120, 200, 0.6) 0%, rgba(120, 100, 180, 0.5) 100%)',
+              boxShadow: isDark
+                ? '0 4px 20px rgba(140, 120, 200, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.2)'
+                : '0 4px 20px rgba(140, 120, 200, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.4)',
+              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: 12,
-              marginBottom: 'clamp(24px, 5vh, 40px)',
-              animation: 'fadeInUp 0.6s ease-out 0.1s both',
-            }}>
-              <span style={{
-                fontSize: 12,
-                color: colors.textMuted,
-                fontWeight: 500,
-              }}>
-                {manualTheme === 'auto' ? 'Auto' : manualTheme === 'light' ? 'Light' : 'Dark'}
-              </span>
-              
-              {/* Three-way toggle: Light / Auto / Dark */}
-              <div style={{
+              justifyContent: 'center',
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+            aria-label="Open Trust & Transparency"
+          >
+            {/* Inner glow */}
+            <div style={{
+              width: 20,
+              height: 20,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.4) 0%, transparent 60%)',
+            }} />
+          </button>
+          
+          <span style={{
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            color: colors.textMuted,
+          }}>
+            Sanctuary
+          </span>
+
+          <div style={{
+            display: 'flex',
+            gap: 4,
+            padding: 4,
+            background: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+            borderRadius: 20,
+          }}>
+            {(['light', 'auto', 'dark'] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setManualTheme(mode)}
+                style={{
+                  padding: '6px 10px',
+                  borderRadius: 16,
+                  border: 'none',
+                  background: manualTheme === mode
+                    ? (isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.9)')
+                    : 'transparent',
+                  color: manualTheme === mode ? colors.text : colors.textMuted,
+                  fontSize: 11,
+                  cursor: 'pointer',
+                }}
+              >
+                {mode === 'auto' ? '◐' : mode === 'light' ? '○' : '●'}
+              </button>
+            ))}
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <main style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          padding: '0 16px',
+        }}>
+          
+          {/* VERA Chat Area */}
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            maxWidth: 600,
+            width: '100%',
+            margin: '0 auto',
+            overflow: 'hidden',
+          }}>
+            
+            {/* Welcome / Chat Messages */}
+            <div
+              ref={chatRef}
+              className="chat-scroll"
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                padding: '20px 0',
                 display: 'flex',
-                gap: 4,
-                padding: 4,
-                background: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
-                borderRadius: 20,
+                flexDirection: 'column',
+              }}
+            >
+              {/* Welcome State (no messages yet) */}
+              {!hasMessages && (
+                <div style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  textAlign: 'center',
+                  animation: 'fadeInUp 0.6s ease-out',
+                  padding: '0 20px',
+                }}>
+                  <h1 style={{
+                    fontFamily: "'Cormorant Garamond', Georgia, serif",
+                    fontSize: 'clamp(2.8rem, 12vw, 4rem)',
+                    fontWeight: 300,
+                    color: colors.text,
+                    marginBottom: 16,
+                    letterSpacing: '-0.02em',
+                  }}>
+                    {getGreeting(timeOfDay)}
+                  </h1>
+                  
+                  <p style={{
+                    fontSize: 'clamp(16px, 4vw, 20px)',
+                    color: colors.textMuted,
+                    marginBottom: 40,
+                    lineHeight: 1.6,
+                  }}>
+                    {getVeraGreeting(timeOfDay)}
+                  </p>
+
+                  {/* Quick Prompts - Centered Wrap */}
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    justifyContent: 'center',
+                    gap: 12,
+                    maxWidth: 500,
+                  }}>
+                      {quickPrompts.map((prompt, index) => (
+                        <button
+                          key={index}
+                          className="prompt-btn"
+                          onClick={() => handleSend(prompt.text)}
+                          style={{
+                            padding: '14px 22px',
+                            background: colors.cardBg,
+                            border: `1px solid ${colors.cardBorder}`,
+                            borderRadius: 50,
+                            color: colors.text,
+                            fontSize: 15,
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            backdropFilter: 'blur(10px)',
+                          }}
+                        >
+                          {prompt.text}
+                        </button>
+                      ))}
+                    </div>
+                </div>
+              )}
+
+              {/* Messages */}
+              {hasMessages && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {messages.map((message) => {
+                    // Render consent prompt
+                    if (message.isConsentPrompt) {
+                      return (
+                        <div
+                          key={message.id}
+                          className="message-appear"
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'flex-start',
+                          }}
+                        >
+                          <div style={{
+                            maxWidth: '85%',
+                            padding: '18px 20px',
+                            borderRadius: '20px 20px 20px 4px',
+                            background: colors.cardBg,
+                            border: `1px solid ${colors.cardBorder}`,
+                          }}>
+                            <p style={{
+                              color: colors.text,
+                              fontSize: 15,
+                              lineHeight: 1.6,
+                              marginBottom: 16,
+                            }}>
+                              Before we continue — would you like me to remember our conversations? 
+                              It helps me understand you better over time, but it's completely your choice.
+                            </p>
+
+                            <div style={{
+                              display: 'flex',
+                              gap: 10,
+                              flexWrap: 'wrap',
+                            }}>
+                              <button
+                                onClick={() => handleConsent(true)}
+                                className="prompt-btn"
+                                style={{
+                                  padding: '10px 20px',
+                                  borderRadius: 50,
+                                  border: `1px solid ${isDark ? 'rgba(200, 170, 120, 0.3)' : 'rgba(200, 170, 120, 0.4)'}`,
+                                  background: isDark ? 'rgba(200, 170, 120, 0.1)' : 'rgba(200, 170, 120, 0.08)',
+                                  color: colors.text,
+                                  fontSize: 14,
+                                  fontWeight: 500,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                Yes, remember
+                              </button>
+
+                              <button
+                                onClick={() => handleConsent(false)}
+                                className="prompt-btn"
+                                style={{
+                                  padding: '10px 20px',
+                                  borderRadius: 50,
+                                  border: `1px solid ${colors.cardBorder}`,
+                                  background: 'transparent',
+                                  color: colors.textMuted,
+                                  fontSize: 14,
+                                  fontWeight: 500,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                Keep private
+                              </button>
+                            </div>
+
+                            <p style={{
+                              color: colors.textMuted,
+                              fontSize: 12,
+                              marginTop: 12,
+                              lineHeight: 1.5,
+                            }}>
+                              You can change this anytime in settings.
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // Render regular message
+                    return (
+                      <div
+                        key={message.id}
+                        className="message-appear"
+                        style={{
+                          display: 'flex',
+                          justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
+                        }}
+                      >
+                        <div style={{
+                          maxWidth: '85%',
+                          padding: '14px 18px',
+                          borderRadius: message.role === 'user' ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
+                          background: message.role === 'user'
+                            ? (isDark ? 'rgba(200, 170, 120, 0.25)' : 'rgba(200, 170, 120, 0.2)')
+                            : colors.cardBg,
+                          border: `1px solid ${message.role === 'user'
+                            ? (isDark ? 'rgba(200, 170, 120, 0.3)' : 'rgba(200, 170, 120, 0.25)')
+                            : colors.cardBorder}`,
+                          color: colors.text,
+                          fontSize: 15,
+                          lineHeight: 1.6,
+                        }}>
+                          {message.content}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Typing Indicator */}
+                  {isTyping && (
+                    <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                      <div style={{
+                        padding: '14px 18px',
+                        borderRadius: '20px 20px 20px 4px',
+                        background: colors.cardBg,
+                        border: `1px solid ${colors.cardBorder}`,
+                        display: 'flex',
+                        gap: 6,
+                      }}>
+                        {[0, 1, 2].map((i) => (
+                          <div
+                            key={i}
+                            style={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              background: colors.accent,
+                              animation: `typing 1.4s infinite ${i * 0.2}s`,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </main>
+
+        {/* Bottom Section - Input + Room Pills */}
+        <footer style={{
+          padding: '16px 20px',
+          paddingBottom: 'max(20px, env(safe-area-inset-bottom))',
+          zIndex: 50,
+        }}>
+          <div style={{
+            maxWidth: 640,
+            margin: '0 auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 16,
+          }}>
+            
+            {/* Input Area */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'flex-end',
+              gap: 12,
+            }}>
+              {/* Audio Controls */}
+              <button style={{
+                width: 52,
+                height: 52,
+                borderRadius: '50%',
+                border: `1.5px solid ${colors.cardBorder}`,
+                background: colors.cardBg,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                flexShrink: 0,
+                color: colors.textMuted,
               }}>
-                {(['light', 'auto', 'dark'] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    onClick={() => setManualTheme(mode)}
-                    aria-label={`${mode} mode`}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: 16,
-                      border: 'none',
-                      background: manualTheme === mode 
-                        ? (isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.9)')
-                        : 'transparent',
-                      color: manualTheme === mode 
-                        ? colors.text 
-                        : colors.textMuted,
-                      fontSize: 11,
-                      fontWeight: manualTheme === mode ? 600 : 400,
-                      cursor: 'pointer',
-                      textTransform: 'capitalize',
-                      transition: 'all 0.2s ease',
-                      boxShadow: manualTheme === mode 
-                        ? (isDark ? 'none' : '0 1px 3px rgba(0,0,0,0.1)')
-                        : 'none',
-                    }}
-                  >
-                    {mode === 'auto' ? '◐' : mode === 'light' ? '○' : '●'}
-                  </button>
-                ))}
+                <RoomIcon type="headphones" color="currentColor" size={22} />
+              </button>
+
+              <button style={{
+                width: 52,
+                height: 52,
+                borderRadius: '50%',
+                border: `1.5px solid ${colors.cardBorder}`,
+                background: colors.cardBg,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                flexShrink: 0,
+                color: colors.textMuted,
+              }}>
+                <RoomIcon type="mic" color="currentColor" size={22} />
+              </button>
+
+              {/* Text Input */}
+              <div style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'flex-end',
+                background: colors.inputBg,
+                border: `1.5px solid ${colors.cardBorder}`,
+                borderRadius: 28,
+                padding: '14px 20px',
+                backdropFilter: 'blur(10px)',
+              }}>
+                <textarea
+                  ref={inputRef}
+                  className="input-field"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Share what's on your mind..."
+                  rows={1}
+                  style={{
+                    flex: 1,
+                    border: 'none',
+                    background: 'transparent',
+                    color: colors.text,
+                    fontSize: 16,
+                    lineHeight: 1.5,
+                    resize: 'none',
+                    maxHeight: 120,
+                  }}
+                />
+                <button
+                  onClick={() => handleSend()}
+                  disabled={!inputValue.trim()}
+                  style={{
+                    marginLeft: 12,
+                    padding: 0,
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: inputValue.trim() ? 'pointer' : 'default',
+                    opacity: inputValue.trim() ? 1 : 0.4,
+                    color: colors.accent,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <RoomIcon type="send" color="currentColor" size={24} />
+                </button>
               </div>
             </div>
 
-            {/* ============================================================ */}
-            {/* ROOM CARDS GRID */}
-            {/* ============================================================ */}
-            <section style={{
-              width: '100%',
-              maxWidth: 500,
-              animation: 'fadeInUp 0.6s ease-out 0.1s both',
+            {/* Room Pills - More Prominent */}
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 14,
             }}>
+              {/* Section Label */}
               <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
-                gap: 'clamp(12px, 3.5vw, 18px)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                width: '100%',
               }}>
-                {ROOMS.map((room, index) => (
+                <div style={{
+                  flex: 1,
+                  height: 1,
+                  background: colors.cardBorder,
+                }} />
+                <span style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  color: colors.textMuted,
+                }}>
+                  Explore Rooms
+                </span>
+                <div style={{
+                  flex: 1,
+                  height: 1,
+                  background: colors.cardBorder,
+                }} />
+              </div>
+
+              {/* Room Pills Grid */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+                flexWrap: 'wrap',
+              }}>
+                {ROOMS.slice(0, showAllRooms ? ROOMS.length : 5).map((room) => (
                   <button
                     key={room.id}
-                    className="room-card"
+                    className="room-pill"
                     onClick={() => handleRoomClick(room.id)}
-                    onMouseEnter={() => setHoveredRoom(room.id)}
-                    onMouseLeave={() => setHoveredRoom(null)}
                     style={{
-                      position: 'relative',
-                      padding: 'clamp(20px, 5.5vw, 30px) clamp(14px, 3.5vw, 20px)',
-                      background: isDark
-                        ? (hoveredRoom === room.id 
-                            ? 'linear-gradient(145deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 250, 240, 0.06) 100%)'
-                            : 'linear-gradient(145deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 250, 240, 0.03) 100%)')
-                        : (hoveredRoom === room.id
-                            ? 'linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 252, 245, 0.9) 100%)'
-                            : 'linear-gradient(145deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 252, 248, 0.7) 100%)'),
-                      border: `1px solid ${isDark
-                        ? (hoveredRoom === room.id ? 'rgba(255, 220, 180, 0.15)' : 'rgba(255, 255, 255, 0.06)')
-                        : (hoveredRoom === room.id ? 'rgba(220, 200, 170, 0.4)' : 'rgba(255, 255, 255, 0.6)')}`,
-                      borderRadius: 'clamp(16px, 4vw, 24px)',
-                      textAlign: 'center',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '12px 20px',
+                      background: isDark 
+                        ? 'rgba(255, 255, 255, 0.08)' 
+                        : 'rgba(255, 255, 255, 0.85)',
+                      border: `1.5px solid ${isDark 
+                        ? 'rgba(255, 255, 255, 0.12)' 
+                        : 'rgba(0, 0, 0, 0.08)'}`,
+                      borderRadius: 50,
                       cursor: 'pointer',
-                      backdropFilter: 'blur(20px)',
-                      WebkitBackdropFilter: 'blur(20px)',
-                      outline: 'none',
-                      overflow: 'hidden',
-                      animation: `fadeInUp 0.5s ease-out ${0.1 + index * 0.06}s both`,
-                      boxShadow: isDark
-                        ? (hoveredRoom === room.id
-                            ? '0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 200, 150, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
-                            : '0 4px 20px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.03)')
-                        : (hoveredRoom === room.id
-                            ? '0 8px 32px rgba(180, 150, 120, 0.2), 0 2px 8px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
-                            : '0 4px 16px rgba(180, 150, 120, 0.12), 0 1px 4px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.6)'),
+                      color: colors.text,
+                      fontSize: 15,
+                      fontWeight: 500,
+                      backdropFilter: 'blur(10px)',
+                      boxShadow: isDark 
+                        ? 'none' 
+                        : '0 2px 8px rgba(0, 0, 0, 0.04)',
                     }}
                   >
-                    {/* Warm glow overlay on hover */}
-                    <div style={{
-                      position: 'absolute',
-                      inset: 0,
-                      background: hoveredRoom === room.id 
-                        ? (isDark 
-                            ? 'radial-gradient(ellipse at 50% 30%, rgba(255, 200, 150, 0.1) 0%, transparent 70%)'
-                            : 'radial-gradient(ellipse at 50% 30%, rgba(255, 220, 180, 0.3) 0%, transparent 70%)')
-                        : 'transparent',
-                      transition: 'background 0.4s ease',
-                      borderRadius: 'inherit',
-                    }} />
-                    
-                    {/* Content */}
-                    <div style={{ position: 'relative', zIndex: 1 }}>
-                      {/* Icon */}
-                      <div style={{
-                        fontSize: 'clamp(1.5rem, 6vw, 2rem)',
-                        marginBottom: 'clamp(10px, 3vw, 16px)',
-                        opacity: hoveredRoom === room.id ? 1 : 0.65,
-                        color: isDark 
-                          ? (hoveredRoom === room.id ? 'rgba(255, 230, 200, 0.9)' : colors.text)
-                          : (hoveredRoom === room.id ? 'rgba(120, 100, 80, 0.9)' : colors.text),
-                        transition: 'all 0.3s ease',
-                        animation: hoveredRoom === room.id ? 'float 3s ease-in-out infinite' : 'none',
-                        textShadow: hoveredRoom === room.id
-                          ? (isDark ? '0 0 20px rgba(255, 200, 150, 0.3)' : '0 0 20px rgba(200, 170, 130, 0.3)')
-                          : 'none',
-                      }}>
-                        {room.icon}
-                      </div>
-                      
-                      {/* Name */}
-                      <div style={{
-                        fontSize: 'clamp(0.85rem, 3.8vw, 1rem)',
-                        fontWeight: 600,
-                        color: colors.text,
-                        marginBottom: 'clamp(4px, 1.2vw, 8px)',
-                        lineHeight: 1.2,
-                      }}>
-                        {room.name}
-                      </div>
-                      
-                      {/* Essence */}
-                      <div style={{
-                        fontSize: 'clamp(0.65rem, 2.8vw, 0.75rem)',
-                        letterSpacing: '0.03em',
-                        color: colors.textMuted,
-                        lineHeight: 1.4,
-                      }}>
-                        {room.essence}
-                      </div>
-                    </div>
+                    <span style={{ 
+                      display: 'flex', 
+                      color: colors.accent,
+                      opacity: 0.9,
+                    }}>
+                      {room.icon}
+                    </span>
+                    <span>{room.shortName}</span>
                   </button>
                 ))}
+                
+                {!showAllRooms && ROOMS.length > 5 && (
+                  <button
+                    className="room-pill"
+                    onClick={() => setShowAllRooms(true)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: 48,
+                      height: 48,
+                      padding: 0,
+                      background: isDark 
+                        ? 'rgba(255, 255, 255, 0.08)' 
+                        : 'rgba(255, 255, 255, 0.85)',
+                      border: `1.5px solid ${isDark 
+                        ? 'rgba(255, 255, 255, 0.12)' 
+                        : 'rgba(0, 0, 0, 0.08)'}`,
+                      borderRadius: '50%',
+                      cursor: 'pointer',
+                      color: colors.textMuted,
+                    }}
+                  >
+                    <RoomIcon type="more" color="currentColor" size={20} />
+                  </button>
+                )}
               </div>
-            </section>
+            </div>
           </div>
-        </div>
+        </footer>
 
+        {/* Trust & Transparency Sidebar */}
+        <TrustTransparencySidebar
+          isDark={isDark}
+          colors={{
+            bg: colors.cardBg,
+            text: colors.text,
+            textMuted: colors.textMuted,
+          }}
+          open={sidebarOpen}
+          onOpenChange={setSidebarOpen}
+        />
       </div>
     </>
   );

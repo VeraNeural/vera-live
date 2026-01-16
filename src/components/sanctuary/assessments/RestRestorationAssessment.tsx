@@ -26,7 +26,7 @@ interface Question {
   id: string;
   text: string;
   subtext?: string;
-  type: 'scale' | 'choice' | 'slider' | 'ranking';
+  type: 'scale' | 'choice' | 'slider';
   options?: { value: number; label: string; description?: string }[];
   category: 'physical' | 'mental' | 'emotional' | 'social' | 'sensory' | 'creative';
   min?: number;
@@ -73,7 +73,8 @@ const QUESTIONS: Question[] = [
   },
   {
     id: 'physical_4',
-    text: 'How much does physical tension (shoulders, jaw, back) affect your daily life?',
+    text: 'How much does physical tension affect your daily life?',
+    subtext: 'Shoulders, jaw, back',
     type: 'slider',
     category: 'physical',
     min: 1,
@@ -85,7 +86,7 @@ const QUESTIONS: Question[] = [
   // Mental Rest (4 questions)
   {
     id: 'mental_1',
-    text: 'How often does your mind feel "full" or overwhelmed with thoughts?',
+    text: 'How often does your mind feel "full" or overwhelmed?',
     type: 'scale',
     options: [
       { value: 1, label: 'Constantly', description: 'My mind never stops' },
@@ -97,7 +98,7 @@ const QUESTIONS: Question[] = [
   },
   {
     id: 'mental_2',
-    text: 'How difficult is it for you to "switch off" from work or responsibilities?',
+    text: 'How difficult is it for you to "switch off" from responsibilities?',
     type: 'slider',
     category: 'mental',
     min: 1,
@@ -133,7 +134,7 @@ const QUESTIONS: Question[] = [
   // Emotional Rest (4 questions)
   {
     id: 'emotional_1',
-    text: 'How much of your day involves managing other people\'s emotions or needs?',
+    text: 'How much of your day involves managing others\' emotions?',
     type: 'slider',
     category: 'emotional',
     min: 1,
@@ -143,7 +144,7 @@ const QUESTIONS: Question[] = [
   },
   {
     id: 'emotional_2',
-    text: 'How often do you feel you can be completely yourself, without performing or filtering?',
+    text: 'How often can you be completely yourself, without performing?',
     type: 'scale',
     options: [
       { value: 1, label: 'Rarely', description: 'I\'m always "on"' },
@@ -167,7 +168,7 @@ const QUESTIONS: Question[] = [
   },
   {
     id: 'emotional_4',
-    text: 'Do you have spaces or relationships where you can truly let your guard down?',
+    text: 'Do you have spaces where you can truly let your guard down?',
     type: 'scale',
     options: [
       { value: 1, label: 'Not really', description: 'I\'m always somewhat guarded' },
@@ -219,7 +220,8 @@ const QUESTIONS: Question[] = [
   // Sensory Rest (3 questions)
   {
     id: 'sensory_1',
-    text: 'How overwhelmed do you feel by sensory input (noise, screens, lights, crowds)?',
+    text: 'How overwhelmed do you feel by sensory input?',
+    subtext: 'Noise, screens, lights, crowds',
     type: 'slider',
     category: 'sensory',
     min: 1,
@@ -229,7 +231,7 @@ const QUESTIONS: Question[] = [
   },
   {
     id: 'sensory_2',
-    text: 'How much of your day involves screens (phone, computer, TV)?',
+    text: 'How much of your day involves screens?',
     type: 'scale',
     options: [
       { value: 1, label: 'Almost all of it', description: '10+ hours' },
@@ -241,7 +243,8 @@ const QUESTIONS: Question[] = [
   },
   {
     id: 'sensory_3',
-    text: 'How often do you intentionally reduce sensory input (silence, darkness, nature)?',
+    text: 'How often do you intentionally reduce sensory input?',
+    subtext: 'Silence, darkness, nature',
     type: 'scale',
     options: [
       { value: 1, label: 'Rarely', description: 'Almost never' },
@@ -267,7 +270,8 @@ const QUESTIONS: Question[] = [
   },
   {
     id: 'creative_2',
-    text: 'How much time do you spend with things that inspire you (nature, art, music, ideas)?',
+    text: 'How much time do you spend with things that inspire you?',
+    subtext: 'Nature, art, music, ideas',
     type: 'slider',
     category: 'creative',
     min: 1,
@@ -295,6 +299,8 @@ const REST_STYLES = {
     description: 'You restore best through solitude, quiet, and protected space. Your nervous system craves refuge from the world\'s demands.',
     practices: ['Solo nature walks', 'Quiet mornings', 'Reading in silence', 'Baths or spa time', 'Screen-free evenings'],
     environment: 'Calm, quiet, private spaces with minimal stimulation',
+    signs: ['Need for solitude', 'Sensitivity to noise', 'Value of privacy', 'Craving silence'],
+    strengths: ['Self-sufficient', 'Introspective', 'Independent', 'Deeply restorative'],
     color: '#6B9BC3',
   },
   mover: {
@@ -302,6 +308,8 @@ const REST_STYLES = {
     description: 'You paradoxically recharge through gentle movement. Stillness can feel restless; your body needs to move to release.',
     practices: ['Gentle yoga', 'Walking', 'Swimming', 'Stretching', 'Gardening', 'Tai chi'],
     environment: 'Space for movement, ideally outdoors or with natural light',
+    signs: ['Restlessness when still', 'Energy through motion', 'Physical release needs', 'Body awareness'],
+    strengths: ['Embodied', 'Active recovery', 'Physical wisdom', 'Motion-oriented'],
     color: '#7BA05B',
   },
   connector: {
@@ -309,6 +317,8 @@ const REST_STYLES = {
     description: 'You restore through meaningful connection with select people. The right company doesn\'t drain you — it fills you up.',
     practices: ['Deep conversations', 'Quiet time with loved ones', 'Co-regulating with pets', 'Gentle social rituals'],
     environment: 'Intimate settings with trusted people, low-pressure gatherings',
+    signs: ['Selective socializing', 'Deep connection needs', 'Quality over quantity', 'Relational energy'],
+    strengths: ['Empathetic', 'Relationship-oriented', 'Deeply connecting', 'Supportive'],
     color: '#E8B86D',
   },
   creator: {
@@ -316,6 +326,8 @@ const REST_STYLES = {
     description: 'You recharge through beauty, inspiration, and creative expression. Making or experiencing art restores your spirit.',
     practices: ['Making art', 'Playing music', 'Visiting museums', 'Photography', 'Crafts', 'Writing'],
     environment: 'Inspiring spaces, access to creative materials, beauty in surroundings',
+    signs: ['Creative urges', 'Beauty sensitivity', 'Artistic needs', 'Inspiration seeking'],
+    strengths: ['Imaginative', 'Expressive', 'Aesthetically attuned', 'Generative'],
     color: '#A78BB3',
   },
   naturalist: {
@@ -323,6 +335,8 @@ const REST_STYLES = {
     description: 'You find your deepest rest in the natural world. Trees, water, sky, and earth speak to something essential in you.',
     practices: ['Forest bathing', 'Sitting by water', 'Stargazing', 'Hiking', 'Beach time', 'Gardening'],
     environment: 'Natural settings, outdoor access, plants and natural elements indoors',
+    signs: ['Nature affinity', 'Outdoor longing', 'Element connection', 'Seasonal attunement'],
+    strengths: ['Grounded', 'Elemental', 'Earth-connected', 'Naturally attuned'],
     color: '#8B9B7A',
   },
   ritualist: {
@@ -330,16 +344,88 @@ const REST_STYLES = {
     description: 'You restore through consistent practices and rhythms. Routine isn\'t boring to you — it\'s grounding and restorative.',
     practices: ['Morning routines', 'Tea ceremonies', 'Evening rituals', 'Regular sleep schedule', 'Weekly rhythms'],
     environment: 'Predictable, orderly spaces that support your routines',
+    signs: ['Routine preference', 'Rhythm sensitivity', 'Structure needs', 'Consistency craving'],
+    strengths: ['Disciplined', 'Consistent', 'Grounded', 'Rhythmically attuned'],
     color: '#C4956A',
   },
 };
+
+// ============================================================================
+// STYLES
+// ============================================================================
+const STYLES = `
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  @keyframes fadeInScale {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  .assess-option {
+    transition: all 0.2s ease;
+  }
+  .assess-option:hover {
+    transform: translateY(-2px);
+  }
+  .assess-option:active {
+    transform: scale(0.98);
+  }
+
+  .assess-scroll::-webkit-scrollbar {
+    width: 4px;
+  }
+  .assess-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .assess-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+  }
+
+  .progress-bar {
+    transition: width 0.4s ease;
+  }
+
+  .slider-input {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 3px;
+    outline: none;
+  }
+  .slider-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+  .slider-input::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+`;
 
 export default function RestRestorationAssessment({ onBack, onComplete }: AssessmentProps) {
   const { isDark, colors } = useTheme();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [showIntro, setShowIntro] = useState(true);
-  const [showReport, setShowReport] = useState(false);
+  const [phase, setPhase] = useState<'intro' | 'questions' | 'report'>('intro');
   const [results, setResults] = useState<AssessmentResults | null>(null);
   const [sliderValue, setSliderValue] = useState(5);
 
@@ -348,6 +434,7 @@ export default function RestRestorationAssessment({ onBack, onComplete }: Assess
   const mutedColor = colors.textMuted;
   const accentColor = colors.accent;
   const cardBg = colors.cardBg;
+  const cardBorder = colors.cardBorder;
 
   const question = QUESTIONS[currentQuestion];
   const progress = ((currentQuestion + 1) / QUESTIONS.length) * 100;
@@ -360,12 +447,12 @@ export default function RestRestorationAssessment({ onBack, onComplete }: Assess
       setTimeout(() => {
         setCurrentQuestion(currentQuestion + 1);
         setSliderValue(5);
-      }, 300);
+      }, 250);
     } else {
-      const calculatedResults = calculateResults(newAnswers);
-      setResults(calculatedResults);
-      setShowReport(true);
-      onComplete?.(calculatedResults);
+      const calculated = calculateResults(newAnswers);
+      setResults(calculated);
+      setPhase('report');
+      onComplete?.(calculated);
     }
   };
 
@@ -405,12 +492,9 @@ export default function RestRestorationAssessment({ onBack, onComplete }: Assess
       creativeRest: normalize(categories.creative),
     };
 
-    // Determine deficit areas (lower scores = more need)
-    const deficits = Object.entries(scores).sort((a, b) => a[1] - b[1]);
-    
     const { restStyle, secondaryStyle } = determineRestStyle(scores, allAnswers);
     const insights = generateInsights(scores, restStyle);
-    const recommendations = generateRecommendations(scores, deficits);
+    const recommendations = generateRecommendations(scores);
     const idealPractices = REST_STYLES[restStyle as keyof typeof REST_STYLES]?.practices || [];
 
     return {
@@ -423,57 +507,41 @@ export default function RestRestorationAssessment({ onBack, onComplete }: Assess
     };
   };
 
-  const determineRestStyle = (scores: Record<string, number>, answers: Record<string, number>) => {
+  const determineRestStyle = (scores: Record<string, number>, ans: Record<string, number>) => {
     let restStyle = 'sanctuary';
     let secondaryStyle = 'ritualist';
 
-    const socialNeed = answers['social_1'] || 2;
-    const sensoryOverwhelm = answers['sensory_1'] || 5;
-    const creativeLife = answers['creative_1'] || 2;
-    const physicalTension = answers['physical_4'] || 5;
+    const socialNeed = ans['social_1'] || 2;
+    const sensoryOverwhelm = ans['sensory_1'] || 5;
+    const creativeLife = ans['creative_1'] || 2;
+    const physicalTension = ans['physical_4'] || 5;
 
-    // High social rest need + sensory sensitivity = Sanctuary
     if (socialNeed >= 3 && sensoryOverwhelm <= 4) {
       restStyle = 'sanctuary';
-    }
-    // Physical tension + movement preference
-    else if (physicalTension <= 4 && scores.physicalRest < 50) {
+    } else if (physicalTension <= 4 && scores.physicalRest < 50) {
       restStyle = 'mover';
-    }
-    // Low social need + emotional connection
-    else if (socialNeed <= 2 && scores.emotionalRest > 50) {
+    } else if (socialNeed <= 2 && scores.emotionalRest > 50) {
       restStyle = 'connector';
-    }
-    // High creative life
-    else if (creativeLife >= 3 && scores.creativeRest > 50) {
+    } else if (creativeLife >= 3 && scores.creativeRest > 50) {
       restStyle = 'creator';
-    }
-    // Sensory sensitivity + nature preference
-    else if (sensoryOverwhelm <= 5) {
+    } else if (sensoryOverwhelm <= 5) {
       restStyle = 'naturalist';
-    }
-    // Default to ritualist for balanced profiles
-    else {
+    } else {
       restStyle = 'ritualist';
     }
 
-    // Determine secondary
-    const styles = ['sanctuary', 'mover', 'connector', 'creator', 'naturalist', 'ritualist'];
-    secondaryStyle = styles.find(s => s !== restStyle) || 'ritualist';
-    
     if (restStyle === 'sanctuary') secondaryStyle = scores.creativeRest > 50 ? 'creator' : 'naturalist';
     else if (restStyle === 'mover') secondaryStyle = 'naturalist';
     else if (restStyle === 'connector') secondaryStyle = 'ritualist';
     else if (restStyle === 'creator') secondaryStyle = 'sanctuary';
     else if (restStyle === 'naturalist') secondaryStyle = 'sanctuary';
+    else secondaryStyle = 'sanctuary';
 
     return { restStyle, secondaryStyle };
   };
 
   const generateInsights = (scores: Record<string, number>, style: string): string[] => {
     const insights: string[] = [];
-
-    // Find biggest deficits
     const sortedScores = Object.entries(scores).sort((a, b) => a[1] - b[1]);
     const biggestDeficit = sortedScores[0];
     const secondDeficit = sortedScores[1];
@@ -486,6 +554,11 @@ export default function RestRestorationAssessment({ onBack, onComplete }: Assess
       sensoryRest: 'sensory rest',
       creativeRest: 'creative rest',
     };
+
+    const styleData = REST_STYLES[style as keyof typeof REST_STYLES];
+    if (styleData) {
+      insights.push(`As ${styleData.name}, ${styleData.description.toLowerCase()}`);
+    }
 
     if (biggestDeficit[1] < 40) {
       insights.push(`Your greatest rest deficit is ${deficitNames[biggestDeficit[0]]}. This is likely affecting your overall energy and wellbeing more than you realize.`);
@@ -507,16 +580,12 @@ export default function RestRestorationAssessment({ onBack, onComplete }: Assess
       insights.push('Your body is asking for attention. Physical rest isn\'t laziness — it\'s necessary maintenance for your whole system.');
     }
 
-    const styleData = REST_STYLES[style as keyof typeof REST_STYLES];
-    if (styleData) {
-      insights.push(`As ${styleData.name}, ${styleData.description.toLowerCase()}`);
-    }
-
     return insights.slice(0, 4);
   };
 
-  const generateRecommendations = (scores: Record<string, number>, deficits: [string, number][]): string[] => {
+  const generateRecommendations = (scores: Record<string, number>): string[] => {
     const recs: string[] = [];
+    const deficits = Object.entries(scores).sort((a, b) => a[1] - b[1]);
 
     deficits.slice(0, 3).forEach(([key, value]) => {
       if (value < 60) {
@@ -548,370 +617,694 @@ export default function RestRestorationAssessment({ onBack, onComplete }: Assess
     return recs.slice(0, 4);
   };
 
+  // ============================================================================
   // INTRO SCREEN
-  if (showIntro) {
+  // ============================================================================
+  if (phase === 'intro') {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: bgColor }}>
-        <div className="flex items-center justify-between p-4">
-          <button onClick={onBack} className="p-2 rounded-full" style={{ color: mutedColor }}>
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+      <>
+        <style>{STYLES}</style>
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: bgColor,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}>
+          {/* Header */}
+          <header style={{
+            padding: '16px',
+            paddingTop: 'max(16px, env(safe-area-inset-top))',
+            display: 'flex',
+            alignItems: 'center',
+          }}>
+            <button
+              onClick={onBack}
+              style={{
+                padding: '10px 18px',
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 50,
+                cursor: 'pointer',
+                fontSize: 14,
+                color: mutedColor,
+              }}
+            >
+              ← Back
+            </button>
+          </header>
 
-        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
-          <div 
-            className="w-24 h-24 rounded-full mb-8 flex items-center justify-center"
-            style={{ backgroundColor: `${accentColor}22` }}
-          >
-            <svg viewBox="0 0 48 48" className="w-12 h-12">
-              <path d="M24 8 C16 8 10 14 10 22 C10 30 16 38 24 42 C32 38 38 30 38 22 C38 14 32 8 24 8" fill="none" stroke={accentColor} strokeWidth="1.5" />
-              <circle cx="24" cy="22" r="6" fill={accentColor} opacity="0.6" />
-              <path d="M24 28 L24 36" stroke={accentColor} strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
+          {/* Content */}
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+            textAlign: 'center',
+            animation: 'fadeIn 0.5s ease',
+          }}>
+            {/* Icon */}
+            <div style={{
+              width: 80,
+              height: 80,
+              borderRadius: '50%',
+              background: `linear-gradient(135deg, ${accentColor}22 0%, ${accentColor}11 100%)`,
+              border: `1px solid ${accentColor}33`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 24,
+            }}>
+              <svg viewBox="0 0 48 48" style={{ width: 40, height: 40 }}>
+                <path 
+                  d="M24 8 C16 8 10 14 10 22 C10 30 16 38 24 42 C32 38 38 30 38 22 C38 14 32 8 24 8" 
+                  fill="none" 
+                  stroke={accentColor} 
+                  strokeWidth="1.5" 
+                />
+                <circle cx="24" cy="22" r="6" fill={accentColor} opacity="0.5" />
+                <path d="M24 28 L24 36" stroke={accentColor} strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </div>
+
+            <h1 style={{
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: 32,
+              fontWeight: 300,
+              color: textColor,
+              marginBottom: 8,
+            }}>
+              Rest & Restoration
+            </h1>
+
+            <p style={{
+              fontSize: 16,
+              color: accentColor,
+              marginBottom: 16,
+            }}>
+              How You Recharge
+            </p>
+
+            <p style={{
+              fontSize: 15,
+              color: mutedColor,
+              maxWidth: 320,
+              lineHeight: 1.6,
+              marginBottom: 32,
+            }}>
+              Discover your unique restoration needs and the practices that will most effectively replenish your energy.
+            </p>
+
+            {/* Info Cards */}
+            <div style={{
+              display: 'flex',
+              gap: 12,
+              marginBottom: 40,
+            }}>
+              <div style={{
+                padding: '12px 20px',
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 12,
+              }}>
+                <div style={{ fontSize: 13, color: mutedColor }}>Duration</div>
+                <div style={{ fontSize: 15, color: textColor, fontWeight: 500 }}>~12 min</div>
+              </div>
+              <div style={{
+                padding: '12px 20px',
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 12,
+              }}>
+                <div style={{ fontSize: 13, color: mutedColor }}>Questions</div>
+                <div style={{ fontSize: 15, color: textColor, fontWeight: 500 }}>{QUESTIONS.length}</div>
+              </div>
+            </div>
+
+            {/* Start Button */}
+            <button
+              onClick={() => setPhase('questions')}
+              style={{
+                padding: '16px 48px',
+                background: `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}dd 100%)`,
+                border: 'none',
+                borderRadius: 50,
+                color: '#fff',
+                fontSize: 16,
+                fontWeight: 500,
+                cursor: 'pointer',
+                boxShadow: `0 4px 20px ${accentColor}44`,
+              }}
+            >
+              Begin Discovery
+            </button>
           </div>
-
-          <h1 className="text-3xl font-light mb-3" style={{ color: textColor }}>
-            Rest & Restoration
-          </h1>
-          <p className="text-lg mb-2" style={{ color: accentColor }}>
-            How You Recharge
-          </p>
-          <p className="text-base mb-8 max-w-md" style={{ color: mutedColor }}>
-            Discover your unique restoration needs and the practices that will most effectively replenish your energy.
-          </p>
-
-          <div 
-            className="w-full max-w-sm p-5 rounded-2xl mb-8"
-            style={{ backgroundColor: cardBg }}
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke={accentColor} strokeWidth="1.5">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 6v6l4 2" />
-              </svg>
-              <span style={{ color: textColor }}>About 12 minutes</span>
-            </div>
-            <div className="flex items-center gap-3 mb-3">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke={accentColor} strokeWidth="1.5">
-                <path d="M9 12l2 2 4-4" />
-                <circle cx="12" cy="12" r="10" />
-              </svg>
-              <span style={{ color: textColor }}>21 reflective questions</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke={accentColor} strokeWidth="1.5">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-              </svg>
-              <span style={{ color: textColor }}>Personalized rest prescription</span>
-            </div>
-          </div>
-
-          <p className="text-sm mb-8 max-w-md" style={{ color: mutedColor }}>
-            Be honest about how you actually rest, not how you think you should. There are no wrong answers.
-          </p>
-
-          <button
-            onClick={() => setShowIntro(false)}
-            className="px-8 py-4 rounded-2xl font-medium text-white"
-            style={{ backgroundColor: accentColor }}
-          >
-            Begin Discovery
-          </button>
         </div>
-      </div>
+      </>
     );
   }
 
-  // REPORT SCREEN
-  if (showReport && results) {
-    const restStyleData = REST_STYLES[results.restStyle as keyof typeof REST_STYLES];
-    const secondaryStyleData = REST_STYLES[results.secondaryStyle as keyof typeof REST_STYLES];
-
+  // ============================================================================
+  // QUESTIONS SCREEN
+  // ============================================================================
+  if (phase === 'questions') {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: bgColor }}>
-        <div className="flex items-center justify-between p-4">
-          <button onClick={onBack} className="p-2 rounded-full" style={{ color: mutedColor }}>
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-          <span className="text-sm" style={{ color: mutedColor }}>Your Rest Profile</span>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          <div className="max-w-lg mx-auto">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <h1 className="text-2xl font-light mb-2" style={{ color: textColor }}>
-                Your Restoration Blueprint
-              </h1>
-              <p className="text-sm" style={{ color: mutedColor }}>
-                How to replenish your unique energy
-              </p>
-            </div>
-
-            {/* Primary Rest Style */}
-            <div 
-              className="p-6 rounded-2xl mb-6"
-              style={{ 
-                backgroundColor: isDark ? `${restStyleData.color}22` : `${restStyleData.color}15`,
-                borderLeft: `4px solid ${restStyleData.color}`,
+      <>
+        <style>{STYLES}</style>
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: bgColor,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}>
+          {/* Header */}
+          <header style={{
+            padding: '16px',
+            paddingTop: 'max(16px, env(safe-area-inset-top))',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <button
+              onClick={onBack}
+              style={{
+                padding: '8px 14px',
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 50,
+                cursor: 'pointer',
+                fontSize: 13,
+                color: mutedColor,
               }}
             >
-              <div className="text-sm uppercase tracking-wide mb-1" style={{ color: restStyleData.color }}>
-                Your Rest Style
-              </div>
-              <h2 className="text-2xl font-medium mb-3" style={{ color: textColor }}>
-                {restStyleData.name}
+              ✕
+            </button>
+            <span style={{ fontSize: 13, color: mutedColor }}>
+              {currentQuestion + 1} of {QUESTIONS.length}
+            </span>
+            <div style={{ width: 50 }} />
+          </header>
+
+          {/* Progress Bar */}
+          <div style={{ padding: '0 20px', marginBottom: 24 }}>
+            <div style={{
+              height: 4,
+              background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+              borderRadius: 4,
+              overflow: 'hidden',
+            }}>
+              <div
+                className="progress-bar"
+                style={{
+                  height: '100%',
+                  width: `${progress}%`,
+                  background: accentColor,
+                  borderRadius: 4,
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Question */}
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '0 24px',
+            animation: 'fadeIn 0.3s ease',
+          }}>
+            <div style={{ marginBottom: 32 }}>
+              <h2 style={{
+                fontSize: 22,
+                fontWeight: 500,
+                color: textColor,
+                lineHeight: 1.4,
+                marginBottom: question.subtext ? 8 : 0,
+              }}>
+                {question.text}
               </h2>
-              <p className="text-base leading-relaxed mb-4" style={{ color: mutedColor }}>
-                {restStyleData.description}
-              </p>
-              <div className="text-sm" style={{ color: mutedColor }}>
-                <strong style={{ color: textColor }}>Ideal environment:</strong> {restStyleData.environment}
-              </div>
+              {question.subtext && (
+                <p style={{ fontSize: 14, color: mutedColor }}>
+                  {question.subtext}
+                </p>
+              )}
             </div>
 
-            {/* Rest Deficit Scores */}
-            <div className="p-5 rounded-2xl mb-6" style={{ backgroundColor: cardBg }}>
-              <h3 className="text-lg font-medium mb-4" style={{ color: textColor }}>
-                Your Rest Levels
-              </h3>
-              <p className="text-xs mb-4" style={{ color: mutedColor }}>
-                Lower scores indicate greater need for this type of rest
-              </p>
-              
-              {[
-                { label: 'Physical Rest', value: results.physicalRest, color: '#C4956A' },
-                { label: 'Mental Rest', value: results.mentalRest, color: '#6B9BC3' },
-                { label: 'Emotional Rest', value: results.emotionalRest, color: '#C47070' },
-                { label: 'Social Rest', value: results.socialRest, color: '#7BA05B' },
-                { label: 'Sensory Rest', value: results.sensoryRest, color: '#A78BB3' },
-                { label: 'Creative Rest', value: results.creativeRest, color: '#E8B86D' },
-              ].map((item, i) => (
-                <div key={i} className="mb-4 last:mb-0">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm" style={{ color: textColor }}>{item.label}</span>
-                    <span className="text-sm font-medium" style={{ color: item.value < 50 ? '#C47070' : item.color }}>
-                      {item.value < 40 ? 'Depleted' : item.value < 60 ? 'Low' : item.value < 75 ? 'Moderate' : 'Good'}
-                    </span>
-                  </div>
-                  <div 
-                    className="h-2 rounded-full overflow-hidden"
-                    style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }}
-                  >
-                    <div 
-                      className="h-full rounded-full transition-all duration-1000"
-                      style={{ width: `${item.value}%`, backgroundColor: item.value < 50 ? '#C47070' : item.color }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Ideal Practices */}
-            <div className="p-5 rounded-2xl mb-6" style={{ backgroundColor: cardBg }}>
-              <h3 className="text-lg font-medium mb-3" style={{ color: textColor }}>
-                Your Ideal Rest Practices
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {results.idealPractices.map((practice, i) => (
-                  <span 
+            {/* Scale/Choice Options */}
+            {(question.type === 'scale' || question.type === 'choice') && question.options && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {question.options.map((option, i) => (
+                  <button
                     key={i}
-                    className="px-3 py-1.5 rounded-full text-sm"
-                    style={{ 
-                      backgroundColor: isDark ? `${restStyleData.color}33` : `${restStyleData.color}22`,
-                      color: restStyleData.color,
+                    className="assess-option"
+                    onClick={() => handleAnswer(option.value)}
+                    style={{
+                      padding: '18px 20px',
+                      background: cardBg,
+                      border: `1px solid ${cardBorder}`,
+                      borderRadius: 16,
+                      cursor: 'pointer',
+                      textAlign: 'left',
                     }}
                   >
-                    {practice}
-                  </span>
+                    <div style={{
+                      fontSize: 16,
+                      fontWeight: 500,
+                      color: textColor,
+                      marginBottom: option.description ? 4 : 0,
+                    }}>
+                      {option.label}
+                    </div>
+                    {option.description && (
+                      <div style={{ fontSize: 13, color: mutedColor }}>
+                        {option.description}
+                      </div>
+                    )}
+                  </button>
                 ))}
               </div>
-            </div>
+            )}
 
-            {/* Secondary Style */}
-            <div className="p-5 rounded-2xl mb-6" style={{ backgroundColor: cardBg }}>
-              <div className="text-sm uppercase tracking-wide mb-1" style={{ color: secondaryStyleData.color }}>
-                Secondary Style
+            {/* Slider */}
+            {question.type === 'slider' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                <div style={{ padding: '0 8px' }}>
+                  <input
+                    type="range"
+                    min={question.min || 1}
+                    max={question.max || 10}
+                    value={sliderValue}
+                    onChange={(e) => setSliderValue(parseInt(e.target.value))}
+                    className="slider-input"
+                    style={{
+                      width: '100%',
+                      background: `linear-gradient(to right, ${accentColor} 0%, ${accentColor} ${((sliderValue - 1) / 9) * 100}%, ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)'} ${((sliderValue - 1) / 9) * 100}%, ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)'} 100%)`,
+                      cursor: 'pointer',
+                    }}
+                  />
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    marginTop: 16,
+                  }}>
+                    <span style={{ fontSize: 12, color: mutedColor, maxWidth: '35%' }}>
+                      {question.minLabel}
+                    </span>
+                    <span style={{
+                      fontSize: 32,
+                      fontWeight: 300,
+                      color: accentColor,
+                      lineHeight: 1,
+                    }}>
+                      {sliderValue}
+                    </span>
+                    <span style={{ fontSize: 12, color: mutedColor, maxWidth: '35%', textAlign: 'right' }}>
+                      {question.maxLabel}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleSliderSubmit}
+                  style={{
+                    padding: '16px',
+                    background: `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}dd 100%)`,
+                    border: 'none',
+                    borderRadius: 50,
+                    color: '#fff',
+                    fontSize: 16,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Continue
+                </button>
               </div>
-              <h3 className="text-lg font-medium mb-2" style={{ color: textColor }}>
-                {secondaryStyleData.name}
-              </h3>
-              <p className="text-sm" style={{ color: mutedColor }}>
-                This style also resonates with you. Mix these practices in for variety.
-              </p>
-            </div>
+            )}
+          </div>
+        </div>
+      </>
+    );
+  }
 
-            {/* Insights */}
-            <div className="p-5 rounded-2xl mb-6" style={{ backgroundColor: cardBg }}>
-              <h3 className="text-lg font-medium mb-4" style={{ color: textColor }}>
-                Insights
-              </h3>
-              <div className="space-y-4">
-                {results.insights.map((insight, i) => (
-                  <div key={i} className="flex gap-3">
-                    <div 
-                      className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
-                      style={{ backgroundColor: `${accentColor}22` }}
-                    >
-                      <span className="text-xs" style={{ color: accentColor }}>{i + 1}</span>
+  // ============================================================================
+  // REPORT SCREEN
+  // ============================================================================
+  if (phase === 'report' && results) {
+    const primary = REST_STYLES[results.restStyle as keyof typeof REST_STYLES];
+    const secondary = REST_STYLES[results.secondaryStyle as keyof typeof REST_STYLES];
+
+    return (
+      <>
+        <style>{STYLES}</style>
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: bgColor,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}>
+          {/* Header */}
+          <header style={{
+            padding: '16px',
+            paddingTop: 'max(16px, env(safe-area-inset-top))',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <button
+              onClick={onBack}
+              style={{
+                padding: '10px 18px',
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 50,
+                cursor: 'pointer',
+                fontSize: 14,
+                color: mutedColor,
+              }}
+            >
+              ← Back
+            </button>
+            <span style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: mutedColor,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+            }}>
+              Your Results
+            </span>
+            <div style={{ width: 80 }} />
+          </header>
+
+          {/* Scrollable Content */}
+          <div
+            className="assess-scroll"
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '20px 24px',
+              paddingBottom: 'max(40px, env(safe-area-inset-bottom))',
+            }}
+          >
+            <div style={{ maxWidth: 500, margin: '0 auto' }}>
+              {/* Primary Rest Style Card */}
+              <div style={{
+                padding: 24,
+                background: `linear-gradient(135deg, ${primary.color}15 0%, ${primary.color}08 100%)`,
+                border: `1px solid ${primary.color}33`,
+                borderRadius: 20,
+                marginBottom: 20,
+                animation: 'fadeInScale 0.5s ease',
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 16,
+                  marginBottom: 16,
+                }}>
+                  <div style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: '50%',
+                    background: `${primary.color}22`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <svg viewBox="0 0 32 32" style={{ width: 28, height: 28 }}>
+                      <circle cx="16" cy="16" r="12" fill="none" stroke={primary.color} strokeWidth="1.5" />
+                      <circle cx="16" cy="16" r="5" fill={primary.color} opacity="0.5" />
+                      <path d="M16 4 L16 8 M16 24 L16 28 M4 16 L8 16 M24 16 L28 16" stroke={primary.color} strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, color: primary.color, marginBottom: 2 }}>
+                      Your Rest Style
                     </div>
-                    <p className="text-sm leading-relaxed" style={{ color: mutedColor }}>
-                      {insight}
-                    </p>
+                    <div style={{
+                      fontFamily: "'Cormorant Garamond', Georgia, serif",
+                      fontSize: 26,
+                      fontWeight: 400,
+                      color: textColor,
+                    }}>
+                      {primary.name}
+                    </div>
+                  </div>
+                </div>
+                <p style={{ fontSize: 15, color: mutedColor, lineHeight: 1.6 }}>
+                  {primary.description}
+                </p>
+              </div>
+
+              {/* Signs */}
+              <div style={{
+                padding: 20,
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 16,
+                marginBottom: 16,
+              }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: textColor, marginBottom: 12 }}>
+                  Signs of Your Style
+                </h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {primary.signs.map((sign, i) => (
+                    <span key={i} style={{
+                      padding: '8px 14px',
+                      background: `${primary.color}15`,
+                      border: `1px solid ${primary.color}25`,
+                      borderRadius: 20,
+                      fontSize: 13,
+                      color: textColor,
+                    }}>
+                      {sign}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Strengths */}
+              <div style={{
+                padding: 20,
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 16,
+                marginBottom: 16,
+              }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: textColor, marginBottom: 12 }}>
+                  Your Strengths
+                </h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {primary.strengths.map((s, i) => (
+                    <span key={i} style={{
+                      padding: '8px 14px',
+                      background: '#7BA05B15',
+                      border: '1px solid #7BA05B25',
+                      borderRadius: 20,
+                      fontSize: 13,
+                      color: textColor,
+                    }}>
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Rest Levels */}
+              <div style={{
+                padding: 20,
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 16,
+                marginBottom: 16,
+              }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: textColor, marginBottom: 16 }}>
+                  Your Rest Levels
+                </h3>
+                <p style={{ fontSize: 12, color: mutedColor, marginBottom: 16 }}>
+                  Lower scores indicate greater need for this type of rest
+                </p>
+                {[
+                  { label: 'Physical Rest', value: results.physicalRest, color: '#C4956A' },
+                  { label: 'Mental Rest', value: results.mentalRest, color: '#6B9BC3' },
+                  { label: 'Emotional Rest', value: results.emotionalRest, color: '#C47070' },
+                  { label: 'Social Rest', value: results.socialRest, color: '#7BA05B' },
+                  { label: 'Sensory Rest', value: results.sensoryRest, color: '#A78BB3' },
+                  { label: 'Creative Rest', value: results.creativeRest, color: '#E8B86D' },
+                ].map((item, i) => (
+                  <div key={i} style={{ marginBottom: i < 5 ? 16 : 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <span style={{ fontSize: 14, color: textColor }}>{item.label}</span>
+                      <span style={{ fontSize: 14, color: item.value < 50 ? '#C47070' : item.color }}>
+                        {item.value < 40 ? 'Depleted' : item.value < 60 ? 'Low' : item.value < 75 ? 'Moderate' : 'Good'}
+                      </span>
+                    </div>
+                    <div style={{
+                      height: 6,
+                      background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+                      borderRadius: 3,
+                      overflow: 'hidden',
+                    }}>
+                      <div style={{
+                        height: '100%',
+                        width: `${item.value}%`,
+                        background: item.value < 50 ? '#C47070' : item.color,
+                        borderRadius: 3,
+                        transition: 'width 1s ease',
+                      }} />
+                    </div>
                   </div>
                 ))}
               </div>
-            </div>
 
-            {/* Recommendations */}
-            <div className="p-5 rounded-2xl mb-6" style={{ backgroundColor: cardBg }}>
-              <h3 className="text-lg font-medium mb-4" style={{ color: textColor }}>
-                Your Rest Prescription
-              </h3>
-              <div className="space-y-4">
-                {results.recommendations.map((rec, i) => (
-                  <div key={i} className="flex gap-3">
-                    <div 
-                      className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
-                      style={{ backgroundColor: `${accentColor}22` }}
-                    >
-                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke={accentColor} strokeWidth="3">
-                        <path d="M5 12h14M12 5l7 7-7 7" />
-                      </svg>
+              {/* Insights */}
+              <div style={{
+                padding: 20,
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 16,
+                marginBottom: 16,
+              }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: textColor, marginBottom: 16 }}>
+                  Key Insights
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {results.insights.map((insight, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 12 }}>
+                      <div style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        background: `${accentColor}22`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        marginTop: 2,
+                      }}>
+                        <span style={{ fontSize: 12, color: accentColor }}>{i + 1}</span>
+                      </div>
+                      <p style={{ fontSize: 14, color: mutedColor, lineHeight: 1.6 }}>
+                        {insight}
+                      </p>
                     </div>
-                    <p className="text-sm leading-relaxed" style={{ color: mutedColor }}>
-                      {rec}
-                    </p>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* Closing */}
-            <div className="text-center py-6">
-              <p className="text-sm mb-6" style={{ color: mutedColor }}>
-                Rest is not a reward for productivity. It's a prerequisite for living fully.
-              </p>
+              {/* Recommendations */}
+              <div style={{
+                padding: 20,
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 16,
+                marginBottom: 16,
+              }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: textColor, marginBottom: 16 }}>
+                  Your Rest Prescription
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {results.recommendations.map((rec, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 12 }}>
+                      <div style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        background: `${primary.color}22`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        marginTop: 2,
+                      }}>
+                        <span style={{ fontSize: 14, color: primary.color }}>→</span>
+                      </div>
+                      <p style={{ fontSize: 14, color: mutedColor, lineHeight: 1.6 }}>
+                        {rec}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Ideal Practices */}
+              <div style={{
+                padding: 20,
+                background: `linear-gradient(135deg, ${primary.color}10 0%, transparent 100%)`,
+                border: `1px solid ${primary.color}25`,
+                borderRadius: 16,
+                marginBottom: 16,
+              }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: textColor, marginBottom: 12 }}>
+                  Your Ideal Practices
+                </h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {results.idealPractices.map((practice, i) => (
+                    <span key={i} style={{
+                      padding: '10px 16px',
+                      background: `${primary.color}20`,
+                      border: `1px solid ${primary.color}30`,
+                      borderRadius: 20,
+                      fontSize: 14,
+                      color: textColor,
+                    }}>
+                      {practice}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Secondary Style */}
+              <div style={{
+                padding: 20,
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 16,
+                marginBottom: 24,
+              }}>
+                <div style={{ fontSize: 12, color: secondary.color, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Secondary Style
+                </div>
+                <h3 style={{ fontSize: 18, fontWeight: 500, color: textColor, marginBottom: 8 }}>
+                  {secondary.name}
+                </h3>
+                <p style={{ fontSize: 14, color: mutedColor, lineHeight: 1.6 }}>
+                  This style also resonates with you. Mix these practices in for variety.
+                </p>
+              </div>
+
+              {/* Close Button */}
               <button
                 onClick={onBack}
-                className="px-8 py-4 rounded-2xl font-medium text-white"
-                style={{ backgroundColor: accentColor }}
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  background: `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}dd 100%)`,
+                  border: 'none',
+                  borderRadius: 50,
+                  color: '#fff',
+                  fontSize: 16,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
               >
                 Return to Library
               </button>
             </div>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
-  // QUESTION SCREEN
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: bgColor }}>
-      <div className="flex items-center justify-between p-4">
-        <button onClick={onBack} className="p-2 rounded-full" style={{ color: mutedColor }}>
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-        <span className="text-sm" style={{ color: mutedColor }}>
-          {currentQuestion + 1} of {QUESTIONS.length}
-        </span>
-      </div>
-
-      <div className="px-4">
-        <div 
-          className="h-1 rounded-full overflow-hidden"
-          style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}
-        >
-          <div 
-            className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${progress}%`, backgroundColor: accentColor }}
-          />
-        </div>
-      </div>
-
-      <div className="flex-1 flex flex-col justify-center px-6 py-8">
-        <div className="max-w-lg mx-auto w-full">
-          <h2 className="text-xl font-medium mb-2 leading-relaxed" style={{ color: textColor }}>
-            {question.text}
-          </h2>
-          {question.subtext && (
-            <p className="text-sm mb-8" style={{ color: mutedColor }}>
-              {question.subtext}
-            </p>
-          )}
-          {!question.subtext && <div className="mb-8" />}
-
-          {(question.type === 'scale' || question.type === 'choice') && question.options && (
-            <div className="space-y-3">
-              {question.options.map((option, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleAnswer(option.value)}
-                  className="w-full p-4 rounded-xl text-left transition-all hover:scale-[1.02]"
-                  style={{ 
-                    backgroundColor: cardBg,
-                    borderWidth: 1,
-                    borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-                  }}
-                >
-                  <div className="font-medium mb-1" style={{ color: textColor }}>
-                    {option.label}
-                  </div>
-                  {option.description && (
-                    <div className="text-sm" style={{ color: mutedColor }}>
-                      {option.description}
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {question.type === 'slider' && (
-            <div className="space-y-6">
-              <div className="px-2">
-                <input
-                  type="range"
-                  min={question.min || 1}
-                  max={question.max || 10}
-                  value={sliderValue}
-                  onChange={(e) => setSliderValue(parseInt(e.target.value))}
-                  className="w-full h-2 rounded-full appearance-none cursor-pointer"
-                  style={{ 
-                    background: `linear-gradient(to right, ${accentColor} 0%, ${accentColor} ${((sliderValue - 1) / 9) * 100}%, ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)'} ${((sliderValue - 1) / 9) * 100}%, ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)'} 100%)`,
-                  }}
-                />
-                <div className="flex justify-between mt-3">
-                  <span className="text-xs max-w-[40%]" style={{ color: mutedColor }}>
-                    {question.minLabel}
-                  </span>
-                  <span className="text-2xl font-light" style={{ color: accentColor }}>
-                    {sliderValue}
-                  </span>
-                  <span className="text-xs max-w-[40%] text-right" style={{ color: mutedColor }}>
-                    {question.maxLabel}
-                  </span>
-                </div>
-              </div>
-              
-              <button
-                onClick={handleSliderSubmit}
-                className="w-full py-4 rounded-2xl font-medium text-white"
-                style={{ backgroundColor: accentColor }}
-              >
-                Continue
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+  return null;
 }

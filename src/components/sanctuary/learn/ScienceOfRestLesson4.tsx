@@ -75,7 +75,7 @@ const CONTENT = [
   },
   {
     type: 'summary',
-    title: 'Key Takeaways',
+    title: 'Course Complete',
     points: [
       'Rest requires intention and protection',
       'Build rest into daily, weekly, and seasonal rhythms',
@@ -85,6 +85,43 @@ const CONTENT = [
   },
 ];
 
+// ============================================================================
+// STYLES
+// ============================================================================
+const STYLES = `
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  @keyframes fadeInScale {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .lesson-scroll::-webkit-scrollbar {
+    width: 4px;
+  }
+  .lesson-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .lesson-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+  }
+
+  .lesson-btn {
+    transition: all 0.2s ease;
+  }
+  .lesson-btn:active {
+    transform: scale(0.98);
+  }
+
+  .progress-bar {
+    transition: width 0.4s ease;
+  }
+`;
+
 export default function ScienceOfRestLesson4({ onBack, onComplete }: LessonProps) {
   const { isDark, colors } = useTheme();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -92,6 +129,13 @@ export default function ScienceOfRestLesson4({ onBack, onComplete }: LessonProps
   const current = CONTENT[currentIndex];
   const progress = ((currentIndex + 1) / CONTENT.length) * 100;
   const isLastSlide = currentIndex === CONTENT.length - 1;
+
+  const bgColor = colors.bg;
+  const textColor = colors.text;
+  const mutedColor = colors.textMuted;
+  const accentColor = colors.accent;
+  const cardBg = colors.cardBg;
+  const cardBorder = colors.cardBorder;
 
   const handleNext = () => {
     if (isLastSlide) {
@@ -108,33 +152,40 @@ export default function ScienceOfRestLesson4({ onBack, onComplete }: LessonProps
     }
   };
 
-  const bgColor = colors.bg;
-  const textColor = colors.text;
-  const mutedColor = colors.textMuted;
-  const accentColor = colors.accent;
-  const cardBg = colors.cardBg;
-
+  // ============================================================================
+  // RENDER VISUAL
+  // ============================================================================
   const renderVisual = (visual: string) => {
     if (visual === 'rhythm') {
+      const rhythms = [
+        { label: 'Daily', height: 40, desc: 'Micro-rests' },
+        { label: 'Weekly', height: 60, desc: 'Sabbath' },
+        { label: 'Seasonal', height: 80, desc: 'Deep renewal' },
+      ];
+      
       return (
-        <div className="flex justify-center items-end gap-6 mb-6">
-          {[
-            { label: 'Daily', height: 40, desc: 'Micro-rests' },
-            { label: 'Weekly', height: 60, desc: 'Sabbath' },
-            { label: 'Seasonal', height: 80, desc: 'Deep renewal' },
-          ].map((item, i) => (
-            <div key={i} className="flex flex-col items-center">
-              <div 
-                className="w-16 rounded-t-lg mb-2"
-                style={{ 
-                  height: item.height,
-                  backgroundColor: isDark ? `${accentColor}44` : `${accentColor}33`,
-                }}
-              />
-              <div className="text-sm font-medium" style={{ color: textColor }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'flex-end',
+          gap: 24,
+          marginBottom: 24,
+        }}>
+          {rhythms.map((item, i) => (
+            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{
+                width: 64,
+                height: item.height,
+                borderRadius: '8px 8px 0 0',
+                background: `linear-gradient(180deg, ${accentColor}44 0%, ${accentColor}22 100%)`,
+                border: `1px solid ${accentColor}33`,
+                borderBottom: 'none',
+                marginBottom: 8,
+              }} />
+              <div style={{ fontSize: 14, fontWeight: 500, color: textColor }}>
                 {item.label}
               </div>
-              <div className="text-xs" style={{ color: mutedColor }}>
+              <div style={{ fontSize: 11, color: mutedColor }}>
                 {item.desc}
               </div>
             </div>
@@ -145,15 +196,43 @@ export default function ScienceOfRestLesson4({ onBack, onComplete }: LessonProps
     return null;
   };
 
+  // ============================================================================
+  // RENDER CONTENT
+  // ============================================================================
   const renderContent = () => {
     switch (current.type) {
       case 'title':
         return (
-          <div className="text-center py-12">
-            <h1 className="text-3xl font-light mb-3" style={{ color: textColor }}>
+          <div style={{
+            textAlign: 'center',
+            padding: '60px 0',
+            animation: 'fadeInScale 0.5s ease',
+          }}>
+            <div style={{
+              width: 72,
+              height: 72,
+              borderRadius: '50%',
+              background: `${accentColor}22`,
+              border: `1px solid ${accentColor}33`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 24px',
+              fontSize: 28,
+              color: accentColor,
+            }}>
+              ∞
+            </div>
+            <h1 style={{
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: 32,
+              fontWeight: 300,
+              color: textColor,
+              marginBottom: 12,
+            }}>
               {current.title}
             </h1>
-            <p className="text-lg" style={{ color: mutedColor }}>
+            <p style={{ fontSize: 16, color: accentColor }}>
               {current.subtitle}
             </p>
           </div>
@@ -161,12 +240,23 @@ export default function ScienceOfRestLesson4({ onBack, onComplete }: LessonProps
 
       case 'visual':
         return (
-          <div className="py-8">
+          <div style={{ animation: 'fadeIn 0.4s ease' }}>
             {renderVisual(current.visual!)}
-            <h2 className="text-xl font-medium mb-4 text-center" style={{ color: textColor }}>
+            <h2 style={{
+              fontSize: 22,
+              fontWeight: 500,
+              color: textColor,
+              marginBottom: 16,
+              textAlign: 'center',
+            }}>
               {current.title}
             </h2>
-            <p className="text-base leading-relaxed text-center" style={{ color: mutedColor }}>
+            <p style={{
+              fontSize: 16,
+              color: mutedColor,
+              lineHeight: 1.7,
+              textAlign: 'center',
+            }}>
               {current.content}
             </p>
           </div>
@@ -174,14 +264,39 @@ export default function ScienceOfRestLesson4({ onBack, onComplete }: LessonProps
 
       case 'insight':
         return (
-          <div className="py-6 px-5 rounded-2xl" style={{ backgroundColor: cardBg }}>
-            <div className="text-sm uppercase tracking-wide mb-2" style={{ color: accentColor }}>
-              Insight
+          <div style={{
+            padding: 24,
+            background: `linear-gradient(135deg, ${accentColor}15 0%, ${accentColor}08 100%)`,
+            border: `1px solid ${accentColor}33`,
+            borderRadius: 20,
+            animation: 'fadeIn 0.4s ease',
+          }}>
+            <div style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: accentColor,
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              marginBottom: 12,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}>
+              <span style={{ fontSize: 14 }}>◇</span> Insight
             </div>
-            <h2 className="text-xl font-medium mb-3" style={{ color: textColor }}>
+            <h2 style={{
+              fontSize: 22,
+              fontWeight: 500,
+              color: textColor,
+              marginBottom: 12,
+            }}>
               {current.title}
             </h2>
-            <p className="text-base leading-relaxed" style={{ color: mutedColor }}>
+            <p style={{
+              fontSize: 16,
+              color: mutedColor,
+              lineHeight: 1.7,
+            }}>
               {current.content}
             </p>
           </div>
@@ -189,17 +304,40 @@ export default function ScienceOfRestLesson4({ onBack, onComplete }: LessonProps
 
       case 'practice':
         return (
-          <div 
-            className="py-6 px-5 rounded-2xl border-l-4"
-            style={{ backgroundColor: cardBg, borderColor: accentColor }}
-          >
-            <div className="text-sm uppercase tracking-wide mb-2" style={{ color: accentColor }}>
-              Practice
+          <div style={{
+            padding: 24,
+            background: cardBg,
+            border: `1px solid ${cardBorder}`,
+            borderLeft: `4px solid ${accentColor}`,
+            borderRadius: 16,
+            animation: 'fadeIn 0.4s ease',
+          }}>
+            <div style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: accentColor,
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              marginBottom: 12,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}>
+              <span style={{ fontSize: 14 }}>○</span> Practice
             </div>
-            <h2 className="text-xl font-medium mb-3" style={{ color: textColor }}>
+            <h2 style={{
+              fontSize: 22,
+              fontWeight: 500,
+              color: textColor,
+              marginBottom: 12,
+            }}>
               {current.title}
             </h2>
-            <p className="text-base leading-relaxed" style={{ color: mutedColor }}>
+            <p style={{
+              fontSize: 16,
+              color: mutedColor,
+              lineHeight: 1.7,
+            }}>
               {current.content}
             </p>
           </div>
@@ -207,92 +345,228 @@ export default function ScienceOfRestLesson4({ onBack, onComplete }: LessonProps
 
       case 'summary':
         return (
-          <div className="py-6">
-            <h2 className="text-xl font-medium mb-4 text-center" style={{ color: textColor }}>
+          <div style={{ animation: 'fadeIn 0.4s ease' }}>
+            <div style={{
+              width: 56,
+              height: 56,
+              borderRadius: '50%',
+              background: `linear-gradient(135deg, ${accentColor}44 0%, ${accentColor}22 100%)`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 20px',
+              fontSize: 20,
+              color: accentColor,
+            }}>
+              ✦
+            </div>
+            <h2 style={{
+              fontSize: 24,
+              fontWeight: 500,
+              color: textColor,
+              marginBottom: 24,
+              textAlign: 'center',
+            }}>
               {current.title}
             </h2>
-            <ul className="space-y-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {(current as any).points.map((point: string, i: number) => (
-                <li key={i} className="flex items-start gap-3 text-base" style={{ color: mutedColor }}>
-                  <span 
-                    className="w-2 h-2 rounded-full mt-2 flex-shrink-0"
-                    style={{ backgroundColor: accentColor }}
-                  />
-                  {point}
-                </li>
+                <div key={i} style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 12,
+                  padding: 16,
+                  background: cardBg,
+                  border: `1px solid ${cardBorder}`,
+                  borderRadius: 12,
+                }}>
+                  <div style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: '50%',
+                    background: `${accentColor}22`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <span style={{ fontSize: 12, color: accentColor }}>✓</span>
+                  </div>
+                  <span style={{ fontSize: 15, color: textColor, lineHeight: 1.5 }}>
+                    {point}
+                  </span>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         );
 
-      default:
+      default: // 'text' type
         return (
-          <div className="py-6">
-            <h2 className="text-xl font-medium mb-4" style={{ color: textColor }}>
+          <div style={{ animation: 'fadeIn 0.4s ease' }}>
+            <h2 style={{
+              fontSize: 24,
+              fontWeight: 500,
+              color: textColor,
+              marginBottom: 16,
+            }}>
               {current.title}
             </h2>
-            <p className="text-base leading-relaxed mb-4" style={{ color: mutedColor }}>
+            <p style={{
+              fontSize: 17,
+              color: mutedColor,
+              lineHeight: 1.8,
+              marginBottom: (current as any).highlight ? 24 : 0,
+            }}>
               {current.content}
             </p>
             {(current as any).highlight && (
-              <p className="text-lg italic text-center mt-6" style={{ color: accentColor }}>
-                {(current as any).highlight}
-              </p>
+              <div style={{
+                padding: '16px 20px',
+                background: `${accentColor}15`,
+                border: `1px solid ${accentColor}25`,
+                borderRadius: 12,
+                textAlign: 'center',
+              }}>
+                <span style={{
+                  fontSize: 18,
+                  fontStyle: 'italic',
+                  color: accentColor,
+                }}>
+                  "{(current as any).highlight}"
+                </span>
+              </div>
             )}
           </div>
         );
     }
   };
 
+  // ============================================================================
+  // MAIN RENDER
+  // ============================================================================
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: bgColor }}>
-      <div className="flex items-center justify-between p-4">
-        <button onClick={onBack} className="p-2 rounded-full transition-colors" style={{ color: mutedColor }}>
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-        <div className="text-sm" style={{ color: mutedColor }}>
-          {currentIndex + 1} / {CONTENT.length}
-        </div>
-      </div>
-
-      <div className="px-4">
-        <div 
-          className="h-1 rounded-full overflow-hidden"
-          style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}
-        >
-          <div 
-            className="h-full rounded-full transition-all duration-300"
-            style={{ width: `${progress}%`, backgroundColor: accentColor }}
-          />
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto px-6 py-8">
-        <div className="max-w-lg mx-auto">
-          {renderContent()}
-        </div>
-      </div>
-
-      <div className="p-4 flex gap-3">
-        {currentIndex > 0 && (
+    <>
+      <style>{STYLES}</style>
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 100,
+        background: bgColor,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}>
+        {/* Header */}
+        <header style={{
+          padding: '16px',
+          paddingTop: 'max(16px, env(safe-area-inset-top))',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
           <button
-            onClick={handlePrev}
-            className="flex-1 py-4 rounded-2xl font-medium transition-colors"
-            style={{ backgroundColor: cardBg, color: textColor }}
+            onClick={onBack}
+            style={{
+              padding: '8px 14px',
+              background: cardBg,
+              border: `1px solid ${cardBorder}`,
+              borderRadius: 50,
+              cursor: 'pointer',
+              fontSize: 18,
+              color: mutedColor,
+              lineHeight: 1,
+            }}
           >
-            Back
+            ✕
           </button>
-        )}
-        <button
-          onClick={handleNext}
-          className="flex-1 py-4 rounded-2xl font-medium transition-colors text-white"
-          style={{ backgroundColor: accentColor }}
+          <span style={{ fontSize: 13, color: mutedColor }}>
+            {currentIndex + 1} / {CONTENT.length}
+          </span>
+          <div style={{ width: 50 }} />
+        </header>
+
+        {/* Progress Bar */}
+        <div style={{ padding: '0 20px', marginBottom: 8 }}>
+          <div style={{
+            height: 4,
+            background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+            borderRadius: 4,
+            overflow: 'hidden',
+          }}>
+            <div
+              className="progress-bar"
+              style={{
+                height: '100%',
+                width: `${progress}%`,
+                background: accentColor,
+                borderRadius: 4,
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Content */}
+        <div
+          className="lesson-scroll"
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '24px',
+          }}
         >
-          {isLastSlide ? 'Complete' : 'Continue'}
-        </button>
+          <div style={{ maxWidth: 500, margin: '0 auto' }}>
+            {renderContent()}
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <div style={{
+          padding: '16px 24px',
+          paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
+          display: 'flex',
+          gap: 12,
+        }}>
+          {currentIndex > 0 && (
+            <button
+              className="lesson-btn"
+              onClick={handlePrev}
+              style={{
+                flex: 1,
+                padding: '16px',
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 50,
+                color: textColor,
+                fontSize: 16,
+                fontWeight: 500,
+                cursor: 'pointer',
+              }}
+            >
+              Back
+            </button>
+          )}
+          <button
+            className="lesson-btn"
+            onClick={handleNext}
+            style={{
+              flex: currentIndex > 0 ? 1 : undefined,
+              width: currentIndex > 0 ? undefined : '100%',
+              padding: '16px 32px',
+              background: `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}dd 100%)`,
+              border: 'none',
+              borderRadius: 50,
+              color: '#fff',
+              fontSize: 16,
+              fontWeight: 500,
+              cursor: 'pointer',
+              boxShadow: `0 4px 16px ${accentColor}44`,
+            }}
+          >
+            {isLastSlide ? 'Complete Course' : 'Continue'}
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -1,8 +1,17 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { ComponentType } from 'react';
 import { useTheme, ThemeToggle } from '@/contexts/ThemeContext';
+import { createClient } from '@supabase/supabase-js';
+import DynamicLessonViewer from './DynamicLessonViewer';
+import DynamicAssessmentViewer from './DynamicAssessmentViewer';
+
+// Supabase client
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 import NervousSystemLesson1 from './learn/NervousSystemLesson1';
 import NervousSystemLesson2 from './learn/NervousSystemLesson2';
@@ -80,14 +89,296 @@ type DiscoverAssessment = {
   Component: DiscoverAssessmentComponent;
 };
 
+// Database types for Supabase content
+type DBStory = {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  chapters: { id: string; title: string; duration: string; text: string }[];
+  created_at?: string;
+};
+
+type DBLesson = {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  content: { type: string; title?: string; subtitle?: string; content?: string; highlight?: string; points?: string[]; visual?: string }[];
+  created_at?: string;
+};
+
+type DBAssessment = {
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  duration: string;
+  icon: string;
+  questions: { id: string; text: string; subtext?: string; options: { value: number; label: string; description?: string }[]; category?: string }[];
+  result_types: { id: string; name: string; description: string; signs?: string[]; strengths?: string[]; shadow?: string; tools?: string[]; color: string }[];
+  created_at?: string;
+};
+
+// ============================================================================
+// SVG ICONS
+// ============================================================================
+
+// Stories Category Icons
+const StoryCategoryIcon = ({ type, color }: { type: string; color: string }) => {
+  const icons: Record<string, React.ReactNode> = {
+    'rest-sleep': (
+      <svg viewBox="0 0 24 24" width="20" height="20">
+        {/* Moon with stars - represents rest and sleep */}
+        <path 
+          d="M12 3C7 3 3 7 3 12s4 9 9 9c1.5 0 2.9-.3 4.2-.9-3.5-1-6.2-4.2-6.2-8.1 0-3.9 2.7-7.1 6.2-8.1C14.9 3.3 13.5 3 12 3z" 
+          fill="none" 
+          stroke={color} 
+          strokeWidth="1.5" 
+        />
+        <circle cx="17" cy="6" r="1" fill={color} opacity="0.6" />
+        <circle cx="20" cy="10" r="0.7" fill={color} opacity="0.4" />
+        <circle cx="18" cy="14" r="0.5" fill={color} opacity="0.3" />
+      </svg>
+    ),
+    'guided-journeys': (
+      <svg viewBox="0 0 24 24" width="20" height="20">
+        {/* Compass/path - represents journeys */}
+        <circle cx="12" cy="12" r="8" fill="none" stroke={color} strokeWidth="1.5" />
+        <path 
+          d="M12 12L16 8L12 16L8 8L12 12" 
+          fill={color} 
+          opacity="0.4" 
+          stroke={color} 
+          strokeWidth="1" 
+        />
+        <circle cx="12" cy="12" r="1.5" fill={color} opacity="0.6" />
+      </svg>
+    ),
+    'meditative-tales': (
+      <svg viewBox="0 0 24 24" width="20" height="20">
+        {/* Lotus flower - represents meditation */}
+        <ellipse cx="12" cy="16" rx="6" ry="3" fill="none" stroke={color} strokeWidth="1.5" opacity="0.5" />
+        <path 
+          d="M12 5C12 5 8 9 8 12C8 14 10 15 12 15C14 15 16 14 16 12C16 9 12 5 12 5Z" 
+          fill="none" 
+          stroke={color} 
+          strokeWidth="1.5" 
+        />
+        <path d="M12 15L12 19" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.6" />
+        <path 
+          d="M7 10C7 10 5 12 6 14" 
+          fill="none" 
+          stroke={color} 
+          strokeWidth="1.5" 
+          strokeLinecap="round"
+          opacity="0.4"
+        />
+        <path 
+          d="M17 10C17 10 19 12 18 14" 
+          fill="none" 
+          stroke={color} 
+          strokeWidth="1.5" 
+          strokeLinecap="round"
+          opacity="0.4"
+        />
+      </svg>
+    ),
+    'rise-ready': (
+      <svg viewBox="0 0 24 24" width="20" height="20">
+        {/* Rising sun - represents new beginnings and confidence */}
+        <path 
+          d="M4 18h16" 
+          stroke={color} 
+          strokeWidth="1.5" 
+          strokeLinecap="round" 
+        />
+        <path 
+          d="M12 14C15.3 14 18 11.3 18 8" 
+          fill="none" 
+          stroke={color} 
+          strokeWidth="1.5" 
+          strokeLinecap="round"
+        />
+        <path 
+          d="M6 8C6 11.3 8.7 14 12 14" 
+          fill="none" 
+          stroke={color} 
+          strokeWidth="1.5" 
+          strokeLinecap="round"
+        />
+        <path d="M12 4L12 6" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M6 6L7.5 7.5" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.6" />
+        <path d="M18 6L16.5 7.5" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.6" />
+        <path d="M3 11L5 11" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.4" />
+        <path d="M19 11L21 11" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.4" />
+      </svg>
+    ),
+  };
+
+  return icons[type] || null;
+};
+
+// Learn Category Icons
+const LearnCategoryIcon = ({ type, color }: { type: string; color: string }) => {
+  const icons: Record<string, React.ReactNode> = {
+    'nervous-system': (
+      <svg viewBox="0 0 24 24" width="20" height="20">
+        {/* Brain/neural pathways - represents nervous system */}
+        <circle cx="12" cy="8" r="5" fill="none" stroke={color} strokeWidth="1.5" />
+        <path 
+          d="M9 7C9 7 10 9 12 9C14 9 15 7 15 7" 
+          fill="none" 
+          stroke={color} 
+          strokeWidth="1.5" 
+          strokeLinecap="round"
+          opacity="0.6"
+        />
+        <path d="M12 13L12 17" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M12 17L9 20" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.6" />
+        <path d="M12 17L15 20" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.6" />
+        <circle cx="10" cy="6" r="1" fill={color} opacity="0.4" />
+        <circle cx="14" cy="6" r="1" fill={color} opacity="0.4" />
+      </svg>
+    ),
+    'emotions': (
+      <svg viewBox="0 0 24 24" width="20" height="20">
+        {/* Heart with wave - represents emotions */}
+        <path 
+          d="M12 6C12 6 8 2 5 5C2 8 5 12 12 19C19 12 22 8 19 5C16 2 12 6 12 6Z" 
+          fill="none" 
+          stroke={color} 
+          strokeWidth="1.5" 
+        />
+        <path 
+          d="M7 10L9 10L10 8L12 12L14 9L15 10L17 10" 
+          fill="none" 
+          stroke={color} 
+          strokeWidth="1.5" 
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity="0.6"
+        />
+      </svg>
+    ),
+    'rest-science': (
+      <svg viewBox="0 0 24 24" width="20" height="20">
+        {/* Wave pattern with Zs - represents rest science */}
+        <path 
+          d="M3 12C5 9 7 15 9 12C11 9 13 15 15 12C17 9 19 15 21 12" 
+          fill="none" 
+          stroke={color} 
+          strokeWidth="1.5" 
+          strokeLinecap="round"
+        />
+        <text x="14" y="8" fill={color} fontSize="6" fontWeight="bold" opacity="0.6">z</text>
+        <text x="17" y="6" fill={color} fontSize="5" fontWeight="bold" opacity="0.4">z</text>
+        <text x="19" y="4" fill={color} fontSize="4" fontWeight="bold" opacity="0.3">z</text>
+      </svg>
+    ),
+    'resilience': (
+      <svg viewBox="0 0 24 24" width="20" height="20">
+        {/* Tree/growth - represents resilience */}
+        <path d="M12 21L12 12" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+        <path 
+          d="M12 12C12 12 6 12 6 8C6 4 12 3 12 3C12 3 18 4 18 8C18 12 12 12 12 12Z" 
+          fill="none" 
+          stroke={color} 
+          strokeWidth="1.5" 
+        />
+        <path d="M9 15L12 12L15 15" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
+        <circle cx="12" cy="7" r="2" fill={color} opacity="0.3" />
+      </svg>
+    ),
+  };
+
+  return icons[type] || null;
+};
+
+// Discover Assessment Icons (existing)
+const AssessmentIcon = ({ type, color }: { type: string; color: string }) => {
+  const icons: Record<string, React.ReactNode> = {
+    'inner-landscape': (
+      <svg viewBox="0 0 24 24" width="20" height="20">
+        <path 
+          d="M12 3 C9 3 6 5.5 6 9 C6 12.5 9 17 12 21 C15 17 18 12.5 18 9 C18 5.5 15 3 12 3" 
+          fill="none" 
+          stroke={color} 
+          strokeWidth="1.5" 
+        />
+        <circle cx="12" cy="9" r="2" fill={color} opacity="0.5" />
+        <path d="M12 11 L12 15" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
+      </svg>
+    ),
+    'rest-restoration': (
+      <svg viewBox="0 0 24 24" width="20" height="20">
+        <path 
+          d="M12 4 C8 4 5 7 5 11 C5 15 8 19 12 21 C16 19 19 15 19 11 C19 7 16 4 12 4" 
+          fill="none" 
+          stroke={color} 
+          strokeWidth="1.5" 
+        />
+        <circle cx="12" cy="11" r="3" fill={color} opacity="0.4" />
+        <path d="M12 14 L12 18" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
+      </svg>
+    ),
+    'stress-response': (
+      <svg viewBox="0 0 24 24" width="20" height="20">
+        <path 
+          d="M12 3 L12 8 M12 16 L12 21" 
+          stroke={color} 
+          strokeWidth="1.5" 
+          strokeLinecap="round" 
+        />
+        <path 
+          d="M4.5 7.5 L8 10 M16 14 L19.5 16.5" 
+          stroke={color} 
+          strokeWidth="1.5" 
+          strokeLinecap="round" 
+          opacity="0.7"
+        />
+        <path 
+          d="M4.5 16.5 L8 14 M16 10 L19.5 7.5" 
+          stroke={color} 
+          strokeWidth="1.5" 
+          strokeLinecap="round" 
+          opacity="0.7"
+        />
+        <circle cx="12" cy="12" r="3" fill={color} opacity="0.4" />
+      </svg>
+    ),
+    'connection-style': (
+      <svg viewBox="0 0 24 24" width="20" height="20">
+        <circle cx="9" cy="10" r="4" fill="none" stroke={color} strokeWidth="1.5" />
+        <circle cx="15" cy="10" r="4" fill="none" stroke={color} strokeWidth="1.5" />
+        <path d="M9 16 C9 19 12 21 12 21 C12 21 15 19 15 16" stroke={color} strokeWidth="1.5" fill="none" strokeLinecap="round" />
+      </svg>
+    ),
+    'life-rhythm': (
+      <svg viewBox="0 0 24 24" width="20" height="20">
+        <circle cx="12" cy="12" r="8" fill="none" stroke={color} strokeWidth="1.5" />
+        <circle cx="12" cy="12" r="1.5" fill={color} opacity="0.5" />
+        <path d="M12 4 L12 7" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M12 17 L12 20" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M4 12 L7 12" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M17 12 L20 12" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M12 12 L12 8" stroke={color} strokeWidth="2" strokeLinecap="round" />
+        <path d="M12 12 L15 12" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+    ),
+  };
+
+  return icons[type] || null;
+};
+
 // ============================================================================
 // CONSTANTS
 // ============================================================================
 const STORY_CATEGORIES = [
-  { id: 'rest-sleep', title: 'Rest & Sleep', description: 'Gentle stories to ease you into rest', count: 4 },
-  { id: 'guided-journeys', title: 'Guided Journeys', description: 'Imaginative travels for the mind', count: 3 },
-  { id: 'meditative-tales', title: 'Meditative Tales', description: 'Stories that slow the world down', count: 3 },
-  { id: 'rise-ready', title: 'Rise & Ready', description: 'Confidence and clarity for the day ahead', count: 4 },
+  { id: 'rest-sleep', title: 'Rest & Sleep', description: 'Gentle stories to ease you into rest', count: 4, icon: 'rest-sleep' },
+  { id: 'guided-journeys', title: 'Guided Journeys', description: 'Imaginative travels for the mind', count: 3, icon: 'guided-journeys' },
+  { id: 'meditative-tales', title: 'Meditative Tales', description: 'Stories that slow the world down', count: 3, icon: 'meditative-tales' },
+  { id: 'rise-ready', title: 'Rise & Ready', description: 'Confidence and clarity for the day ahead', count: 4, icon: 'rise-ready' },
 ];
 
 const STORIES: Story[] = [
@@ -146,10 +437,10 @@ const STORIES: Story[] = [
 ];
 
 const LEARN_CATEGORIES = [
-  { id: 'nervous-system', title: 'Your Nervous System', description: "Understanding your body's wisdom", count: 4 },
-  { id: 'emotions', title: 'Understanding Emotions', description: 'The language of feeling', count: 4 },
-  { id: 'rest-science', title: 'The Science of Rest', description: 'Why restoration matters', count: 4 },
-  { id: 'resilience', title: 'Building Resilience', description: "Growing through life's challenges", count: 4 },
+  { id: 'nervous-system', title: 'Your Nervous System', description: "Understanding your body's wisdom", count: 4, icon: 'nervous-system' },
+  { id: 'emotions', title: 'Understanding Emotions', description: 'The language of feeling', count: 4, icon: 'emotions' },
+  { id: 'rest-science', title: 'The Science of Rest', description: 'Why restoration matters', count: 4, icon: 'rest-science' },
+  { id: 'resilience', title: 'Building Resilience', description: "Growing through life's challenges", count: 4, icon: 'resilience' },
 ];
 
 const LEARN_LESSONS_BY_CATEGORY: Record<string, LearnLesson[]> = {
@@ -186,7 +477,7 @@ const DISCOVER_ASSESSMENTS: DiscoverAssessment[] = [
     subtitle: 'Emotional Patterns',
     duration: '15 min',
     description: 'Explore your emotional world and discover your unique patterns',
-    icon: '🌿',
+    icon: 'inner-landscape',
     Component: InnerLandscapeAssessment,
   },
   {
@@ -195,7 +486,7 @@ const DISCOVER_ASSESSMENTS: DiscoverAssessment[] = [
     subtitle: 'How You Recharge',
     duration: '12 min',
     description: 'Discover your ideal rest practices and restoration needs',
-    icon: '🌙',
+    icon: 'rest-restoration',
     Component: RestRestorationAssessment,
   },
   {
@@ -204,7 +495,7 @@ const DISCOVER_ASSESSMENTS: DiscoverAssessment[] = [
     subtitle: "Your Body's Patterns",
     duration: '15 min',
     description: 'Understand how your nervous system responds to pressure',
-    icon: '⚡',
+    icon: 'stress-response',
     Component: StressResponseAssessment,
   },
   {
@@ -213,7 +504,7 @@ const DISCOVER_ASSESSMENTS: DiscoverAssessment[] = [
     subtitle: 'Relationships & Boundaries',
     duration: '12 min',
     description: 'Explore how you connect and what you need from others',
-    icon: '💫',
+    icon: 'connection-style',
     Component: ConnectionStyleAssessment,
   },
   {
@@ -222,7 +513,7 @@ const DISCOVER_ASSESSMENTS: DiscoverAssessment[] = [
     subtitle: 'Energy & Natural Cycles',
     duration: '10 min',
     description: 'Discover your natural energy patterns and optimal rhythms',
-    icon: '🌀',
+    icon: 'life-rhythm',
     Component: LifeRhythmAssessment,
   },
 ];
@@ -312,6 +603,16 @@ export default function LibraryRoom({ onBack, onStartStory, onStartLesson, onSta
   const { colors } = useTheme();
   const COLORS = getLibraryColors(colors);
 
+  // Database content state
+  const [dbStories, setDbStories] = useState<DBStory[]>([]);
+  const [dbLessons, setDbLessons] = useState<DBLesson[]>([]);
+  const [dbAssessments, setDbAssessments] = useState<DBAssessment[]>([]);
+  const [dbLoading, setDbLoading] = useState(true);
+
+  // Dynamic content viewers
+  const [activeDynamicLesson, setActiveDynamicLesson] = useState<DBLesson | null>(null);
+  const [activeDynamicAssessment, setActiveDynamicAssessment] = useState<DBAssessment | null>(null);
+
   // UI State
   const [activeTab, setActiveTab] = useState<Tab>('stories');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -336,6 +637,41 @@ export default function LibraryRoom({ onBack, onStartStory, onStartLesson, onSta
 
   useEffect(() => {
     setTimeout(() => setIsLoaded(true), 100);
+  }, []);
+
+  // Fetch content from Supabase
+  useEffect(() => {
+    const fetchContent = async () => {
+      try {
+        const { data: storiesData } = await supabase
+          .from('stories')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        const { data: lessonsData } = await supabase
+          .from('lessons')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        const { data: assessmentsData } = await supabase
+  .from('assessments')
+  .select('*')
+  .order('created_at', { ascending: false });
+
+// ADD THIS LINE HERE:
+console.log('Lessons from DB:', lessonsData);
+
+if (storiesData) setDbStories(storiesData);
+if (lessonsData) setDbLessons(lessonsData);
+        if (assessmentsData) setDbAssessments(assessmentsData);
+      } catch (error) {
+        console.error('Error fetching library content:', error);
+      } finally {
+        setDbLoading(false);
+      }
+    };
+
+    fetchContent();
   }, []);
 
   useEffect(() => {
@@ -477,7 +813,22 @@ export default function LibraryRoom({ onBack, onStartStory, onStartLesson, onSta
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const storiesInCategory = STORIES.filter(s => s.category === selectedCategory);
+  const allStories: Story[] = [
+    ...STORIES,
+    ...dbStories.map(s => ({
+      id: s.id,
+      title: s.title,
+      description: s.description,
+      category: s.category,
+      chapters: s.chapters.map(ch => ({
+        id: ch.id,
+        title: ch.title,
+        duration: ch.duration,
+        audioUrl: '', // DB stories use text-to-speech, not pre-recorded audio
+      }))
+    }))
+  ];
+  const storiesInCategory = allStories.filter(s => s.category === selectedCategory);
   const currentChapter = selectedStory?.chapters[currentChapterIndex];
 
   const selectedLearnMeta = selectedLearnCategory
@@ -716,6 +1067,21 @@ export default function LibraryRoom({ onBack, onStartStory, onStartLesson, onSta
                       textAlign: 'left',
                     }}
                   >
+                    {/* Icon */}
+                    <div style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: 12,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'rgba(255, 180, 100, 0.10)',
+                      border: '1px solid rgba(255, 180, 100, 0.18)',
+                      marginBottom: 12,
+                    }}>
+                      <StoryCategoryIcon type={category.icon} color={COLORS.accent} />
+                    </div>
+                    
                     <div style={{
                       fontFamily: "'Cormorant Garamond', Georgia, serif",
                       fontSize: 16,
@@ -737,7 +1103,7 @@ export default function LibraryRoom({ onBack, onStartStory, onStartLesson, onSta
                       fontSize: 11,
                       color: COLORS.accentDim,
                     }}>
-                      {category.count} stories
+                      {allStories.filter(s => s.category === category.id).length} stories
                     </div>
                   </button>
                 ))}
@@ -1148,6 +1514,21 @@ export default function LibraryRoom({ onBack, onStartStory, onStartLesson, onSta
                       textAlign: 'left',
                     }}
                   >
+                    {/* Icon */}
+                    <div style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: 12,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'rgba(255, 180, 100, 0.10)',
+                      border: '1px solid rgba(255, 180, 100, 0.18)',
+                      marginBottom: 12,
+                    }}>
+                      <LearnCategoryIcon type={category.icon} color={COLORS.accent} />
+                    </div>
+                    
                     <div style={{
                       fontFamily: "'Cormorant Garamond', Georgia, serif",
                       fontSize: 16,
@@ -1286,6 +1667,63 @@ export default function LibraryRoom({ onBack, onStartStory, onStartLesson, onSta
                     </button>
                   );
                 })}
+
+                {/* Database Lessons for this category */}
+                {dbLessons
+                  .filter(lesson => lesson.category === selectedLearnCategory)
+                  .map((lesson) => {
+                    const isCompleted = completedLearnLessons.has(lesson.id);
+                    return (
+                      <button
+                        key={lesson.id}
+                        className="card-btn"
+                        onClick={() => setActiveDynamicLesson(lesson)}
+                        style={{
+                          padding: '16px 16px',
+                          background: COLORS.cardBg,
+                          border: `1px solid ${COLORS.cardBorder}`,
+                          borderRadius: 14,
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          gap: 12,
+                        }}
+                      >
+                        <div>
+                          <div style={{
+                            fontSize: 14,
+                            fontWeight: 600,
+                            color: COLORS.text,
+                            marginBottom: 4,
+                          }}>
+                            {lesson.title}
+                          </div>
+                          <div style={{
+                            fontSize: 12,
+                            color: COLORS.textDim,
+                          }}>
+                            {lesson.description}
+                          </div>
+                        </div>
+
+                        {isCompleted && (
+                          <div style={{
+                            fontSize: 11,
+                            color: COLORS.accentDim,
+                            padding: '6px 10px',
+                            borderRadius: 999,
+                            border: `1px solid rgba(255, 180, 100, 0.25)`,
+                            background: 'rgba(255, 180, 100, 0.08)',
+                            whiteSpace: 'nowrap',
+                          }}>
+                            Completed
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
               </div>
             )}
 
@@ -1299,7 +1737,7 @@ export default function LibraryRoom({ onBack, onStartStory, onStartLesson, onSta
             {/* ============================================================ */}
             {/* DISCOVER TAB - Assessments */}
             {/* ============================================================ */}
-            {activeTab === 'discover' && !selectedCategory && !selectedStory && !activeAssessment && (
+            {activeTab === 'discover' && !selectedCategory && !selectedStory && !activeAssessment && !activeDynamicAssessment && (
               <div style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -1308,6 +1746,7 @@ export default function LibraryRoom({ onBack, onStartStory, onStartLesson, onSta
                 width: '100%',
                 animation: 'fadeIn 0.4s ease-out',
               }}>
+                {/* Hardcoded Assessments */}
                 {DISCOVER_ASSESSMENTS.map((assessment) => {
                   const isCompleted = completedAssessments.includes(assessment.id);
                   return (
@@ -1344,11 +1783,108 @@ export default function LibraryRoom({ onBack, onStartStory, onStartLesson, onSta
                             justifyContent: 'center',
                             background: 'rgba(255, 180, 100, 0.10)',
                             border: '1px solid rgba(255, 180, 100, 0.18)',
-                            fontSize: 18,
-                            lineHeight: '38px',
                             flexShrink: 0,
                           }}>
-                            {assessment.icon}
+                            <AssessmentIcon type={assessment.icon} color={COLORS.accent} />
+                          </div>
+
+                          <div>
+                            <div style={{
+                              fontFamily: "'Cormorant Garamond', Georgia, serif",
+                              fontSize: 18,
+                              fontWeight: 400,
+                              color: COLORS.text,
+                              marginBottom: 2,
+                            }}>
+                              {assessment.title}
+                            </div>
+                            <div style={{
+                              fontSize: 12,
+                              color: COLORS.accentDim,
+                            }}>
+                              {assessment.subtitle}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'flex-end',
+                          gap: 8,
+                          flexShrink: 0,
+                        }}>
+                          <div style={{
+                            fontSize: 11,
+                            color: COLORS.accentDim,
+                          }}>
+                            {assessment.duration}
+                          </div>
+
+                          {isCompleted && (
+                            <div style={{
+                              fontSize: 11,
+                              color: COLORS.accentDim,
+                              padding: '6px 10px',
+                              borderRadius: 999,
+                              border: '1px solid rgba(255, 180, 100, 0.25)',
+                              background: 'rgba(255, 180, 100, 0.08)',
+                              whiteSpace: 'nowrap',
+                            }}>
+                              Completed
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div style={{
+                        fontSize: 13,
+                        color: COLORS.textDim,
+                        lineHeight: 1.4,
+                      }}>
+                        {assessment.description}
+                      </div>
+                    </button>
+                  );
+                })}
+
+                {/* Database Assessments */}
+                {dbAssessments.map((assessment) => {
+                  const isCompleted = completedAssessments.includes(assessment.id);
+                  return (
+                    <button
+                      key={assessment.id}
+                      className="card-btn"
+                      onClick={() => setActiveDynamicAssessment(assessment)}
+                      style={{
+                        padding: '18px',
+                        background: COLORS.cardBg,
+                        border: `1px solid ${COLORS.cardBorder}`,
+                        borderRadius: 14,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        justifyContent: 'space-between',
+                        gap: 12,
+                        marginBottom: 8,
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                          <div style={{
+                            width: 38,
+                            height: 38,
+                            borderRadius: 12,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: 'rgba(255, 180, 100, 0.10)',
+                            border: '1px solid rgba(255, 180, 100, 0.18)',
+                            flexShrink: 0,
+                          }}>
+                            <span style={{ fontSize: 18 }}>✨</span>
                           </div>
 
                           <div>
@@ -1417,6 +1953,48 @@ export default function LibraryRoom({ onBack, onStartStory, onStartLesson, onSta
               <activeDiscoverAssessment.Component
                 onBack={() => setActiveAssessment(null)}
                 onComplete={() => markAssessmentComplete(activeDiscoverAssessment.id)}
+              />
+            )}
+
+            {/* Dynamic Assessment Viewer (from database) */}
+            {activeDynamicAssessment && (
+              <DynamicAssessmentViewer
+                assessment={activeDynamicAssessment}
+                onBack={() => setActiveDynamicAssessment(null)}
+                onComplete={() => {
+                  markAssessmentComplete(activeDynamicAssessment.id);
+                  setActiveDynamicAssessment(null);
+                }}
+                colors={{
+                  bg: COLORS.bg,
+                  text: COLORS.text,
+                  textMuted: COLORS.textMuted,
+                  cardBg: COLORS.cardBg,
+                  cardBorder: COLORS.cardBorder,
+                  accent: COLORS.accent,
+                }}
+                isDark={true}
+              />
+            )}
+
+            {/* Dynamic Lesson Viewer (from database) */}
+            {activeDynamicLesson && (
+              <DynamicLessonViewer
+                lesson={activeDynamicLesson}
+                onBack={() => setActiveDynamicLesson(null)}
+                onComplete={() => {
+                  markLearnLessonComplete(activeDynamicLesson.id);
+                  setActiveDynamicLesson(null);
+                }}
+                colors={{
+                  bg: COLORS.bg,
+                  text: COLORS.text,
+                  textMuted: COLORS.textMuted,
+                  cardBg: COLORS.cardBg,
+                  cardBorder: COLORS.cardBorder,
+                  accent: COLORS.accent,
+                }}
+                isDark={true}
               />
             )}
           </div>

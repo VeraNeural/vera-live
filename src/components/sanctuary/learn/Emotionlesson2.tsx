@@ -8,85 +8,130 @@ interface LessonProps {
   onComplete?: () => void;
 }
 
+// TODO: Update this content for Lesson 2
 const CONTENT = [
   {
     type: 'title',
     title: 'Understanding Emotions',
-    subtitle: 'Lesson 1: What Are Emotions?',
+    subtitle: 'Lesson 2: The Emotion Cycle',
   },
   {
     type: 'text',
-    title: 'More Than Just Feelings',
-    content: 'Emotions are often dismissed as irrational or inconvenient. But they\'re actually sophisticated information systems — your body\'s way of making sense of the world and guiding your actions. They\'ve evolved over millions of years for good reason.',
+    title: 'Emotions Have a Lifespan',
+    content: 'Every emotion follows a predictable pattern: it rises, peaks, and fades. Understanding this cycle helps you ride the wave rather than being overwhelmed by it. No emotion lasts forever — even the most intense feelings will pass.',
   },
   {
     type: 'text',
-    title: 'A Full-Body Experience',
-    content: 'Emotions aren\'t just in your head. They\'re whole-body experiences involving your brain, nervous system, hormones, muscles, and organs. That\'s why you feel fear in your stomach, grief in your chest, and joy throughout your entire being.',
+    title: 'The Trigger',
+    content: 'Emotions begin with a trigger — something you perceive in your environment, a thought, a memory, or even a physical sensation. The trigger itself is neutral; it\'s your interpretation that sparks the emotional response.',
   },
   {
     type: 'visual',
-    visual: 'components',
-    title: 'The Three Components',
-    content: 'Every emotion has three interconnected components: physical sensations in your body, thoughts and interpretations in your mind, and action urges that motivate behavior.',
+    visual: 'cycle',
+    title: 'The Emotion Wave',
+    content: 'Emotions typically rise over seconds to minutes, reach a peak intensity, then gradually subside over 20-90 minutes if we don\'t feed them with more thoughts or resistance.',
   },
   {
     type: 'text',
-    title: 'Body Sensations',
-    content: 'Each emotion has a unique physical signature. Anger might feel hot and tight. Sadness might feel heavy and slow. Fear might feel cold and fluttery. Learning to recognize these sensations helps you identify emotions earlier.',
-    highlight: 'Emotions live in the body',
+    title: 'The Rising Phase',
+    content: 'As an emotion builds, you\'ll notice increasing physical sensations and stronger urges to act. This is when we\'re most likely to react impulsively. Learning to recognize this phase gives you a window to choose your response.',
+    highlight: 'Awareness creates choice',
   },
   {
     type: 'text',
-    title: 'Thoughts & Interpretations',
-    content: 'Emotions are shaped by how we interpret situations. The same event can trigger different emotions depending on what we think it means. This is both the challenge and the opportunity — our thoughts influence our feelings.',
-    highlight: 'Meaning shapes emotion',
+    title: 'The Peak',
+    content: 'At the peak, the emotion feels most intense and urgent. It can seem like it will last forever or that you must act immediately. But this is actually the turning point — intensity naturally begins to decrease from here.',
+    highlight: 'The peak is the turning point',
   },
   {
     type: 'text',
-    title: 'Action Urges',
-    content: 'Every emotion comes with an urge to act. Fear urges us to flee or freeze. Anger urges us to fight or assert. Sadness urges us to withdraw and process. These urges aren\'t commands — but they are information.',
-    highlight: 'Emotions prepare us to act',
+    title: 'The Falling Phase',
+    content: 'After the peak, emotions naturally begin to subside. Physical sensations calm, thoughts become clearer, and urges lose their power. This is when reflection and learning become possible.',
+    highlight: 'Clarity returns as emotions settle',
   },
   {
     type: 'insight',
-    title: 'Emotions Are Information',
-    content: 'Your emotions are trying to tell you something important. Fear says "this might be dangerous." Anger says "a boundary has been crossed." Sadness says "something meaningful has been lost." Learning to listen to this information is emotional intelligence.',
+    title: 'Surf, Don\'t Fight',
+    content: 'Resisting or suppressing emotions often prolongs them. Fighting the wave exhausts you. Instead, try surfing — acknowledge the emotion, let it move through you, and trust that it will pass. This is the essence of emotional regulation.',
   },
   {
     type: 'text',
-    title: 'No "Bad" Emotions',
-    content: 'We often label emotions as good or bad, but all emotions serve a purpose. Even uncomfortable ones like fear, anger, and sadness have evolved because they help us survive and thrive. The goal isn\'t to eliminate emotions — it\'s to understand them.',
+    title: 'What Prolongs Emotions',
+    content: 'Rumination (replaying events), resistance (fighting the feeling), and secondary emotions (feeling bad about feeling bad) can all extend the emotion cycle. Notice when you\'re doing these and gently redirect.',
   },
   {
     type: 'text',
-    title: 'Emotions vs. Moods',
-    content: 'Emotions are relatively brief responses to specific triggers. Moods are longer-lasting background states. Understanding this distinction helps you recognize what you\'re experiencing and respond appropriately.',
+    title: 'What Helps Emotions Pass',
+    content: 'Acceptance, physical movement, deep breathing, and shifting attention can all support the natural completion of the emotion cycle. These aren\'t about avoiding feelings — they\'re about allowing them to complete their journey.',
   },
   {
     type: 'practice',
-    title: 'Notice Right Now',
-    content: 'Pause and check in with yourself. What emotion are you experiencing right now? Where do you feel it in your body? What thoughts are connected to it? What action urge, if any, do you notice? This simple practice builds emotional awareness.',
+    title: 'Track the Wave',
+    content: 'Next time you feel a strong emotion, try to notice where you are in the cycle. Is it rising, peaking, or falling? Just this simple awareness can help you feel less overwhelmed and more confident that the intensity will pass.',
   },
   {
     type: 'summary',
     title: 'Key Takeaways',
     points: [
-      'Emotions are sophisticated information systems',
-      'They have three components: body, thoughts, and action urges',
-      'All emotions serve a purpose — none are "bad"',
-      'Emotional intelligence means learning to listen',
+      'All emotions follow a cycle: rise, peak, fall',
+      'The peak feels endless but is actually the turning point',
+      'Resistance prolongs emotions; acceptance lets them pass',
+      'Tracking the wave builds emotional confidence',
     ],
   },
 ];
 
-export default function EmotionsLesson1({ onBack, onComplete }: LessonProps) {
+// ============================================================================
+// STYLES
+// ============================================================================
+const STYLES = `
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  @keyframes fadeInScale {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .lesson-scroll::-webkit-scrollbar {
+    width: 4px;
+  }
+  .lesson-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .lesson-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+  }
+
+  .lesson-btn {
+    transition: all 0.2s ease;
+  }
+  .lesson-btn:active {
+    transform: scale(0.98);
+  }
+
+  .progress-bar {
+    transition: width 0.4s ease;
+  }
+`;
+
+export default function EmotionsLesson2({ onBack, onComplete }: LessonProps) {
   const { isDark, colors } = useTheme();
   const [currentIndex, setCurrentIndex] = useState(0);
   
   const current = CONTENT[currentIndex];
   const progress = ((currentIndex + 1) / CONTENT.length) * 100;
   const isLastSlide = currentIndex === CONTENT.length - 1;
+
+  const bgColor = colors.bg;
+  const textColor = colors.text;
+  const mutedColor = colors.textMuted;
+  const accentColor = colors.accent;
+  const cardBg = colors.cardBg;
+  const cardBorder = colors.cardBorder;
 
   const handleNext = () => {
     if (isLastSlide) {
@@ -103,78 +148,127 @@ export default function EmotionsLesson1({ onBack, onComplete }: LessonProps) {
     }
   };
 
-  const bgColor = colors.bg;
-  const textColor = colors.text;
-  const mutedColor = colors.textMuted;
-  const accentColor = colors.accent;
-  const cardBg = colors.cardBg;
-
+  // ============================================================================
+  // RENDER VISUAL
+  // ============================================================================
   const renderVisual = (visual: string) => {
+    if (visual === 'cycle') {
+      return (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: 16,
+          marginBottom: 24,
+          flexWrap: 'wrap',
+        }}>
+          {[
+            { label: 'Rise', color: '#C4956A', icon: '↗' },
+            { label: 'Peak', color: '#6B9BC3', icon: '◆' },
+            { label: 'Fall', color: '#7BA05B', icon: '↘' },
+          ].map((item, i) => (
+            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{
+                width: 64,
+                height: 64,
+                borderRadius: '50%',
+                background: `${item.color}22`,
+                border: `2px solid ${item.color}44`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 8,
+                fontSize: 24,
+                color: item.color,
+              }}>
+                {item.icon}
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 500, color: item.color }}>
+                {item.label}
+              </span>
+            </div>
+          ))}
+        </div>
+      );
+    }
     if (visual === 'components') {
       return (
-        <div className="flex justify-center items-center gap-4 mb-6">
-          <div className="flex flex-col items-center">
-            <div 
-              className="w-20 h-20 rounded-full flex items-center justify-center mb-2"
-              style={{ backgroundColor: isDark ? '#C4956A33' : '#C4956A22' }}
-            >
-              <svg viewBox="0 0 40 40" className="w-10 h-10">
-                <ellipse cx="20" cy="22" rx="12" ry="15" fill="#C4956A" opacity="0.6" />
-                <circle cx="20" cy="12" r="8" fill="#C4956A" opacity="0.8" />
-              </svg>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: 16,
+          marginBottom: 24,
+          flexWrap: 'wrap',
+        }}>
+          {[
+            { label: 'Body', color: '#C4956A', icon: '◉' },
+            { label: 'Thoughts', color: '#6B9BC3', icon: '◎' },
+            { label: 'Action', color: '#7BA05B', icon: '△' },
+          ].map((item, i) => (
+            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{
+                width: 64,
+                height: 64,
+                borderRadius: '50%',
+                background: `${item.color}22`,
+                border: `2px solid ${item.color}44`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 8,
+                fontSize: 24,
+                color: item.color,
+              }}>
+                {item.icon}
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 500, color: item.color }}>
+                {item.label}
+              </span>
             </div>
-            <span className="text-xs font-medium" style={{ color: '#C4956A' }}>Body</span>
-          </div>
-          
-          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
-            <path d="M8 12h8M12 8v8" stroke={mutedColor} strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
-          </svg>
-          
-          <div className="flex flex-col items-center">
-            <div 
-              className="w-20 h-20 rounded-full flex items-center justify-center mb-2"
-              style={{ backgroundColor: isDark ? '#6B9BC333' : '#6B9BC322' }}
-            >
-              <svg viewBox="0 0 40 40" className="w-10 h-10">
-                <circle cx="20" cy="20" r="12" fill="none" stroke="#6B9BC3" strokeWidth="2" />
-                <circle cx="20" cy="20" r="6" fill="#6B9BC3" opacity="0.6" />
-                <path d="M20 8 L20 4 M20 36 L20 32 M8 20 L4 20 M36 20 L32 20" stroke="#6B9BC3" strokeWidth="1.5" />
-              </svg>
-            </div>
-            <span className="text-xs font-medium" style={{ color: '#6B9BC3' }}>Thoughts</span>
-          </div>
-          
-          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
-            <path d="M8 12h8M12 8v8" stroke={mutedColor} strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
-          </svg>
-          
-          <div className="flex flex-col items-center">
-            <div 
-              className="w-20 h-20 rounded-full flex items-center justify-center mb-2"
-              style={{ backgroundColor: isDark ? '#7BA05B33' : '#7BA05B22' }}
-            >
-              <svg viewBox="0 0 40 40" className="w-10 h-10">
-                <path d="M10 25 L20 10 L30 25" fill="none" stroke="#7BA05B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                <circle cx="20" cy="28" r="4" fill="#7BA05B" opacity="0.6" />
-              </svg>
-            </div>
-            <span className="text-xs font-medium" style={{ color: '#7BA05B' }}>Action</span>
-          </div>
+          ))}
         </div>
       );
     }
     return null;
   };
 
+  // ============================================================================
+  // RENDER CONTENT
+  // ============================================================================
   const renderContent = () => {
     switch (current.type) {
       case 'title':
         return (
-          <div className="text-center py-12">
-            <h1 className="text-3xl font-light mb-3" style={{ color: textColor }}>
+          <div style={{
+            textAlign: 'center',
+            padding: '60px 0',
+            animation: 'fadeInScale 0.5s ease',
+          }}>
+            <div style={{
+              width: 72,
+              height: 72,
+              borderRadius: '50%',
+              background: `${accentColor}22`,
+              border: `1px solid ${accentColor}33`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 24px',
+              fontSize: 32,
+            }}>
+              💭
+            </div>
+            <h1 style={{
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: 32,
+              fontWeight: 300,
+              color: textColor,
+              marginBottom: 12,
+            }}>
               {current.title}
             </h1>
-            <p className="text-lg" style={{ color: mutedColor }}>
+            <p style={{ fontSize: 16, color: accentColor }}>
               {current.subtitle}
             </p>
           </div>
@@ -182,12 +276,23 @@ export default function EmotionsLesson1({ onBack, onComplete }: LessonProps) {
 
       case 'visual':
         return (
-          <div className="py-8">
+          <div style={{ animation: 'fadeIn 0.4s ease' }}>
             {renderVisual(current.visual!)}
-            <h2 className="text-xl font-medium mb-4 text-center" style={{ color: textColor }}>
+            <h2 style={{
+              fontSize: 22,
+              fontWeight: 500,
+              color: textColor,
+              marginBottom: 16,
+              textAlign: 'center',
+            }}>
               {current.title}
             </h2>
-            <p className="text-base leading-relaxed text-center" style={{ color: mutedColor }}>
+            <p style={{
+              fontSize: 16,
+              color: mutedColor,
+              lineHeight: 1.7,
+              textAlign: 'center',
+            }}>
               {current.content}
             </p>
           </div>
@@ -195,14 +300,36 @@ export default function EmotionsLesson1({ onBack, onComplete }: LessonProps) {
 
       case 'insight':
         return (
-          <div className="py-6 px-5 rounded-2xl" style={{ backgroundColor: cardBg }}>
-            <div className="text-sm uppercase tracking-wide mb-2" style={{ color: accentColor }}>
-              Insight
+          <div style={{
+            padding: 24,
+            background: `linear-gradient(135deg, ${accentColor}15 0%, ${accentColor}08 100%)`,
+            border: `1px solid ${accentColor}33`,
+            borderRadius: 20,
+            animation: 'fadeIn 0.4s ease',
+          }}>
+            <div style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: accentColor,
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              marginBottom: 12,
+            }}>
+              💡 Insight
             </div>
-            <h2 className="text-xl font-medium mb-3" style={{ color: textColor }}>
+            <h2 style={{
+              fontSize: 22,
+              fontWeight: 500,
+              color: textColor,
+              marginBottom: 12,
+            }}>
               {current.title}
             </h2>
-            <p className="text-base leading-relaxed" style={{ color: mutedColor }}>
+            <p style={{
+              fontSize: 16,
+              color: mutedColor,
+              lineHeight: 1.7,
+            }}>
               {current.content}
             </p>
           </div>
@@ -210,17 +337,37 @@ export default function EmotionsLesson1({ onBack, onComplete }: LessonProps) {
 
       case 'practice':
         return (
-          <div 
-            className="py-6 px-5 rounded-2xl border-l-4"
-            style={{ backgroundColor: cardBg, borderColor: accentColor }}
-          >
-            <div className="text-sm uppercase tracking-wide mb-2" style={{ color: accentColor }}>
-              Practice
+          <div style={{
+            padding: 24,
+            background: cardBg,
+            border: `1px solid ${cardBorder}`,
+            borderLeft: `4px solid ${accentColor}`,
+            borderRadius: 16,
+            animation: 'fadeIn 0.4s ease',
+          }}>
+            <div style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: accentColor,
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              marginBottom: 12,
+            }}>
+              🎯 Practice
             </div>
-            <h2 className="text-xl font-medium mb-3" style={{ color: textColor }}>
+            <h2 style={{
+              fontSize: 22,
+              fontWeight: 500,
+              color: textColor,
+              marginBottom: 12,
+            }}>
               {current.title}
             </h2>
-            <p className="text-base leading-relaxed" style={{ color: mutedColor }}>
+            <p style={{
+              fontSize: 16,
+              color: mutedColor,
+              lineHeight: 1.7,
+            }}>
               {current.content}
             </p>
           </div>
@@ -228,96 +375,227 @@ export default function EmotionsLesson1({ onBack, onComplete }: LessonProps) {
 
       case 'summary':
         return (
-          <div className="py-6">
-            <h2 className="text-xl font-medium mb-4 text-center" style={{ color: textColor }}>
+          <div style={{ animation: 'fadeIn 0.4s ease' }}>
+            <div style={{
+              width: 56,
+              height: 56,
+              borderRadius: '50%',
+              background: `${accentColor}22`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 20px',
+              fontSize: 24,
+            }}>
+              ✓
+            </div>
+            <h2 style={{
+              fontSize: 24,
+              fontWeight: 500,
+              color: textColor,
+              marginBottom: 24,
+              textAlign: 'center',
+            }}>
               {current.title}
             </h2>
-            <ul className="space-y-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {(current as any).points.map((point: string, i: number) => (
-                <li key={i} className="flex items-start gap-3 text-base" style={{ color: mutedColor }}>
-                  <span 
-                    className="w-2 h-2 rounded-full mt-2 flex-shrink-0"
-                    style={{ backgroundColor: accentColor }}
-                  />
-                  {point}
-                </li>
+                <div key={i} style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 12,
+                  padding: 16,
+                  background: cardBg,
+                  border: `1px solid ${cardBorder}`,
+                  borderRadius: 12,
+                }}>
+                  <div style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: '50%',
+                    background: `${accentColor}22`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <span style={{ fontSize: 12, color: accentColor }}>{i + 1}</span>
+                  </div>
+                  <span style={{ fontSize: 15, color: textColor, lineHeight: 1.5 }}>
+                    {point}
+                  </span>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         );
 
-      default:
+      default: // 'text' type
         return (
-          <div className="py-6">
-            <h2 className="text-xl font-medium mb-4" style={{ color: textColor }}>
+          <div style={{ animation: 'fadeIn 0.4s ease' }}>
+            <h2 style={{
+              fontSize: 24,
+              fontWeight: 500,
+              color: textColor,
+              marginBottom: 16,
+            }}>
               {current.title}
             </h2>
-            <p className="text-base leading-relaxed mb-4" style={{ color: mutedColor }}>
+            <p style={{
+              fontSize: 17,
+              color: mutedColor,
+              lineHeight: 1.8,
+              marginBottom: (current as any).highlight ? 24 : 0,
+            }}>
               {current.content}
             </p>
             {(current as any).highlight && (
-              <p className="text-lg italic text-center mt-6" style={{ color: accentColor }}>
-                {(current as any).highlight}
-              </p>
+              <div style={{
+                padding: '16px 20px',
+                background: `${accentColor}15`,
+                border: `1px solid ${accentColor}25`,
+                borderRadius: 12,
+                textAlign: 'center',
+              }}>
+                <span style={{
+                  fontSize: 18,
+                  fontStyle: 'italic',
+                  color: accentColor,
+                }}>
+                  "{(current as any).highlight}"
+                </span>
+              </div>
             )}
           </div>
         );
     }
   };
 
+  // ============================================================================
+  // MAIN RENDER
+  // ============================================================================
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: bgColor }}>
-      {/* Header */}
-      <div className="flex items-center justify-between p-4">
-        <button onClick={onBack} className="p-2 rounded-full transition-colors" style={{ color: mutedColor }}>
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-        <div className="text-sm" style={{ color: mutedColor }}>
-          {currentIndex + 1} / {CONTENT.length}
-        </div>
-      </div>
-
-      {/* Progress bar */}
-      <div className="px-4">
-        <div 
-          className="h-1 rounded-full overflow-hidden"
-          style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}
-        >
-          <div 
-            className="h-full rounded-full transition-all duration-300"
-            style={{ width: `${progress}%`, backgroundColor: accentColor }}
-          />
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-6 py-8">
-        <div className="max-w-lg mx-auto">
-          {renderContent()}
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <div className="p-4 flex gap-3">
-        {currentIndex > 0 && (
+    <>
+      <style>{STYLES}</style>
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 100,
+        background: bgColor,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}>
+        {/* Header */}
+        <header style={{
+          padding: '16px',
+          paddingTop: 'max(16px, env(safe-area-inset-top))',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
           <button
-            onClick={handlePrev}
-            className="flex-1 py-4 rounded-2xl font-medium transition-colors"
-            style={{ backgroundColor: cardBg, color: textColor }}
+            onClick={onBack}
+            style={{
+              padding: '8px 14px',
+              background: cardBg,
+              border: `1px solid ${cardBorder}`,
+              borderRadius: 50,
+              cursor: 'pointer',
+              fontSize: 18,
+              color: mutedColor,
+              lineHeight: 1,
+            }}
           >
-            Back
+            ✕
           </button>
-        )}
-        <button
-          onClick={handleNext}
-          className="flex-1 py-4 rounded-2xl font-medium transition-colors text-white"
-          style={{ backgroundColor: accentColor }}
+          <span style={{ fontSize: 13, color: mutedColor }}>
+            {currentIndex + 1} / {CONTENT.length}
+          </span>
+          <div style={{ width: 50 }} />
+        </header>
+
+        {/* Progress Bar */}
+        <div style={{ padding: '0 20px', marginBottom: 8 }}>
+          <div style={{
+            height: 4,
+            background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+            borderRadius: 4,
+            overflow: 'hidden',
+          }}>
+            <div
+              className="progress-bar"
+              style={{
+                height: '100%',
+                width: `${progress}%`,
+                background: accentColor,
+                borderRadius: 4,
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Content */}
+        <div
+          className="lesson-scroll"
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '24px',
+          }}
         >
-          {isLastSlide ? 'Complete' : 'Continue'}
-        </button>
+          <div style={{ maxWidth: 500, margin: '0 auto' }}>
+            {renderContent()}
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <div style={{
+          padding: '16px 24px',
+          paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
+          display: 'flex',
+          gap: 12,
+        }}>
+          {currentIndex > 0 && (
+            <button
+              className="lesson-btn"
+              onClick={handlePrev}
+              style={{
+                flex: 1,
+                padding: '16px',
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 50,
+                color: textColor,
+                fontSize: 16,
+                fontWeight: 500,
+                cursor: 'pointer',
+              }}
+            >
+              Back
+            </button>
+          )}
+          <button
+            className="lesson-btn"
+            onClick={handleNext}
+            style={{
+              flex: currentIndex > 0 ? 1 : undefined,
+              width: currentIndex > 0 ? undefined : '100%',
+              padding: '16px 32px',
+              background: `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}dd 100%)`,
+              border: 'none',
+              borderRadius: 50,
+              color: '#fff',
+              fontSize: 16,
+              fontWeight: 500,
+              cursor: 'pointer',
+              boxShadow: `0 4px 16px ${accentColor}44`,
+            }}
+          >
+            {isLastSlide ? 'Complete' : 'Continue'}
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
