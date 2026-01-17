@@ -13,14 +13,6 @@ type NarrateRequestBody = {
 
 type NarrationProfile = 'default' | 'rest';
 
-function getRequiredEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
-  }
-  return value;
-}
-
 function getRequiredEnvAny(names: string[]): { name: string; value: string } {
   for (const name of names) {
     const value = process.env[name];
@@ -39,7 +31,6 @@ function safePathSegment(input: string): string {
 function getAudioBucketCandidates(): string[] {
   const fromEnv = (process.env.SUPABASE_AUDIO_BUCKET || '').trim();
   const candidates = [fromEnv, 'vera-live', 'Vera-live'].filter(Boolean);
-  // De-dupe while preserving order
   return Array.from(new Set(candidates));
 }
 
@@ -62,8 +53,7 @@ function getVoiceNameForProfile(profile: NarrationProfile): string {
       ? (process.env.HUME_TTS_VOICE_NAME_REST || '').trim()
       : (process.env.HUME_TTS_VOICE_NAME_DEFAULT || '').trim();
 
-  // Keep the existing hardcoded voice as a safe fallback.
-  return envName || 'Male English Actor';
+  return envName || 'ITO';
 }
 
 function getUtteranceTuning(profile: NarrationProfile): { speed?: number; description?: string } {
@@ -80,6 +70,7 @@ async function synthesizeWithHumeTts(input: { text: string; profile: NarrationPr
   const { name: apiKeyEnv, value: apiKey } = getRequiredEnvAny(['HUMEAI_API_KEY', 'HUME_API_KEY']);
 
   const provider = getHumeVoiceProvider();
+
   const voiceName = getVoiceNameForProfile(input.profile);
   const tuning = getUtteranceTuning(input.profile);
 
@@ -95,15 +86,12 @@ async function synthesizeWithHumeTts(input: { text: string; profile: NarrationPr
           text: input.text,
           ...tuning,
           voice: {
-            // Works with Hume Voice Library voices
             name: voiceName,
             provider,
           },
         },
       ],
-      // Avoid multi-file headers in streamed output.
       strip_headers: true,
-      // Keep mapping 1:1 with the provided utterance.
       split_utterances: false,
       instant_mode: true,
     }),
@@ -151,8 +139,6 @@ export async function POST(req: NextRequest) {
   try {
     const supabaseAdmin = getSupabaseAdmin();
 
-    // Best-effort: if this storyId is a DB story (often a UUID), use its category to choose a narration profile.
-    // Rest Chamber content may not be backed by a `stories` row, so we do not hard-fail.
     const { data: storyMeta } = await supabaseAdmin
       .from('stories')
       .select('category, chapters')
@@ -165,10 +151,8 @@ export async function POST(req: NextRequest) {
     const profile: NarrationProfile =
       isRestChamberStoryId(storyId) || (storyCategory && isRestfulStoryCategory(storyCategory)) ? 'rest' : 'default';
 
-    // 1) Synthesize audio with Hume (server-side key)
     const { audio, contentType } = await synthesizeWithHumeTts({ text, profile });
 
-    // 2) Upload to Supabase Storage
     const bucketCandidates = getAudioBucketCandidates();
     const path = `stories/${safePathSegment(storyId)}/${safePathSegment(chapterId || 'full')}.wav`;
 
@@ -201,8 +185,6 @@ export async function POST(req: NextRequest) {
     const publicUrlResult = supabaseAdmin.storage.from(chosenBucket).getPublicUrl(path);
     const audioUrl = publicUrlResult.data.publicUrl;
 
-    // 3) Best-effort: update story record with audioUrl (stored on chapter object in `chapters` JSON)
-    // Rest Chamber content isn't necessarily backed by a `stories` row, so we don't hard-fail.
     const chaptersRaw = chaptersRawFromMeta;
     const chapters = Array.isArray(chaptersRaw) ? chaptersRaw : null;
 
