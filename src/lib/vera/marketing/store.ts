@@ -32,10 +32,9 @@ function safeJsonParse<T>(text: string): T | null {
 }
 
 function marketingBucket(): string {
-  // Supabase bucket names are case-sensitive and typically lowercase.
-  // Default to the existing project bucket.
-  const fromEnv = (process.env.SUPABASE_MARKETING_BUCKET || '').trim();
-  return fromEnv || 'vera-live';
+  // Per project convention: marketing posts live in the existing Supabase Storage bucket.
+  // Path: vera-live/marketing/posts/{id}.json
+  return 'vera-live';
 }
 
 function postPath(id: string): string {
