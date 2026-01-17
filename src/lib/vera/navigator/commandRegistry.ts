@@ -154,6 +154,18 @@ export const COMMAND_REGISTRY: Command[] = [
     route: { room: 'ops', view: 'reflect-connect' },
     voiceResponse: "Let's reflect on your day.",
   },
+  {
+    id: 'ops-learn-language',
+    phrases: ['learn language', 'language learning', 'teach me spanish', 'learn spanish', 'learn french', 'learn macedonian'],
+    route: { room: 'ops', view: 'learning-growth' },
+    voiceResponse: "Opening language learning.",
+  },
+  {
+    id: 'ops-translate',
+    phrases: ['translate', 'translation', 'how do i say', 'translate this', 'say this in'],
+    route: { room: 'ops', view: 'translate' },
+    voiceResponse: 'Opening translation tools.',
+  },
 
   // Library commands
   {

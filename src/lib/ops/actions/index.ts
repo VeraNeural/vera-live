@@ -348,6 +348,14 @@ FORMAT RULES:
   ],
 
   learning: [
+    {
+      id: 'language-learning',
+      title: 'Language',
+      description: 'Learn phrases + translate + listen',
+      icon: 'learn',
+      placeholder: '',
+      systemPrompt: '',
+    },
     { id: 'study-plan', title: 'Study Plan', description: 'Learn anything effectively', icon: 'study', placeholder: 'What do you want to learn? Timeline? Current level?', systemPrompt: 'Create a study plan for learning this. Include: 1) Learning roadmap, 2) Best resources, 3) Practice exercises, 4) Milestones to track progress, 5) How long each phase should take.', fields: [
       { id: 'topic', label: 'What to learn', type: 'text', placeholder: 'Spanish, Python, photography...', required: true },
       { id: 'timeline', label: 'Timeline', type: 'text', placeholder: '3 months, 1 year...' },

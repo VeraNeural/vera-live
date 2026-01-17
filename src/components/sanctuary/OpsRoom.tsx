@@ -14,6 +14,7 @@ import {
   DynamicForm,
 } from '@/lib/ops/components';
 import { veraWatch } from '@/lib/ops/monitoring/veraWatch';
+import LanguageExperience from '@/lib/ops/experiences/Language';
 
 interface OpsRoomProps {
   onBack: () => void;
@@ -145,25 +146,52 @@ export default function OpsRoom({ onBack, initialView }: OpsRoomProps) {
     return () => clearInterval(interval);
   }, []);
 
-  const normalizeCategoryFromView = (view?: string): Category | null => {
+  const normalizeCategoryFromView = (view?: string): { category: Category; actionId?: string; languageTab?: 'learn' | 'translate' } | null => {
     const v = (view || '').toLowerCase().trim();
     if (!v) return null;
-    // Accept direct category IDs
-    if ((CATEGORIES as any[]).some((c) => c.id === v)) return v as Category;
+
+    // Direct category IDs
+    if ((CATEGORIES as any[]).some((c) => c.id === v)) return { category: v as Category };
+
     // Map navigator-level views to Ops categories
-    if (v === 'communication') return 'communication';
-    if (v === 'work-career') return 'work';
-    if (v === 'money-finance') return 'money';
-    if (v === 'planning-goals') return 'planning';
-    if (v === 'reflect-connect') return 'relationships';
+    if (v === 'communication') return { category: 'communication' };
+    if (v === 'work-career') return { category: 'work' };
+    if (v === 'money-finance') return { category: 'money' };
+    if (v === 'planning-goals') return { category: 'planning' };
+    if (v === 'reflect-connect') return { category: 'relationships' };
+
+    // Learning & Growth experiences
+    if (v === 'learning-growth' || v === 'language') {
+      return { category: 'learning', actionId: 'language-learning' };
+    }
+    if (v === 'learn-language') {
+      return { category: 'learning', actionId: 'language-learning', languageTab: 'learn' };
+    }
+    if (v === 'translate') {
+      return { category: 'learning', actionId: 'language-learning', languageTab: 'translate' };
+    }
+
     return null;
   };
 
   useEffect(() => {
-    const category = normalizeCategoryFromView(initialView);
-    if (!category) return;
-    setActiveCategory(category);
-    setSelectedAction(null);
+    const mapped = normalizeCategoryFromView(initialView);
+    if (!mapped) return;
+    setActiveCategory(mapped.category);
+    if (mapped.actionId) {
+      const action = ACTIONS_BY_CATEGORY[mapped.category].find((a) => a.id === mapped.actionId) ?? null;
+      setSelectedAction(action);
+
+      if (mapped.actionId === 'language-learning' && mapped.languageTab) {
+        try {
+          window.localStorage.setItem('vera.ops.language.lastTab.v1', mapped.languageTab);
+        } catch {
+          // ignore
+        }
+      }
+    } else {
+      setSelectedAction(null);
+    }
   }, [initialView]);
 
   const isDark = manualTheme === 'dark' ? true : manualTheme === 'light' ? false : (timeOfDay === 'evening' || timeOfDay === 'night');
@@ -259,6 +287,7 @@ export default function OpsRoom({ onBack, initialView }: OpsRoomProps) {
 
   const handleSelectCategory = (category: Category) => {
     setActiveCategory(category);
+    setSelectedAction(null);
   };
 
   const handleSelectAction = (action: ActionItem) => {
@@ -349,7 +378,15 @@ export default function OpsRoom({ onBack, initialView }: OpsRoomProps) {
             />
           )}
 
-          {selectedAction && !output && !compareOutputs && !isGenerating && (
+          {selectedAction?.id === 'language-learning' && !output && !compareOutputs && !isGenerating && (
+            <LanguageExperience
+              colors={colors}
+              isDark={isDark}
+              onExit={() => setSelectedAction(null)}
+            />
+          )}
+
+          {selectedAction && selectedAction.id !== 'language-learning' && !output && !compareOutputs && !isGenerating && (
             <DynamicForm
               action={selectedAction}
               simpleInput={simpleInput}
