@@ -11,7 +11,10 @@ export interface CreativeStudioProps {
 
 export type Tab = 'activities' | 'projects';
 
-export type ActivityCategory = 'art' | 'craft' | 'build' | 'express';
+export type ActivityCategory = 'art' | 'craft' | 'build' | 'express' | 'sound' | 'written' | 'body';
+
+// Alias used in some parts of the UI/codebase (category selection).
+export type CategoryId = ActivityCategory;
 
 export type Activity = {
   id: string;
