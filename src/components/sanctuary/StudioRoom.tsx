@@ -38,6 +38,7 @@ export default function CreativeStudio({ onBack, onStartActivity }: CreativeStud
   const [activeTab, setActiveTab] = useState<Tab>('activities');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [activeActivity, setActiveActivity] = useState<string | null>(null);
+  const [comingSoonActivityId, setComingSoonActivityId] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -58,7 +59,11 @@ export default function CreativeStudio({ onBack, onStartActivity }: CreativeStud
     if (activity?.hasExperience) {
       setActiveActivity(activityId);
     } else {
-      onStartActivity?.(activityId);
+      if (onStartActivity) {
+        onStartActivity(activityId);
+      } else {
+        setComingSoonActivityId(activityId);
+      }
     }
   };
 
@@ -67,7 +72,102 @@ export default function CreativeStudio({ onBack, onStartActivity }: CreativeStud
     setActiveActivity(null);
   };
 
+  const handleCloseComingSoon = () => {
+    setComingSoonActivityId(null);
+  };
+
   const activitiesInCategory = ACTIVITIES.filter(a => a.category === selectedCategory);
+
+  if (comingSoonActivityId) {
+    const activity = ACTIVITIES.find(a => a.id === comingSoonActivityId);
+    return (
+      <>
+        <style jsx global>{GLOBAL_STYLES}</style>
+        <div style={{ position: 'fixed', inset: 0, background: COLORS.bg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <header style={{
+            padding: '16px',
+            paddingTop: 'max(16px, env(safe-area-inset-top))',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            zIndex: 50,
+          }}>
+            <button onClick={handleCloseComingSoon} style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '10px 18px',
+              background: COLORS.cardBg,
+              border: `1px solid ${COLORS.cardBorder}`,
+              borderRadius: 50,
+              cursor: 'pointer',
+              fontSize: 14,
+              fontWeight: 500,
+              color: COLORS.textMuted,
+            }}>
+              ← Back
+            </button>
+            <span style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: COLORS.textDim,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+            }}>
+              Coming soon
+            </span>
+            <ThemeToggle />
+          </header>
+
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20,
+          }}>
+            <div style={{
+              width: '100%',
+              maxWidth: 420,
+              background: COLORS.cardBg,
+              border: `1px solid ${COLORS.cardBorder}`,
+              borderRadius: 16,
+              padding: 20,
+              textAlign: 'center',
+            }}>
+              <h2 style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: 26,
+                fontWeight: 300,
+                color: COLORS.text,
+                marginBottom: 10,
+              }}>
+                {activity?.title ?? 'This activity'}
+              </h2>
+              <p style={{ fontSize: 14, color: COLORS.textDim, lineHeight: 1.6, marginBottom: 16 }}>
+                {activity?.description ?? 'This experience is not available yet.'}
+              </p>
+              <div style={{
+                display: 'inline-flex',
+                gap: 8,
+                alignItems: 'center',
+                padding: '8px 12px',
+                borderRadius: 999,
+                background: COLORS.accentGlow,
+                color: COLORS.accentDim,
+                fontSize: 12,
+                fontWeight: 600,
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+              }}>
+                Coming soon
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   // Activity routing
   if (activeActivity === 'emotion-colors') return <EmotionColorMap onBack={() => setActiveActivity(null)} onComplete={handleActivityComplete} />;
