@@ -43,10 +43,6 @@ function isRestfulStoryCategory(category: string): boolean {
   return normalized === 'rest-sleep' || normalized === 'guided-journeys' || normalized === 'meditative-tales';
 }
 
-function getHumeVoiceProvider(): string {
-  return (process.env.HUME_TTS_VOICE_PROVIDER || 'HUME_AI').trim() || 'HUME_AI';
-}
-
 function getVoiceNameForProfile(profile: NarrationProfile): string {
   const envName =
     profile === 'rest'

@@ -238,7 +238,7 @@ export async function checkHume(): Promise<HealthCheck> {
           {
             text: 'ping',
             voice: {
-              provider: 'HUME_AI',
+              name: 'ITO',
             },
           },
         ],
