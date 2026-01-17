@@ -34,6 +34,13 @@ function safePathSegment(input: string): string {
   return input.replace(/[^a-zA-Z0-9._-]/g, '_');
 }
 
+function getAudioBucketCandidates(): string[] {
+  const fromEnv = (process.env.SUPABASE_AUDIO_BUCKET || '').trim();
+  const candidates = [fromEnv, 'vera-live', 'Vera-live'].filter(Boolean);
+  // De-dupe while preserving order
+  return Array.from(new Set(candidates));
+}
+
 async function synthesizeWithHumeTts(input: { text: string }): Promise<{ audio: Buffer; contentType: string }>
 {
   const { name: apiKeyEnv, value: apiKey } = getRequiredEnvAny(['HUMEAI_API_KEY', 'HUME_API_KEY']);
@@ -109,22 +116,36 @@ export async function POST(req: NextRequest) {
     const { audio, contentType } = await synthesizeWithHumeTts({ text });
 
     // 2) Upload to Supabase Storage
-    const bucket = 'vera-live';
+    const bucketCandidates = getAudioBucketCandidates();
     const path = `stories/${safePathSegment(storyId)}/${safePathSegment(chapterId || 'full')}.wav`;
 
-    const uploadResult = await supabaseAdmin.storage.from(bucket).upload(path, audio, {
-      contentType,
-      upsert: true,
-    });
+    let chosenBucket: string | null = null;
+    let lastUploadError: string | null = null;
 
-    if (uploadResult.error) {
+    for (const bucket of bucketCandidates) {
+      const uploadResult = await supabaseAdmin.storage.from(bucket).upload(path, audio, {
+        contentType,
+        upsert: true,
+      });
+
+      if (!uploadResult.error) {
+        chosenBucket = bucket;
+        break;
+      }
+
+      lastUploadError = uploadResult.error.message;
+    }
+
+    if (!chosenBucket) {
       return NextResponse.json(
-        { error: `Storage upload failed: ${uploadResult.error.message}` },
+        {
+          error: `Storage upload failed (buckets tried: ${bucketCandidates.join(', ')}): ${lastUploadError || 'unknown error'}`,
+        },
         { status: 500 }
       );
     }
 
-    const publicUrlResult = supabaseAdmin.storage.from(bucket).getPublicUrl(path);
+    const publicUrlResult = supabaseAdmin.storage.from(chosenBucket).getPublicUrl(path);
     const audioUrl = publicUrlResult.data.publicUrl;
 
     // 3) Best-effort: update story record with audioUrl (stored on chapter object in `chapters` JSON)

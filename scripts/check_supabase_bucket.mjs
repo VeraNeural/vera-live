@@ -1,5 +1,6 @@
 // Local sanity-check helper (not required at runtime).
-// Prints available Supabase Storage buckets and verifies `vera-live` exists.
+// Prints available Supabase Storage buckets and verifies the narration audio bucket exists.
+// Default expected bucket is `vera-live` (case-sensitive in Supabase).
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -69,10 +70,14 @@ try {
   const names = buckets.map((b) => b?.name).filter(Boolean);
 
   console.log('Buckets:', names.join(', ') || '(none)');
-  if (names.includes('vera-live')) {
-    console.log('OK: vera-live bucket exists');
+
+  const expected = (process.env.SUPABASE_AUDIO_BUCKET || 'vera-live').trim();
+  const ok = names.includes(expected) || names.includes('vera-live') || names.includes('Vera-live');
+
+  if (ok) {
+    console.log(`OK: narration bucket exists (expected: ${expected})`);
   } else {
-    console.log('MISSING: vera-live bucket not found');
+    console.log(`MISSING: narration bucket not found (expected: ${expected}). If you used a different name, set SUPABASE_AUDIO_BUCKET in .env.local.`);
     process.exitCode = 2;
   }
 } catch (err) {
