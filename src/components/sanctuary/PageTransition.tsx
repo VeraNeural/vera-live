@@ -16,12 +16,10 @@ const FADE_IN_MS = 300;
 export default function PageTransition({ children }: PageTransitionProps) {
   const pathname = usePathname();
 
-  const [displayedPath, setDisplayedPath] = useState(pathname);
-  const [displayedChildren, setDisplayedChildren] = useState(children);
   const [phase, setPhase] = useState<TransitionPhase>('idle');
 
-  const pendingRef = useRef<{ path: string; children: React.ReactNode } | null>(null);
   const transitionTokenRef = useRef(0);
+  const lastPathRef = useRef<string | null>(null);
 
   const isTransitioning = phase !== 'idle';
 
@@ -73,17 +71,14 @@ export default function PageTransition({ children }: PageTransitionProps) {
   }, [phase]);
 
   useEffect(() => {
-    // Keep displayed children in sync on first mount / same-route updates.
-    if (pathname === displayedPath && !pendingRef.current) {
-      setDisplayedChildren(children);
+    // First mount: establish baseline path without transitioning.
+    if (lastPathRef.current === null) {
+      lastPathRef.current = pathname;
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [children]);
 
-  useEffect(() => {
-    if (pathname === displayedPath) return;
-
-    pendingRef.current = { path: pathname, children };
+    if (pathname === lastPathRef.current) return;
+    lastPathRef.current = pathname;
 
     const start = () => {
       transitionTokenRef.current += 1;
@@ -93,12 +88,6 @@ export default function PageTransition({ children }: PageTransitionProps) {
 
       window.setTimeout(() => {
         if (transitionTokenRef.current !== token) return;
-
-        const pending = pendingRef.current;
-        if (pending) {
-          setDisplayedPath(pending.path);
-          setDisplayedChildren(pending.children);
-        }
 
         setPhase('pause');
 
@@ -110,7 +99,6 @@ export default function PageTransition({ children }: PageTransitionProps) {
           window.setTimeout(() => {
             if (transitionTokenRef.current !== token) return;
             setPhase('idle');
-            pendingRef.current = null;
           }, FADE_IN_MS);
         }, PAUSE_MS);
       }, FADE_OUT_MS);
@@ -118,7 +106,7 @@ export default function PageTransition({ children }: PageTransitionProps) {
 
     // If we're mid-transition, restart the sequence so we always land on the latest route.
     start();
-  }, [pathname, displayedPath, children]);
+  }, [pathname]);
 
   return (
     <div className="vera-page-transition" style={{ position: 'relative', width: '100%', minHeight: '100vh' }}>
@@ -156,9 +144,9 @@ export default function PageTransition({ children }: PageTransitionProps) {
       </div>
 
       {/* Content */}
-      <div style={contentStyle}>{displayedChildren}</div>
+      <div style={contentStyle}>{children}</div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes veraOrbBreath {
           0% {
             transform: translate(-50%, -50%) scale(0.96);
