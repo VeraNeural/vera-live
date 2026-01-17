@@ -1,43 +1,24 @@
+﻿/**
+ * LibraryRoom Component
+ * 
+ * Orchestrates the Library experience with Stories, Learn, and Discover tabs.
+ * All logic extracted into modular components and hooks.
+ */
+
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import type { ComponentType } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme, ThemeToggle } from '@/contexts/ThemeContext';
-import { createClient } from '@supabase/supabase-js';
+import type { Tab, DBLesson, DBAssessment } from '@/lib/library/types';
+import { getLibraryColors } from '@/lib/library/theme';
+import { LESSONS_BY_CATEGORY } from '@/lib/library/data/lessons';
+import { ASSESSMENTS } from '@/lib/library/data/assessments';
+import { StoryTab } from '@/lib/library/components/StoryTab';
+import { LearnTab } from '@/lib/library/components/LearnTab';
+import { DiscoverTab } from '@/lib/library/components/DiscoverTab';
+import { useLibraryData } from '@/lib/library/hooks/useLibraryData';
 import DynamicLessonViewer from './DynamicLessonViewer';
 import DynamicAssessmentViewer from './DynamicAssessmentViewer';
-
-// Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
-import NervousSystemLesson1 from './learn/NervousSystemLesson1';
-import NervousSystemLesson2 from './learn/NervousSystemLesson2';
-import NervousSystemLesson3 from './learn/NervousSystemLesson3';
-import NervousSystemLesson4 from './learn/NervousSystemLesson4';
-
-import Emotionlesson1 from './learn/Emotionlesson1';
-import Emotionlesson2 from './learn/Emotionlesson2';
-import Emotionlesson3 from './learn/Emotionlesson3';
-import Emotionlesson4 from './learn/Emotionlesson4';
-
-import ScienceOfRestLesson1 from './learn/ScienceOfRestLesson1';
-import ScienceOfRestLesson2 from './learn/ScienceOfRestLesson2';
-import ScienceOfRestLesson3 from './learn/ScienceOfRestLesson3';
-import ScienceOfRestLesson4 from './learn/ScienceOfRestLesson4';
-
-import ResilienceLesson1 from './learn/ResilienceLesson1';
-import ResilienceLesson2 from './learn/ResilienceLesson2';
-import ResilienceLesson3 from './learn/ResilienceLesson3';
-import ResilienceLesson4 from './learn/ResilienceLesson4';
-
-import InnerLandscapeAssessment from './assessments/InnerLandscapeAssessment';
-import RestRestorationAssessment from './assessments/RestRestorationAssessment';
-import StressResponseAssessment from './assessments/StressResponseAssessment';
-import ConnectionStyleAssessment from './assessments/ConnectionStyleAssessment';
-import LifeRhythmAssessment from './assessments/LifeRhythmAssessment';
 
 // ============================================================================
 // TYPES
@@ -48,499 +29,6 @@ interface LibraryRoomProps {
   onStartLesson?: (lessonId: string) => void;
   onStartAssessment?: (assessmentId: string) => void;
 }
-
-type Tab = 'stories' | 'learn' | 'discover';
-
-type Chapter = {
-  id: string;
-  title: string;
-  duration: string;
-  audioUrl: string;
-};
-
-type Story = {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  chapters: Chapter[];
-};
-
-type LearnLessonComponent = ComponentType<{ onBack: () => void; onComplete?: () => void }>;
-
-type LearnLesson = {
-  id: string;
-  title: string;
-  Component: LearnLessonComponent;
-};
-
-type DiscoverAssessmentComponent = ComponentType<{
-  onBack: () => void;
-  onComplete?: (...args: any[]) => void;
-}>;
-
-type DiscoverAssessment = {
-  id: string;
-  title: string;
-  subtitle: string;
-  duration: string;
-  description: string;
-  icon: string;
-  Component: DiscoverAssessmentComponent;
-};
-
-// Database types for Supabase content
-type DBStory = {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  chapters: { id: string; title: string; duration: string; text: string }[];
-  created_at?: string;
-};
-
-type DBLesson = {
-  id: string;
-  title: string;
-  category: string;
-  description: string;
-  content: { type: string; title?: string; subtitle?: string; content?: string; highlight?: string; points?: string[]; visual?: string }[];
-  created_at?: string;
-};
-
-type DBAssessment = {
-  id: string;
-  title: string;
-  subtitle: string;
-  description: string;
-  duration: string;
-  icon: string;
-  questions: { id: string; text: string; subtext?: string; options: { value: number; label: string; description?: string }[]; category?: string }[];
-  result_types: { id: string; name: string; description: string; signs?: string[]; strengths?: string[]; shadow?: string; tools?: string[]; color: string }[];
-  created_at?: string;
-};
-
-// ============================================================================
-// SVG ICONS
-// ============================================================================
-
-// Stories Category Icons
-const StoryCategoryIcon = ({ type, color }: { type: string; color: string }) => {
-  const icons: Record<string, React.ReactNode> = {
-    'rest-sleep': (
-      <svg viewBox="0 0 24 24" width="20" height="20">
-        {/* Moon with stars - represents rest and sleep */}
-        <path 
-          d="M12 3C7 3 3 7 3 12s4 9 9 9c1.5 0 2.9-.3 4.2-.9-3.5-1-6.2-4.2-6.2-8.1 0-3.9 2.7-7.1 6.2-8.1C14.9 3.3 13.5 3 12 3z" 
-          fill="none" 
-          stroke={color} 
-          strokeWidth="1.5" 
-        />
-        <circle cx="17" cy="6" r="1" fill={color} opacity="0.6" />
-        <circle cx="20" cy="10" r="0.7" fill={color} opacity="0.4" />
-        <circle cx="18" cy="14" r="0.5" fill={color} opacity="0.3" />
-      </svg>
-    ),
-    'guided-journeys': (
-      <svg viewBox="0 0 24 24" width="20" height="20">
-        {/* Compass/path - represents journeys */}
-        <circle cx="12" cy="12" r="8" fill="none" stroke={color} strokeWidth="1.5" />
-        <path 
-          d="M12 12L16 8L12 16L8 8L12 12" 
-          fill={color} 
-          opacity="0.4" 
-          stroke={color} 
-          strokeWidth="1" 
-        />
-        <circle cx="12" cy="12" r="1.5" fill={color} opacity="0.6" />
-      </svg>
-    ),
-    'meditative-tales': (
-      <svg viewBox="0 0 24 24" width="20" height="20">
-        {/* Lotus flower - represents meditation */}
-        <ellipse cx="12" cy="16" rx="6" ry="3" fill="none" stroke={color} strokeWidth="1.5" opacity="0.5" />
-        <path 
-          d="M12 5C12 5 8 9 8 12C8 14 10 15 12 15C14 15 16 14 16 12C16 9 12 5 12 5Z" 
-          fill="none" 
-          stroke={color} 
-          strokeWidth="1.5" 
-        />
-        <path d="M12 15L12 19" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.6" />
-        <path 
-          d="M7 10C7 10 5 12 6 14" 
-          fill="none" 
-          stroke={color} 
-          strokeWidth="1.5" 
-          strokeLinecap="round"
-          opacity="0.4"
-        />
-        <path 
-          d="M17 10C17 10 19 12 18 14" 
-          fill="none" 
-          stroke={color} 
-          strokeWidth="1.5" 
-          strokeLinecap="round"
-          opacity="0.4"
-        />
-      </svg>
-    ),
-    'rise-ready': (
-      <svg viewBox="0 0 24 24" width="20" height="20">
-        {/* Rising sun - represents new beginnings and confidence */}
-        <path 
-          d="M4 18h16" 
-          stroke={color} 
-          strokeWidth="1.5" 
-          strokeLinecap="round" 
-        />
-        <path 
-          d="M12 14C15.3 14 18 11.3 18 8" 
-          fill="none" 
-          stroke={color} 
-          strokeWidth="1.5" 
-          strokeLinecap="round"
-        />
-        <path 
-          d="M6 8C6 11.3 8.7 14 12 14" 
-          fill="none" 
-          stroke={color} 
-          strokeWidth="1.5" 
-          strokeLinecap="round"
-        />
-        <path d="M12 4L12 6" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-        <path d="M6 6L7.5 7.5" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.6" />
-        <path d="M18 6L16.5 7.5" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.6" />
-        <path d="M3 11L5 11" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.4" />
-        <path d="M19 11L21 11" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.4" />
-      </svg>
-    ),
-  };
-
-  return icons[type] || null;
-};
-
-// Learn Category Icons
-const LearnCategoryIcon = ({ type, color }: { type: string; color: string }) => {
-  const icons: Record<string, React.ReactNode> = {
-    'nervous-system': (
-      <svg viewBox="0 0 24 24" width="20" height="20">
-        {/* Brain/neural pathways - represents nervous system */}
-        <circle cx="12" cy="8" r="5" fill="none" stroke={color} strokeWidth="1.5" />
-        <path 
-          d="M9 7C9 7 10 9 12 9C14 9 15 7 15 7" 
-          fill="none" 
-          stroke={color} 
-          strokeWidth="1.5" 
-          strokeLinecap="round"
-          opacity="0.6"
-        />
-        <path d="M12 13L12 17" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-        <path d="M12 17L9 20" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.6" />
-        <path d="M12 17L15 20" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.6" />
-        <circle cx="10" cy="6" r="1" fill={color} opacity="0.4" />
-        <circle cx="14" cy="6" r="1" fill={color} opacity="0.4" />
-      </svg>
-    ),
-    'emotions': (
-      <svg viewBox="0 0 24 24" width="20" height="20">
-        {/* Heart with wave - represents emotions */}
-        <path 
-          d="M12 6C12 6 8 2 5 5C2 8 5 12 12 19C19 12 22 8 19 5C16 2 12 6 12 6Z" 
-          fill="none" 
-          stroke={color} 
-          strokeWidth="1.5" 
-        />
-        <path 
-          d="M7 10L9 10L10 8L12 12L14 9L15 10L17 10" 
-          fill="none" 
-          stroke={color} 
-          strokeWidth="1.5" 
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity="0.6"
-        />
-      </svg>
-    ),
-    'rest-science': (
-      <svg viewBox="0 0 24 24" width="20" height="20">
-        {/* Wave pattern with Zs - represents rest science */}
-        <path 
-          d="M3 12C5 9 7 15 9 12C11 9 13 15 15 12C17 9 19 15 21 12" 
-          fill="none" 
-          stroke={color} 
-          strokeWidth="1.5" 
-          strokeLinecap="round"
-        />
-        <text x="14" y="8" fill={color} fontSize="6" fontWeight="bold" opacity="0.6">z</text>
-        <text x="17" y="6" fill={color} fontSize="5" fontWeight="bold" opacity="0.4">z</text>
-        <text x="19" y="4" fill={color} fontSize="4" fontWeight="bold" opacity="0.3">z</text>
-      </svg>
-    ),
-    'resilience': (
-      <svg viewBox="0 0 24 24" width="20" height="20">
-        {/* Tree/growth - represents resilience */}
-        <path d="M12 21L12 12" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-        <path 
-          d="M12 12C12 12 6 12 6 8C6 4 12 3 12 3C12 3 18 4 18 8C18 12 12 12 12 12Z" 
-          fill="none" 
-          stroke={color} 
-          strokeWidth="1.5" 
-        />
-        <path d="M9 15L12 12L15 15" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
-        <circle cx="12" cy="7" r="2" fill={color} opacity="0.3" />
-      </svg>
-    ),
-  };
-
-  return icons[type] || null;
-};
-
-// Discover Assessment Icons (existing)
-const AssessmentIcon = ({ type, color }: { type: string; color: string }) => {
-  const icons: Record<string, React.ReactNode> = {
-    'inner-landscape': (
-      <svg viewBox="0 0 24 24" width="20" height="20">
-        <path 
-          d="M12 3 C9 3 6 5.5 6 9 C6 12.5 9 17 12 21 C15 17 18 12.5 18 9 C18 5.5 15 3 12 3" 
-          fill="none" 
-          stroke={color} 
-          strokeWidth="1.5" 
-        />
-        <circle cx="12" cy="9" r="2" fill={color} opacity="0.5" />
-        <path d="M12 11 L12 15" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
-      </svg>
-    ),
-    'rest-restoration': (
-      <svg viewBox="0 0 24 24" width="20" height="20">
-        <path 
-          d="M12 4 C8 4 5 7 5 11 C5 15 8 19 12 21 C16 19 19 15 19 11 C19 7 16 4 12 4" 
-          fill="none" 
-          stroke={color} 
-          strokeWidth="1.5" 
-        />
-        <circle cx="12" cy="11" r="3" fill={color} opacity="0.4" />
-        <path d="M12 14 L12 18" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
-      </svg>
-    ),
-    'stress-response': (
-      <svg viewBox="0 0 24 24" width="20" height="20">
-        <path 
-          d="M12 3 L12 8 M12 16 L12 21" 
-          stroke={color} 
-          strokeWidth="1.5" 
-          strokeLinecap="round" 
-        />
-        <path 
-          d="M4.5 7.5 L8 10 M16 14 L19.5 16.5" 
-          stroke={color} 
-          strokeWidth="1.5" 
-          strokeLinecap="round" 
-          opacity="0.7"
-        />
-        <path 
-          d="M4.5 16.5 L8 14 M16 10 L19.5 7.5" 
-          stroke={color} 
-          strokeWidth="1.5" 
-          strokeLinecap="round" 
-          opacity="0.7"
-        />
-        <circle cx="12" cy="12" r="3" fill={color} opacity="0.4" />
-      </svg>
-    ),
-    'connection-style': (
-      <svg viewBox="0 0 24 24" width="20" height="20">
-        <circle cx="9" cy="10" r="4" fill="none" stroke={color} strokeWidth="1.5" />
-        <circle cx="15" cy="10" r="4" fill="none" stroke={color} strokeWidth="1.5" />
-        <path d="M9 16 C9 19 12 21 12 21 C12 21 15 19 15 16" stroke={color} strokeWidth="1.5" fill="none" strokeLinecap="round" />
-      </svg>
-    ),
-    'life-rhythm': (
-      <svg viewBox="0 0 24 24" width="20" height="20">
-        <circle cx="12" cy="12" r="8" fill="none" stroke={color} strokeWidth="1.5" />
-        <circle cx="12" cy="12" r="1.5" fill={color} opacity="0.5" />
-        <path d="M12 4 L12 7" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-        <path d="M12 17 L12 20" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-        <path d="M4 12 L7 12" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-        <path d="M17 12 L20 12" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-        <path d="M12 12 L12 8" stroke={color} strokeWidth="2" strokeLinecap="round" />
-        <path d="M12 12 L15 12" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-      </svg>
-    ),
-  };
-
-  return icons[type] || null;
-};
-
-// ============================================================================
-// CONSTANTS
-// ============================================================================
-const STORY_CATEGORIES = [
-  { id: 'rest-sleep', title: 'Rest & Sleep', description: 'Gentle stories to ease you into rest', count: 4, icon: 'rest-sleep' },
-  { id: 'guided-journeys', title: 'Guided Journeys', description: 'Imaginative travels for the mind', count: 3, icon: 'guided-journeys' },
-  { id: 'meditative-tales', title: 'Meditative Tales', description: 'Stories that slow the world down', count: 3, icon: 'meditative-tales' },
-  { id: 'rise-ready', title: 'Rise & Ready', description: 'Confidence and clarity for the day ahead', count: 4, icon: 'rise-ready' },
-];
-
-const STORIES: Story[] = [
-  { 
-    id: 'rest-edge-of-sleep', 
-    title: 'Rest — A Story for the Edge of Sleep', 
-    description: 'A gentle descent into rest. Five chapters that ease you from day to night, from thoughts to stillness, from waking to sleep.',
-    category: 'rest-sleep',
-    chapters: [
-      { id: 'ch1', title: 'Chapter 1: The House After Dusk', duration: '1:44', audioUrl: '/audio/Rest.wav' },
-      { id: 'ch2', title: 'Chapter 2: The Weight of the Evening Air', duration: '2:05', audioUrl: '/audio/Rest2.wav' },
-      { id: 'ch3', title: 'Chapter 3: The Bed That Waited', duration: '1:48', audioUrl: '/audio/Rest3.wav' },
-      { id: 'ch4', title: 'Chapter 4: When Thought Loses Its Edges', duration: '1:51', audioUrl: '/audio/Rest4.wav' },
-      { id: 'ch5', title: 'Chapter 5: The Moment Before Sleep', duration: '1:42', audioUrl: '/audio/Rest5.wav' },
-    ]
-  },
-  { 
-    id: 'calm-forest', 
-    title: 'The Calm Forest', 
-    description: 'A gentle walk through peaceful woods, where sunlight filters through ancient trees and every step brings you deeper into stillness.',
-    category: 'meditative-tales',
-    chapters: [
-      { id: 'ch1', title: 'Chapter 1: Where the Ground Changes', duration: '1:42', audioUrl: '/audio/calm-forest.wav' },
-      { id: 'ch2', title: 'Chapter 2: Nothing Reacts', duration: '1:49', audioUrl: '/audio/calm-forest2.wav' },
-      { id: 'ch3', title: 'Chapter 3: The Space Between Sounds', duration: '1:46', audioUrl: '/audio/calm-forest3.wav' },
-      { id: 'ch4', title: 'Chapter 4: Without Waiting', duration: '1:47', audioUrl: '/audio/calm-forest4.wav' },
-      { id: 'ch5', title: 'Chapter 5: Enough to Carry', duration: '1:44', audioUrl: '/audio/calm-forest5.wav' },
-    ]
-  },
-  { 
-    id: 'office-after-everyone-left', 
-    title: 'The Office After Everyone Left', 
-    description: 'Discover the quiet power of spaces after the day ends. Five chapters exploring stillness, freedom, and wisdom.',
-    category: 'rise-ready',
-    chapters: [
-      { id: 'ch1', title: 'Chapter 1: When the Noise Withdraws', duration: '1:28', audioUrl: '/audio/Office.wav' },
-      { id: 'ch2', title: 'Chapter 2: The Space That Expands', duration: '1:34', audioUrl: '/audio/Office2.wav' },
-      { id: 'ch3', title: 'Chapter 3: Without an Audience', duration: '1:48', audioUrl: '/audio/Office3.wav' },
-      { id: 'ch4', title: 'Chapter 4: What the Body Learned Here', duration: '1:42', audioUrl: '/audio/office4.wav' },
-      { id: 'ch5', title: 'Chapter 5: After the Lights Go Out', duration: '1:45', audioUrl: '/audio/office5.wav' },
-    ]
-  },
-  { 
-    id: 'guided-journeys-trains', 
-    title: 'Journey Through Time', 
-    description: 'A series of imaginative journeys that transport your mind to places both familiar and fantastical.',
-    category: 'guided-journeys',
-    chapters: [
-      { id: 'ch1', title: 'Journey 1 — The Train That Didn\'t Rush', duration: '1:51', audioUrl: '/audio/Train.wav' },
-      { id: 'ch2', title: 'Journey 2 — The Desert at First Light', duration: '1:45', audioUrl: '/audio/Train2.wav' },
-      { id: 'ch3', title: 'Journey 3 — The City Seen From Above', duration: '1:28', audioUrl: '/audio/Train3.wav' },
-      { id: 'ch4', title: 'Journey 4 — The Lake Without Wind', duration: '1:19', audioUrl: '/audio/Train4.wav' },
-      { id: 'ch5', title: 'Journey 5 — The Road After Midnight', duration: '1:32', audioUrl: '/audio/Train5.wav' },
-    ]
-  },
-];
-
-const LEARN_CATEGORIES = [
-  { id: 'nervous-system', title: 'Your Nervous System', description: "Understanding your body's wisdom", count: 4, icon: 'nervous-system' },
-  { id: 'emotions', title: 'Understanding Emotions', description: 'The language of feeling', count: 4, icon: 'emotions' },
-  { id: 'rest-science', title: 'The Science of Rest', description: 'Why restoration matters', count: 4, icon: 'rest-science' },
-  { id: 'resilience', title: 'Building Resilience', description: "Growing through life's challenges", count: 4, icon: 'resilience' },
-];
-
-const LEARN_LESSONS_BY_CATEGORY: Record<string, LearnLesson[]> = {
-  'nervous-system': [
-    { id: 'nervous-system-1', title: 'Lesson 1', Component: NervousSystemLesson1 },
-    { id: 'nervous-system-2', title: 'Lesson 2', Component: NervousSystemLesson2 },
-    { id: 'nervous-system-3', title: 'Lesson 3', Component: NervousSystemLesson3 },
-    { id: 'nervous-system-4', title: 'Lesson 4', Component: NervousSystemLesson4 },
-  ],
-  emotions: [
-    { id: 'emotions-1', title: 'Lesson 1', Component: Emotionlesson1 },
-    { id: 'emotions-2', title: 'Lesson 2', Component: Emotionlesson2 },
-    { id: 'emotions-3', title: 'Lesson 3', Component: Emotionlesson3 },
-    { id: 'emotions-4', title: 'Lesson 4', Component: Emotionlesson4 },
-  ],
-  'rest-science': [
-    { id: 'rest-science-1', title: 'Lesson 1', Component: ScienceOfRestLesson1 },
-    { id: 'rest-science-2', title: 'Lesson 2', Component: ScienceOfRestLesson2 },
-    { id: 'rest-science-3', title: 'Lesson 3', Component: ScienceOfRestLesson3 },
-    { id: 'rest-science-4', title: 'Lesson 4', Component: ScienceOfRestLesson4 },
-  ],
-  resilience: [
-    { id: 'resilience-1', title: 'Lesson 1', Component: ResilienceLesson1 },
-    { id: 'resilience-2', title: 'Lesson 2', Component: ResilienceLesson2 },
-    { id: 'resilience-3', title: 'Lesson 3', Component: ResilienceLesson3 },
-    { id: 'resilience-4', title: 'Lesson 4', Component: ResilienceLesson4 },
-  ],
-};
-
-const DISCOVER_ASSESSMENTS: DiscoverAssessment[] = [
-  {
-    id: 'inner-landscape',
-    title: 'Inner Landscape',
-    subtitle: 'Emotional Patterns',
-    duration: '15 min',
-    description: 'Explore your emotional world and discover your unique patterns',
-    icon: 'inner-landscape',
-    Component: InnerLandscapeAssessment,
-  },
-  {
-    id: 'rest-restoration',
-    title: 'Rest & Restoration',
-    subtitle: 'How You Recharge',
-    duration: '12 min',
-    description: 'Discover your ideal rest practices and restoration needs',
-    icon: 'rest-restoration',
-    Component: RestRestorationAssessment,
-  },
-  {
-    id: 'stress-response',
-    title: 'Stress Response',
-    subtitle: "Your Body's Patterns",
-    duration: '15 min',
-    description: 'Understand how your nervous system responds to pressure',
-    icon: 'stress-response',
-    Component: StressResponseAssessment,
-  },
-  {
-    id: 'connection-style',
-    title: 'Connection Style',
-    subtitle: 'Relationships & Boundaries',
-    duration: '12 min',
-    description: 'Explore how you connect and what you need from others',
-    icon: 'connection-style',
-    Component: ConnectionStyleAssessment,
-  },
-  {
-    id: 'life-rhythm',
-    title: 'Life Rhythm',
-    subtitle: 'Energy & Natural Cycles',
-    duration: '10 min',
-    description: 'Discover your natural energy patterns and optimal rhythms',
-    icon: 'life-rhythm',
-    Component: LifeRhythmAssessment,
-  },
-];
-
-type ThemeColors = {
-  bg: string;
-  accent: string;
-  text: string;
-  textMuted: string;
-  cardBg: string;
-  cardBorder: string;
-  glow: string;
-};
-
-const getLibraryColors = (theme: ThemeColors) => {
-  return {
-    bg: theme.bg,
-    text: theme.text,
-    textMuted: theme.textMuted,
-    textDim: theme.textMuted,
-    cardBg: theme.cardBg,
-    cardBorder: theme.cardBorder,
-    accent: theme.accent,
-    accentDim: theme.accent,
-    warmGlow: theme.glow,
-  };
-};
 
 // ============================================================================
 // STYLES
@@ -599,15 +87,26 @@ const GLOBAL_STYLES = `
 // ============================================================================
 // COMPONENT
 // ============================================================================
-export default function LibraryRoom({ onBack, onStartStory, onStartLesson, onStartAssessment }: LibraryRoomProps) {
+export default function LibraryRoom({ 
+  onBack, 
+  onStartStory, 
+  onStartLesson, 
+  onStartAssessment 
+}: LibraryRoomProps) {
   const { colors } = useTheme();
   const COLORS = getLibraryColors(colors);
 
-  // Database content state
-  const [dbStories, setDbStories] = useState<DBStory[]>([]);
-  const [dbLessons, setDbLessons] = useState<DBLesson[]>([]);
-  const [dbAssessments, setDbAssessments] = useState<DBAssessment[]>([]);
-  const [dbLoading, setDbLoading] = useState(true);
+  // Use the extracted data hook
+  const {
+    dbStories,
+    dbLessons,
+    dbAssessments,
+    dbLoading,
+    completedLearnLessons,
+    completedAssessments,
+    markLearnLessonComplete,
+    markAssessmentComplete,
+  } = useLibraryData();
 
   // Dynamic content viewers
   const [activeDynamicLesson, setActiveDynamicLesson] = useState<DBLesson | null>(null);
@@ -615,273 +114,46 @@ export default function LibraryRoom({ onBack, onStartStory, onStartLesson, onSta
 
   // UI State
   const [activeTab, setActiveTab] = useState<Tab>('stories');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedStory, setSelectedStory] = useState<Story | null>(null);
-  const [currentChapterIndex, setCurrentChapterIndex] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Learn State
-  const [selectedLearnCategory, setSelectedLearnCategory] = useState<string | null>(null);
   const [activeLearnLessonId, setActiveLearnLessonId] = useState<string | null>(null);
-  const [completedLearnLessons, setCompletedLearnLessons] = useState<Set<string>>(new Set());
 
   // Discover State
   const [activeAssessment, setActiveAssessment] = useState<string | null>(null);
-  const [completedAssessments, setCompletedAssessments] = useState<string[]>([]);
-
-  // Audio State
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [audioProgress, setAudioProgress] = useState(0);
-  const [audioDuration, setAudioDuration] = useState(0);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     setTimeout(() => setIsLoaded(true), 100);
   }, []);
 
-  // Fetch content from Supabase
-  useEffect(() => {
-    const fetchContent = async () => {
-      try {
-        const { data: storiesData } = await supabase
-          .from('stories')
-          .select('*')
-          .order('created_at', { ascending: false });
-        
-        const { data: lessonsData } = await supabase
-          .from('lessons')
-          .select('*')
-          .order('created_at', { ascending: false });
-        
-        const { data: assessmentsData } = await supabase
-  .from('assessments')
-  .select('*')
-  .order('created_at', { ascending: false });
-
-// ADD THIS LINE HERE:
-console.log('Lessons from DB:', lessonsData);
-
-if (storiesData) setDbStories(storiesData);
-if (lessonsData) setDbLessons(lessonsData);
-        if (assessmentsData) setDbAssessments(assessmentsData);
-      } catch (error) {
-        console.error('Error fetching library content:', error);
-      } finally {
-        setDbLoading(false);
-      }
-    };
-
-    fetchContent();
-  }, []);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('vera.library.learn.completedLessons.v1');
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        const ids = parsed.filter((v) => typeof v === 'string');
-        setCompletedLearnLessons(new Set(ids));
-      }
-    } catch {
-      // Ignore localStorage/JSON failures
-    }
-  }, []);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('vera.library.discover.completedAssessments.v1');
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        const ids = parsed.filter((v) => typeof v === 'string');
-        setCompletedAssessments(Array.from(new Set(ids)));
-      }
-    } catch {
-      // Ignore localStorage/JSON failures
-    }
-  }, []);
-
+  // Reset tab-specific state when switching tabs
   useEffect(() => {
     if (activeTab !== 'learn') {
-      setSelectedLearnCategory(null);
       setActiveLearnLessonId(null);
     }
-
     if (activeTab !== 'discover') {
       setActiveAssessment(null);
     }
   }, [activeTab]);
 
-  // Audio event handlers
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const handleTimeUpdate = () => setAudioProgress(audio.currentTime);
-    const handleLoadedMetadata = () => setAudioDuration(audio.duration);
-    const handleEnded = () => {
-      if (selectedStory && currentChapterIndex < selectedStory.chapters.length - 1) {
-        setCurrentChapterIndex(prev => prev + 1);
-        setTimeout(() => {
-          if (audioRef.current) {
-            audioRef.current.play();
-            setIsPlaying(true);
-          }
-        }, 300);
-      } else {
-        setIsPlaying(false);
-        setAudioProgress(0);
-      }
-    };
-
-    audio.addEventListener('timeupdate', handleTimeUpdate);
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-    audio.addEventListener('ended', handleEnded);
-
-    return () => {
-      audio.removeEventListener('timeupdate', handleTimeUpdate);
-      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      audio.removeEventListener('ended', handleEnded);
-    };
-  }, [selectedStory, currentChapterIndex]);
-
-  // ============================================================================
-  // HANDLERS
-  // ============================================================================
-  const togglePlayPause = () => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (isPlaying) {
-      audio.pause();
-    } else {
-      audio.play();
-    }
-    setIsPlaying(!isPlaying);
-  };
-
-  const handleStop = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
-    setIsPlaying(false);
-    setAudioProgress(0);
-  };
-
-  const handleRewind = () => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = Math.max(0, audioRef.current.currentTime - 15);
-    }
-  };
-
-  const handleForward = () => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = Math.min(audioRef.current.duration, audioRef.current.currentTime + 15);
-    }
-  };
-
-  const handleChapterSelect = (index: number) => {
-    setCurrentChapterIndex(index);
-    setAudioProgress(0);
-    setIsPlaying(false);
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
-  };
-
-  const handleCategoryClick = (categoryId: string) => {
-    setSelectedCategory(categoryId);
-  };
-
-  const handleStoryClick = (story: Story) => {
-    setSelectedStory(story);
-    setCurrentChapterIndex(0);
-  };
-
-  const handleBackToCategories = () => {
-    setSelectedCategory(null);
-    setSelectedStory(null);
-    setCurrentChapterIndex(0);
-    handleStop();
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const allStories: Story[] = [
-    ...STORIES,
-    ...dbStories.map(s => ({
-      id: s.id,
-      title: s.title,
-      description: s.description,
-      category: s.category,
-      chapters: s.chapters.map(ch => ({
-        id: ch.id,
-        title: ch.title,
-        duration: ch.duration,
-        audioUrl: '', // DB stories use text-to-speech, not pre-recorded audio
-      }))
-    }))
-  ];
-  const storiesInCategory = allStories.filter(s => s.category === selectedCategory);
-  const currentChapter = selectedStory?.chapters[currentChapterIndex];
-
-  const selectedLearnMeta = selectedLearnCategory
-    ? LEARN_CATEGORIES.find((c) => c.id === selectedLearnCategory) ?? null
-    : null;
-
-  const selectedLearnLessons = selectedLearnCategory
-    ? LEARN_LESSONS_BY_CATEGORY[selectedLearnCategory] ?? []
-    : [];
-
+  // Find active lesson component
   const activeLearnLesson = (() => {
     if (!activeLearnLessonId) return null;
-    for (const lessons of Object.values(LEARN_LESSONS_BY_CATEGORY)) {
+    for (const lessons of Object.values(LESSONS_BY_CATEGORY)) {
       const found = lessons.find((l) => l.id === activeLearnLessonId);
       if (found) return found;
     }
     return null;
   })();
 
+  // Find active assessment component
   const activeDiscoverAssessment = activeAssessment
-    ? DISCOVER_ASSESSMENTS.find((a) => a.id === activeAssessment) ?? null
+    ? ASSESSMENTS.find((a) => a.id === activeAssessment) ?? null
     : null;
 
-  const markLearnLessonComplete = (lessonId: string) => {
-    setCompletedLearnLessons((prev) => {
-      if (prev.has(lessonId)) return prev;
-      const next = new Set(prev);
-      next.add(lessonId);
-      try {
-        localStorage.setItem('vera.library.learn.completedLessons.v1', JSON.stringify(Array.from(next)));
-      } catch {
-        // Ignore persistence failures
-      }
-      return next;
-    });
-  };
+  // Check if we're in a sub-view
+  const isInSubView = activeLearnLessonId ; activeAssessment ; activeDynamicLesson ; activeDynamicAssessment;
 
-  const markAssessmentComplete = (assessmentId: string) => {
-    setCompletedAssessments((prev) => {
-      if (prev.includes(assessmentId)) return prev;
-      const next = [...prev, assessmentId];
-      try {
-        localStorage.setItem('vera.library.discover.completedAssessments.v1', JSON.stringify(next));
-      } catch {
-        // Ignore persistence failures
-      }
-      return next;
-    });
-  };
-
-  // ============================================================================
-  // RENDER
-  // ============================================================================
   return (
     <>
       <style jsx global>{GLOBAL_STYLES}</style>
@@ -895,16 +167,13 @@ if (lessonsData) setDbLessons(lessonsData);
         overflow: 'hidden',
       }}>
         
-        {/* ================================================================ */}
-        {/* AMBIENT BACKGROUND */}
-        {/* ================================================================ */}
+        {/* Ambient Background */}
         <div style={{
           position: 'absolute',
           inset: 0,
           pointerEvents: 'none',
           overflow: 'hidden',
         }}>
-          {/* Warm fireplace glow - bottom left */}
           <div style={{
             position: 'absolute',
             bottom: '-10%',
@@ -914,8 +183,6 @@ if (lessonsData) setDbLessons(lessonsData);
             background: `radial-gradient(ellipse at center, ${COLORS.warmGlow} 0%, transparent 60%)`,
             borderRadius: '50%',
           }} />
-
-          {/* Subtle top glow */}
           <div style={{
             position: 'absolute',
             top: '-20%',
@@ -927,9 +194,7 @@ if (lessonsData) setDbLessons(lessonsData);
           }} />
         </div>
 
-        {/* ================================================================ */}
-        {/* HEADER */}
-        {/* ================================================================ */}
+        {/* Header */}
         <header style={{
           padding: '16px',
           paddingTop: 'max(16px, env(safe-area-inset-top))',
@@ -954,7 +219,7 @@ if (lessonsData) setDbLessons(lessonsData);
               color: COLORS.textMuted,
             }}
           >
-            ← Sanctuary
+             Sanctuary
           </button>
           
           <span style={{
@@ -970,9 +235,7 @@ if (lessonsData) setDbLessons(lessonsData);
           <ThemeToggle />
         </header>
 
-        {/* ================================================================ */}
-        {/* SCROLLABLE CONTENT */}
-        {/* ================================================================ */}
+        {/* Scrollable Content */}
         <div style={{
           flex: 1,
           overflowY: 'auto',
@@ -992,7 +255,7 @@ if (lessonsData) setDbLessons(lessonsData);
           }}>
             
             {/* Title - only show on main views */}
-            {!selectedStory && !selectedLearnCategory && !activeAssessment && (
+            {!isInSubView && (
               <div style={{ textAlign: 'center', marginBottom: 24 }}>
                 <h1 style={{
                   fontFamily: "'Cormorant Garamond', Georgia, serif",
@@ -1013,7 +276,7 @@ if (lessonsData) setDbLessons(lessonsData);
             )}
 
             {/* Tabs - only show on main views */}
-            {!selectedCategory && !selectedStory && !selectedLearnCategory && !activeAssessment && (
+            {!isInSubView && (
               <div style={{
                 display: 'flex',
                 gap: 8,
@@ -1041,929 +304,41 @@ if (lessonsData) setDbLessons(lessonsData);
               </div>
             )}
 
-            {/* ============================================================ */}
-            {/* STORIES TAB - Categories */}
-            {/* ============================================================ */}
-            {activeTab === 'stories' && !selectedCategory && !selectedStory && (
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
-                gap: 12,
-                maxWidth: 360,
-                width: '100%',
-                animation: 'fadeIn 0.4s ease-out',
-              }}>
-                {STORY_CATEGORIES.map((category) => (
-                  <button
-                    key={category.id}
-                    className="card-btn"
-                    onClick={() => handleCategoryClick(category.id)}
-                    style={{
-                      padding: '18px 16px',
-                      background: COLORS.cardBg,
-                      border: `1px solid ${COLORS.cardBorder}`,
-                      borderRadius: 14,
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                    }}
-                  >
-                    {/* Icon */}
-                    <div style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: 12,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: 'rgba(255, 180, 100, 0.10)',
-                      border: '1px solid rgba(255, 180, 100, 0.18)',
-                      marginBottom: 12,
-                    }}>
-                      <StoryCategoryIcon type={category.icon} color={COLORS.accent} />
-                    </div>
-                    
-                    <div style={{
-                      fontFamily: "'Cormorant Garamond', Georgia, serif",
-                      fontSize: 16,
-                      fontWeight: 400,
-                      color: COLORS.text,
-                      marginBottom: 6,
-                    }}>
-                      {category.title}
-                    </div>
-                    <div style={{
-                      fontSize: 12,
-                      color: COLORS.textDim,
-                      marginBottom: 8,
-                      lineHeight: 1.4,
-                    }}>
-                      {category.description}
-                    </div>
-                    <div style={{
-                      fontSize: 11,
-                      color: COLORS.accentDim,
-                    }}>
-                      {allStories.filter(s => s.category === category.id).length} stories
-                    </div>
-                  </button>
-                ))}
-              </div>
+            {/* Stories Tab */}
+            {activeTab === 'stories' ; !isInSubView && (
+              <StoryTab colors={COLORS} dbStories={dbStories} />
             )}
 
-            {/* ============================================================ */}
-            {/* STORIES TAB - Story List */}
-            {/* ============================================================ */}
-            {activeTab === 'stories' && selectedCategory && !selectedStory && (
-              <div style={{
-                width: '100%',
-                maxWidth: 400,
-                animation: 'fadeIn 0.4s ease-out',
-              }}>
-                <button
-                  onClick={handleBackToCategories}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: COLORS.accentDim,
-                    fontSize: 13,
-                    cursor: 'pointer',
-                    marginBottom: 16,
-                  }}
-                >
-                  ← Back to categories
-                </button>
-
-                <h2 style={{
-                  fontFamily: "'Cormorant Garamond', Georgia, serif",
-                  fontSize: 22,
-                  fontWeight: 300,
-                  color: COLORS.text,
-                  marginBottom: 20,
-                  textAlign: 'center',
-                }}>
-                  {STORY_CATEGORIES.find(c => c.id === selectedCategory)?.title}
-                </h2>
-
-                {storiesInCategory.length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {storiesInCategory.map((story) => (
-                      <button
-                        key={story.id}
-                        className="card-btn"
-                        onClick={() => handleStoryClick(story)}
-                        style={{
-                          padding: '18px',
-                          background: COLORS.cardBg,
-                          border: `1px solid ${COLORS.cardBorder}`,
-                          borderRadius: 14,
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                        }}
-                      >
-                        <div style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'flex-start',
-                          marginBottom: 8,
-                        }}>
-                          <div style={{
-                            fontFamily: "'Cormorant Garamond', Georgia, serif",
-                            fontSize: 17,
-                            fontWeight: 400,
-                            color: COLORS.text,
-                            flex: 1,
-                          }}>
-                            {story.title}
-                          </div>
-                          <div style={{
-                            fontSize: 11,
-                            color: COLORS.accentDim,
-                            marginLeft: 12,
-                          }}>
-                            {story.chapters.length} chapters
-                          </div>
-                        </div>
-                        <div style={{
-                          fontSize: 13,
-                          color: COLORS.textDim,
-                          lineHeight: 1.5,
-                        }}>
-                          {story.description}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{
-                    textAlign: 'center',
-                    padding: 40,
-                    color: COLORS.textDim,
-                  }}>
-                    Stories coming soon
-                  </div>
-                )}
-              </div>
+            {/* Learn Tab */}
+            {activeTab === 'learn' ; !activeLearnLessonId && !activeDynamicLesson && (
+              <LearnTab
+                colors={COLORS}
+                completedLessons={completedLearnLessons}
+                activeLessonId={activeLearnLessonId}
+                onLessonSelect={setActiveLearnLessonId}
+                onBack={() => setActiveLearnLessonId(null)}
+                onStartLesson={onStartLesson}
+                dbLessons={dbLessons}
+                onDynamicLessonSelect={setActiveDynamicLesson}
+              />
             )}
 
-            {/* ============================================================ */}
-            {/* STORY PLAYER */}
-            {/* ============================================================ */}
-            {selectedStory && currentChapter && (
-              <div style={{
-                width: '100%',
-                maxWidth: 400,
-                animation: 'fadeIn 0.4s ease-out',
-              }}>
-                <button
-                  onClick={handleBackToCategories}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: COLORS.accentDim,
-                    fontSize: 13,
-                    cursor: 'pointer',
-                    marginBottom: 20,
-                  }}
-                >
-                  ← Back to stories
-                </button>
-
-                {/* Story Title */}
-                <h1 style={{
-                  fontFamily: "'Cormorant Garamond', Georgia, serif",
-                  fontSize: 24,
-                  fontWeight: 300,
-                  color: COLORS.text,
-                  textAlign: 'center',
-                  marginBottom: 24,
-                }}>
-                  {selectedStory.title}
-                </h1>
-
-                {/* Chapter Selector */}
-                <div style={{ marginBottom: 28 }}>
-                  <h3 style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: COLORS.accentDim,
-                    marginBottom: 12,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                  }}>
-                    Chapters
-                  </h3>
-                  <div 
-                    className="chapters-scroll"
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 8,
-                      maxHeight: 180,
-                      overflowY: 'auto',
-                    }}
-                  >
-                    {selectedStory.chapters.map((chapter, index) => (
-                      <button
-                        key={chapter.id}
-                        onClick={() => handleChapterSelect(index)}
-                        style={{
-                          padding: '12px 14px',
-                          background: currentChapterIndex === index 
-                            ? 'rgba(255, 180, 100, 0.15)' 
-                            : 'rgba(255, 255, 255, 0.04)',
-                          border: `1px solid ${currentChapterIndex === index 
-                            ? 'rgba(255, 180, 100, 0.3)' 
-                            : 'rgba(255, 255, 255, 0.08)'}`,
-                          borderRadius: 8,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          textAlign: 'left',
-                        }}
-                      >
-                        <span style={{
-                          fontSize: 14,
-                          color: currentChapterIndex === index ? COLORS.accent : COLORS.textMuted,
-                          flex: 1,
-                        }}>
-                          {chapter.title}
-                        </span>
-                        <span style={{
-                          fontSize: 12,
-                          color: COLORS.textDim,
-                          marginLeft: 8,
-                        }}>
-                          {chapter.duration}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Current Chapter */}
-                <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                  <h2 style={{
-                    fontFamily: "'Cormorant Garamond', Georgia, serif",
-                    fontSize: 20,
-                    fontWeight: 300,
-                    color: COLORS.accent,
-                    marginBottom: 4,
-                  }}>
-                    {currentChapter.title}
-                  </h2>
-                  <span style={{ fontSize: 13, color: COLORS.textDim }}>
-                    {currentChapter.duration}
-                  </span>
-                </div>
-
-                {/* Play/Pause Button */}
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
-                  <button
-                    onClick={togglePlayPause}
-                    style={{
-                      width: 72,
-                      height: 72,
-                      borderRadius: '50%',
-                      background: isPlaying 
-                        ? 'rgba(255, 180, 100, 0.2)' 
-                        : 'rgba(255, 180, 100, 0.12)',
-                      border: `1px solid ${isPlaying 
-                        ? 'rgba(255, 180, 100, 0.4)' 
-                        : 'rgba(255, 180, 100, 0.25)'}`,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {isPlaying ? (
-                      <div style={{ display: 'flex', gap: 5 }}>
-                        <div style={{ width: 5, height: 22, background: COLORS.accent, borderRadius: 2 }} />
-                        <div style={{ width: 5, height: 22, background: COLORS.accent, borderRadius: 2 }} />
-                      </div>
-                    ) : (
-                      <div style={{
-                        width: 0,
-                        height: 0,
-                        borderTop: '12px solid transparent',
-                        borderBottom: '12px solid transparent',
-                        borderLeft: `20px solid ${COLORS.accent}`,
-                        marginLeft: 4,
-                      }} />
-                    )}
-                  </button>
-                </div>
-
-                {/* Audio Element */}
-                <audio 
-                  ref={audioRef} 
-                  src={currentChapter.audioUrl} 
-                  preload="metadata" 
-                />
-
-                {/* Progress Bar */}
-                <div style={{ marginBottom: 20 }}>
-                  <div style={{
-                    width: '100%',
-                    height: 4,
-                    background: 'rgba(255, 180, 100, 0.15)',
-                    borderRadius: 2,
-                    marginBottom: 8,
-                    overflow: 'hidden',
-                  }}>
-                    <div style={{
-                      height: '100%',
-                      width: `${audioDuration ? (audioProgress / audioDuration) * 100 : 0}%`,
-                      background: COLORS.accent,
-                      borderRadius: 2,
-                      transition: 'width 0.1s linear',
-                    }} />
-                  </div>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    fontSize: 12,
-                    color: COLORS.textDim,
-                  }}>
-                    <span>{formatTime(audioProgress)}</span>
-                    <span>{formatTime(audioDuration)}</span>
-                  </div>
-                </div>
-
-                {/* Playback Controls */}
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  gap: 12,
-                  marginBottom: 24,
-                }}>
-                  <button
-                    onClick={handleRewind}
-                    style={{
-                      padding: '10px 16px',
-                      background: 'rgba(255, 180, 100, 0.08)',
-                      border: `1px solid rgba(255, 180, 100, 0.2)`,
-                      borderRadius: 8,
-                      color: COLORS.accentDim,
-                      fontSize: 13,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    -15s
-                  </button>
-                  <button
-                    onClick={handleStop}
-                    style={{
-                      padding: '10px 16px',
-                      background: 'rgba(200, 100, 80, 0.08)',
-                      border: `1px solid rgba(200, 100, 80, 0.2)`,
-                      borderRadius: 8,
-                      color: 'rgba(220, 120, 100, 0.7)',
-                      fontSize: 13,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Stop
-                  </button>
-                  <button
-                    onClick={handleForward}
-                    style={{
-                      padding: '10px 16px',
-                      background: 'rgba(255, 180, 100, 0.08)',
-                      border: `1px solid rgba(255, 180, 100, 0.2)`,
-                      borderRadius: 8,
-                      color: COLORS.accentDim,
-                      fontSize: 13,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    +15s
-                  </button>
-                </div>
-
-                {/* Chapter Navigation */}
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: 12,
-                }}>
-                  <button
-                    onClick={() => handleChapterSelect(currentChapterIndex - 1)}
-                    disabled={currentChapterIndex === 0}
-                    style={{
-                      padding: '10px 16px',
-                      background: 'rgba(255, 180, 100, 0.1)',
-                      border: `1px solid rgba(255, 180, 100, 0.2)`,
-                      borderRadius: 8,
-                      color: COLORS.accentDim,
-                      fontSize: 13,
-                      cursor: currentChapterIndex === 0 ? 'not-allowed' : 'pointer',
-                      opacity: currentChapterIndex === 0 ? 0.4 : 1,
-                    }}
-                  >
-                    ← Prev
-                  </button>
-                  <span style={{ fontSize: 12, color: COLORS.textDim }}>
-                    {currentChapterIndex + 1} / {selectedStory.chapters.length}
-                  </span>
-                  <button
-                    onClick={() => handleChapterSelect(currentChapterIndex + 1)}
-                    disabled={currentChapterIndex === selectedStory.chapters.length - 1}
-                    style={{
-                      padding: '10px 16px',
-                      background: 'rgba(255, 180, 100, 0.1)',
-                      border: `1px solid rgba(255, 180, 100, 0.2)`,
-                      borderRadius: 8,
-                      color: COLORS.accentDim,
-                      fontSize: 13,
-                      cursor: currentChapterIndex === selectedStory.chapters.length - 1 ? 'not-allowed' : 'pointer',
-                      opacity: currentChapterIndex === selectedStory.chapters.length - 1 ? 0.4 : 1,
-                    }}
-                  >
-                    Next →
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ============================================================ */}
-            {/* LEARN TAB */}
-            {/* ============================================================ */}
-            {activeTab === 'learn' && !selectedCategory && !selectedStory && !selectedLearnCategory && (
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
-                gap: 12,
-                maxWidth: 360,
-                width: '100%',
-                animation: 'fadeIn 0.4s ease-out',
-              }}>
-                {LEARN_CATEGORIES.map((category) => (
-                  <button
-                    key={category.id}
-                    className="card-btn"
-                    onClick={() => setSelectedLearnCategory(category.id)}
-                    style={{
-                      padding: '18px 16px',
-                      background: COLORS.cardBg,
-                      border: `1px solid ${COLORS.cardBorder}`,
-                      borderRadius: 14,
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                    }}
-                  >
-                    {/* Icon */}
-                    <div style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: 12,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: 'rgba(255, 180, 100, 0.10)',
-                      border: '1px solid rgba(255, 180, 100, 0.18)',
-                      marginBottom: 12,
-                    }}>
-                      <LearnCategoryIcon type={category.icon} color={COLORS.accent} />
-                    </div>
-                    
-                    <div style={{
-                      fontFamily: "'Cormorant Garamond', Georgia, serif",
-                      fontSize: 16,
-                      fontWeight: 400,
-                      color: COLORS.text,
-                      marginBottom: 6,
-                    }}>
-                      {category.title}
-                    </div>
-                    <div style={{
-                      fontSize: 12,
-                      color: COLORS.textDim,
-                      marginBottom: 8,
-                      lineHeight: 1.4,
-                    }}>
-                      {category.description}
-                    </div>
-                    <div style={{
-                      fontSize: 11,
-                      color: COLORS.accentDim,
-                    }}>
-                      {category.count} lessons
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {activeTab === 'learn' && !selectedCategory && !selectedStory && selectedLearnCategory && (
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 12,
-                maxWidth: 420,
-                width: '100%',
-                animation: 'fadeIn 0.4s ease-out',
-              }}>
-                <button
-                  onClick={() => {
-                    setSelectedLearnCategory(null);
-                    setActiveLearnLessonId(null);
-                  }}
-                  style={{
-                    alignSelf: 'flex-start',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '10px 16px',
-                    background: COLORS.cardBg,
-                    border: `1px solid ${COLORS.cardBorder}`,
-                    borderRadius: 50,
-                    cursor: 'pointer',
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: COLORS.textMuted,
-                    marginBottom: 4,
-                  }}
-                >
-                  ← Topics
-                </button>
-
-                <div style={{ padding: '0 2px 8px' }}>
-                  <div style={{
-                    fontFamily: "'Cormorant Garamond', Georgia, serif",
-                    fontSize: 22,
-                    fontWeight: 400,
-                    color: COLORS.text,
-                    marginBottom: 4,
-                  }}>
-                    {selectedLearnMeta?.title ?? 'Learn'}
-                  </div>
-                  {selectedLearnMeta?.description && (
-                    <div style={{
-                      fontSize: 13,
-                      color: COLORS.textDim,
-                      lineHeight: 1.5,
-                    }}>
-                      {selectedLearnMeta.description}
-                    </div>
-                  )}
-                </div>
-
-                {selectedLearnLessons.map((lesson, idx) => {
-                  const isCompleted = completedLearnLessons.has(lesson.id);
-                  return (
-                    <button
-                      key={lesson.id}
-                      className="card-btn"
-                      onClick={() => {
-                        setActiveLearnLessonId(lesson.id);
-                        onStartLesson?.(lesson.id);
-                      }}
-                      style={{
-                        padding: '16px 16px',
-                        background: COLORS.cardBg,
-                        border: `1px solid ${COLORS.cardBorder}`,
-                        borderRadius: 14,
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        gap: 12,
-                      }}
-                    >
-                      <div>
-                        <div style={{
-                          fontSize: 14,
-                          fontWeight: 600,
-                          color: COLORS.text,
-                          marginBottom: 4,
-                        }}>
-                          {lesson.title}
-                        </div>
-                        <div style={{
-                          fontSize: 12,
-                          color: COLORS.textDim,
-                        }}>
-                          Lesson {idx + 1} of {selectedLearnLessons.length}
-                        </div>
-                      </div>
-
-                      {isCompleted && (
-                        <div style={{
-                          fontSize: 11,
-                          color: COLORS.accentDim,
-                          padding: '6px 10px',
-                          borderRadius: 999,
-                          border: `1px solid rgba(255, 180, 100, 0.25)`,
-                          background: 'rgba(255, 180, 100, 0.08)',
-                          whiteSpace: 'nowrap',
-                        }}>
-                          Completed
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-
-                {/* Database Lessons for this category */}
-                {dbLessons
-                  .filter(lesson => lesson.category === selectedLearnCategory)
-                  .map((lesson) => {
-                    const isCompleted = completedLearnLessons.has(lesson.id);
-                    return (
-                      <button
-                        key={lesson.id}
-                        className="card-btn"
-                        onClick={() => setActiveDynamicLesson(lesson)}
-                        style={{
-                          padding: '16px 16px',
-                          background: COLORS.cardBg,
-                          border: `1px solid ${COLORS.cardBorder}`,
-                          borderRadius: 14,
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          gap: 12,
-                        }}
-                      >
-                        <div>
-                          <div style={{
-                            fontSize: 14,
-                            fontWeight: 600,
-                            color: COLORS.text,
-                            marginBottom: 4,
-                          }}>
-                            {lesson.title}
-                          </div>
-                          <div style={{
-                            fontSize: 12,
-                            color: COLORS.textDim,
-                          }}>
-                            {lesson.description}
-                          </div>
-                        </div>
-
-                        {isCompleted && (
-                          <div style={{
-                            fontSize: 11,
-                            color: COLORS.accentDim,
-                            padding: '6px 10px',
-                            borderRadius: 999,
-                            border: `1px solid rgba(255, 180, 100, 0.25)`,
-                            background: 'rgba(255, 180, 100, 0.08)',
-                            whiteSpace: 'nowrap',
-                          }}>
-                            Completed
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-              </div>
-            )}
-
-            {activeTab === 'learn' && activeLearnLesson && (
+            {/* Active Lesson Component */}
+            {activeTab === 'learn' ; activeLearnLesson ; (
               <activeLearnLesson.Component
                 onBack={() => setActiveLearnLessonId(null)}
                 onComplete={() => markLearnLessonComplete(activeLearnLesson.id)}
               />
             )}
 
-            {/* ============================================================ */}
-            {/* DISCOVER TAB - Assessments */}
-            {/* ============================================================ */}
-            {activeTab === 'discover' && !selectedCategory && !selectedStory && !activeAssessment && !activeDynamicAssessment && (
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 12,
-                maxWidth: 420,
-                width: '100%',
-                animation: 'fadeIn 0.4s ease-out',
-              }}>
-                {/* Hardcoded Assessments */}
-                {DISCOVER_ASSESSMENTS.map((assessment) => {
-                  const isCompleted = completedAssessments.includes(assessment.id);
-                  return (
-                    <button
-                      key={assessment.id}
-                      className="card-btn"
-                      onClick={() => {
-                        setActiveAssessment(assessment.id);
-                        onStartAssessment?.(assessment.id);
-                      }}
-                      style={{
-                        padding: '18px',
-                        background: COLORS.cardBg,
-                        border: `1px solid ${COLORS.cardBorder}`,
-                        borderRadius: 14,
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                      }}
-                    >
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        justifyContent: 'space-between',
-                        gap: 12,
-                        marginBottom: 8,
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                          <div style={{
-                            width: 38,
-                            height: 38,
-                            borderRadius: 12,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            background: 'rgba(255, 180, 100, 0.10)',
-                            border: '1px solid rgba(255, 180, 100, 0.18)',
-                            flexShrink: 0,
-                          }}>
-                            <AssessmentIcon type={assessment.icon} color={COLORS.accent} />
-                          </div>
-
-                          <div>
-                            <div style={{
-                              fontFamily: "'Cormorant Garamond', Georgia, serif",
-                              fontSize: 18,
-                              fontWeight: 400,
-                              color: COLORS.text,
-                              marginBottom: 2,
-                            }}>
-                              {assessment.title}
-                            </div>
-                            <div style={{
-                              fontSize: 12,
-                              color: COLORS.accentDim,
-                            }}>
-                              {assessment.subtitle}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'flex-end',
-                          gap: 8,
-                          flexShrink: 0,
-                        }}>
-                          <div style={{
-                            fontSize: 11,
-                            color: COLORS.accentDim,
-                          }}>
-                            {assessment.duration}
-                          </div>
-
-                          {isCompleted && (
-                            <div style={{
-                              fontSize: 11,
-                              color: COLORS.accentDim,
-                              padding: '6px 10px',
-                              borderRadius: 999,
-                              border: '1px solid rgba(255, 180, 100, 0.25)',
-                              background: 'rgba(255, 180, 100, 0.08)',
-                              whiteSpace: 'nowrap',
-                            }}>
-                              Completed
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div style={{
-                        fontSize: 13,
-                        color: COLORS.textDim,
-                        lineHeight: 1.4,
-                      }}>
-                        {assessment.description}
-                      </div>
-                    </button>
-                  );
-                })}
-
-                {/* Database Assessments */}
-                {dbAssessments.map((assessment) => {
-                  const isCompleted = completedAssessments.includes(assessment.id);
-                  return (
-                    <button
-                      key={assessment.id}
-                      className="card-btn"
-                      onClick={() => setActiveDynamicAssessment(assessment)}
-                      style={{
-                        padding: '18px',
-                        background: COLORS.cardBg,
-                        border: `1px solid ${COLORS.cardBorder}`,
-                        borderRadius: 14,
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                      }}
-                    >
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        justifyContent: 'space-between',
-                        gap: 12,
-                        marginBottom: 8,
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                          <div style={{
-                            width: 38,
-                            height: 38,
-                            borderRadius: 12,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            background: 'rgba(255, 180, 100, 0.10)',
-                            border: '1px solid rgba(255, 180, 100, 0.18)',
-                            flexShrink: 0,
-                          }}>
-                            <span style={{ fontSize: 18 }}>✨</span>
-                          </div>
-
-                          <div>
-                            <div style={{
-                              fontFamily: "'Cormorant Garamond', Georgia, serif",
-                              fontSize: 18,
-                              fontWeight: 400,
-                              color: COLORS.text,
-                              marginBottom: 2,
-                            }}>
-                              {assessment.title}
-                            </div>
-                            <div style={{
-                              fontSize: 12,
-                              color: COLORS.accentDim,
-                            }}>
-                              {assessment.subtitle}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'flex-end',
-                          gap: 8,
-                          flexShrink: 0,
-                        }}>
-                          <div style={{
-                            fontSize: 11,
-                            color: COLORS.accentDim,
-                          }}>
-                            {assessment.duration}
-                          </div>
-
-                          {isCompleted && (
-                            <div style={{
-                              fontSize: 11,
-                              color: COLORS.accentDim,
-                              padding: '6px 10px',
-                              borderRadius: 999,
-                              border: '1px solid rgba(255, 180, 100, 0.25)',
-                              background: 'rgba(255, 180, 100, 0.08)',
-                              whiteSpace: 'nowrap',
-                            }}>
-                              Completed
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div style={{
-                        fontSize: 13,
-                        color: COLORS.textDim,
-                        lineHeight: 1.4,
-                      }}>
-                        {assessment.description}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {activeTab === 'discover' && activeDiscoverAssessment && (
-              <activeDiscoverAssessment.Component
-                onBack={() => setActiveAssessment(null)}
-                onComplete={() => markAssessmentComplete(activeDiscoverAssessment.id)}
-              />
-            )}
-
-            {/* Dynamic Assessment Viewer (from database) */}
-            {activeDynamicAssessment && (
-              <DynamicAssessmentViewer
-                assessment={activeDynamicAssessment}
-                onBack={() => setActiveDynamicAssessment(null)}
+            {/* Dynamic Lesson Viewer */}
+            {activeDynamicLesson ; (
+              <DynamicLessonViewer
+                lesson={activeDynamicLesson as any}
+                onBack={() => setActiveDynamicLesson(null)}
                 onComplete={() => {
-                  markAssessmentComplete(activeDynamicAssessment.id);
-                  setActiveDynamicAssessment(null);
+                  markLearnLessonComplete(activeDynamicLesson.id);
+                  setActiveDynamicLesson(null);
                 }}
                 colors={{
                   bg: COLORS.bg,
@@ -1977,14 +352,34 @@ if (lessonsData) setDbLessons(lessonsData);
               />
             )}
 
-            {/* Dynamic Lesson Viewer (from database) */}
-            {activeDynamicLesson && (
-              <DynamicLessonViewer
-                lesson={activeDynamicLesson as any}
-                onBack={() => setActiveDynamicLesson(null)}
+            {/* Discover Tab */}
+            {activeTab === 'discover' ; !activeAssessment && !activeDynamicAssessment && (
+              <DiscoverTab
+                colors={COLORS}
+                completedAssessments={completedAssessments}
+                onAssessmentSelect={setActiveAssessment}
+                onStartAssessment={onStartAssessment}
+                dbAssessments={dbAssessments}
+                onDynamicAssessmentSelect={setActiveDynamicAssessment}
+              />
+            )}
+
+            {/* Active Assessment Component */}
+            {activeTab === 'discover' ; activeDiscoverAssessment ; (
+              <activeDiscoverAssessment.Component
+                onBack={() => setActiveAssessment(null)}
+                onComplete={() => markAssessmentComplete(activeDiscoverAssessment.id)}
+              />
+            )}
+
+            {/* Dynamic Assessment Viewer */}
+            {activeDynamicAssessment ; (
+              <DynamicAssessmentViewer
+                assessment={activeDynamicAssessment}
+                onBack={() => setActiveDynamicAssessment(null)}
                 onComplete={() => {
-                  markLearnLessonComplete(activeDynamicLesson.id);
-                  setActiveDynamicLesson(null);
+                  markAssessmentComplete(activeDynamicAssessment.id);
+                  setActiveDynamicAssessment(null);
                 }}
                 colors={{
                   bg: COLORS.bg,
