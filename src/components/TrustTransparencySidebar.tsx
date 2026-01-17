@@ -37,6 +37,8 @@ export default function TrustTransparencySidebar({
   onOpenChange,
 }: TrustTransparencySidebarProps) {
   const [openSection, setOpenSection] = useState<SectionId | null>(null);
+  const [legalOpen, setLegalOpen] = useState(false);
+  const [legalView, setLegalView] = useState<"privacy" | "terms">("privacy");
   const [memoryEnabled, setMemoryEnabled] = useState<boolean | null>(null);
   const [isLoadingMemory, setIsLoadingMemory] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -81,18 +83,32 @@ export default function TrustTransparencySidebar({
     if (!open) return;
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onOpenChange(false);
+      if (e.key !== "Escape") return;
+
+      if (legalOpen) {
+        e.preventDefault();
+        setLegalOpen(false);
+        return;
+      }
+
+      onOpenChange(false);
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open, onOpenChange]);
+  }, [open, onOpenChange, legalOpen]);
 
   useEffect(() => {
     if (open) return;
     setOpenSection(null);
     setShowDeleteConfirm(false);
+    setLegalOpen(false);
   }, [open]);
+
+  const openLegal = (view: "privacy" | "terms") => {
+    setLegalView(view);
+    setLegalOpen(true);
+  };
 
   const panelBg = useMemo(() => {
     if (isDark) return "rgba(20,20,28,0.92)";
@@ -274,6 +290,247 @@ export default function TrustTransparencySidebar({
           pointerEvents: open ? "auto" : "none",
         }}
       />
+
+      {/* Privacy / Terms modal */}
+      {open && legalOpen && (
+        <div
+          role="presentation"
+          onClick={() => setLegalOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1001,
+            background: isDark ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0.25)",
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "center",
+            padding: 14,
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={legalView === "privacy" ? "Privacy Policy" : "Terms of Service"}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "min(780px, 96vw)",
+              maxHeight: "min(78vh, 680px)",
+              borderRadius: 16,
+              border: `1px solid ${border}`,
+              background: isDark ? "rgba(16,16,22,0.98)" : "rgba(255,255,255,0.98)",
+              boxShadow: isDark
+                ? "0 20px 80px rgba(0,0,0,0.75)"
+                : "0 20px 60px rgba(0,0,0,0.25)",
+              overflow: "hidden",
+              backdropFilter: "blur(16px)",
+              WebkitBackdropFilter: "blur(16px)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 10,
+                padding: "12px 12px",
+                borderBottom: `1px solid ${border}`,
+              }}
+            >
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <button
+                  type="button"
+                  onClick={() => setLegalView("privacy")}
+                  style={{
+                    padding: "8px 10px",
+                    borderRadius: 10,
+                    border: `1px solid ${border}`,
+                    background:
+                      legalView === "privacy"
+                        ? (isDark ? "rgba(200, 170, 120, 0.22)" : "rgba(200, 170, 120, 0.18)")
+                        : (isDark ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.65)"),
+                    color: colors.text,
+                    cursor: "pointer",
+                    fontSize: 12,
+                    fontWeight: 700,
+                  }}
+                >
+                  Privacy
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLegalView("terms")}
+                  style={{
+                    padding: "8px 10px",
+                    borderRadius: 10,
+                    border: `1px solid ${border}`,
+                    background:
+                      legalView === "terms"
+                        ? (isDark ? "rgba(200, 170, 120, 0.22)" : "rgba(200, 170, 120, 0.18)")
+                        : (isDark ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.65)"),
+                    color: colors.text,
+                    cursor: "pointer",
+                    fontSize: 12,
+                    fontWeight: 700,
+                  }}
+                >
+                  Terms
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setLegalOpen(false)}
+                aria-label="Close"
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 999,
+                  border: `1px solid ${border}`,
+                  background: isDark ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.65)",
+                  color: colors.textMuted,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <span style={{ fontSize: 16, lineHeight: 1 }}>×</span>
+              </button>
+            </div>
+
+            <div
+              style={{
+                padding: 12,
+                overflowY: "auto",
+                overscrollBehavior: "contain",
+              }}
+            >
+              <div
+                style={{
+                  padding: 12,
+                  borderRadius: 14,
+                  border: `1px solid ${isDark ? "rgba(220, 100, 100, 0.22)" : "rgba(200, 80, 80, 0.20)"}`,
+                  background: isDark ? "rgba(220, 100, 100, 0.10)" : "rgba(200, 80, 80, 0.08)",
+                  color: colors.text,
+                  fontSize: 12,
+                  lineHeight: 1.55,
+                  marginBottom: 12,
+                }}
+              >
+                <div style={{ fontWeight: 800, marginBottom: 6 }}>Crisis disclaimer</div>
+                <div>
+                  VERA is an AI Governance system. VERA is not a licensed therapist or medical
+                  professional. If you're in crisis, call 988.
+                </div>
+              </div>
+
+              {legalView === "privacy" ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div
+                    style={{
+                      fontFamily: "'Cormorant Garamond', Georgia, serif",
+                      fontSize: 18,
+                      fontWeight: 600,
+                      color: colors.text,
+                      letterSpacing: "-0.01em",
+                    }}
+                  >
+                    Privacy Policy
+                  </div>
+                  <div style={{ color: colors.textMuted, fontSize: 12, lineHeight: 1.6 }}>
+                    VERA is an AI Governance system. VERA helps you regulate, organize, and
+                    navigate your life. This policy explains what information may be processed and
+                    how you can control it.
+                  </div>
+
+                  <div style={{ color: colors.text, fontSize: 13, fontWeight: 700 }}>
+                    What we may collect
+                  </div>
+                  <div style={{ color: colors.textMuted, fontSize: 12, lineHeight: 1.6 }}>
+                    We may process conversation content you provide, basic account identifiers, and
+                    limited usage/diagnostic data needed to operate and secure the service.
+                  </div>
+
+                  <div style={{ color: colors.text, fontSize: 13, fontWeight: 700 }}>
+                    Memory & consent
+                  </div>
+                  <div style={{ color: colors.textMuted, fontSize: 12, lineHeight: 1.6 }}>
+                    In Sanctuary, memory is available only with your consent. You can toggle memory
+                    and delete conversations from the sidebar.
+                  </div>
+
+                  <div style={{ color: colors.text, fontSize: 13, fontWeight: 700 }}>
+                    How we use information
+                  </div>
+                  <div style={{ color: colors.textMuted, fontSize: 12, lineHeight: 1.6 }}>
+                    To provide the experience, improve reliability, prevent abuse, and keep systems
+                    safe. We aim to minimize collection and use data proportionate to operation.
+                  </div>
+
+                  <div style={{ color: colors.text, fontSize: 13, fontWeight: 700 }}>
+                    Your choices
+                  </div>
+                  <div style={{ color: colors.textMuted, fontSize: 12, lineHeight: 1.6 }}>
+                    You can manage or delete your account through Clerk, and you can disable memory
+                    and delete conversations when available.
+                  </div>
+
+                  <div style={{ color: colors.textMuted, fontSize: 11, lineHeight: 1.6, marginTop: 6 }}>
+                    This is a high-level summary provided in-app for convenience.
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div
+                    style={{
+                      fontFamily: "'Cormorant Garamond', Georgia, serif",
+                      fontSize: 18,
+                      fontWeight: 600,
+                      color: colors.text,
+                      letterSpacing: "-0.01em",
+                    }}
+                  >
+                    Terms of Service
+                  </div>
+                  <div style={{ color: colors.textMuted, fontSize: 12, lineHeight: 1.6 }}>
+                    VERA is an AI Governance system. VERA helps you regulate, organize, and
+                    navigate your life. By using the service, you agree to use it lawfully and
+                    responsibly.
+                  </div>
+
+                  <div style={{ color: colors.text, fontSize: 13, fontWeight: 700 }}>
+                    No professional relationship
+                  </div>
+                  <div style={{ color: colors.textMuted, fontSize: 12, lineHeight: 1.6 }}>
+                    VERA provides informational assistance and structured guidance. It is not a
+                    substitute for medical, legal, or mental health care.
+                  </div>
+
+                  <div style={{ color: colors.text, fontSize: 13, fontWeight: 700 }}>
+                    Your responsibility
+                  </div>
+                  <div style={{ color: colors.textMuted, fontSize: 12, lineHeight: 1.6 }}>
+                    You are responsible for your decisions and actions. If something feels unsafe,
+                    pause and seek appropriate human support.
+                  </div>
+
+                  <div style={{ color: colors.text, fontSize: 13, fontWeight: 700 }}>
+                    Service changes
+                  </div>
+                  <div style={{ color: colors.textMuted, fontSize: 12, lineHeight: 1.6 }}>
+                    Features may change over time to improve safety, reliability, and product
+                    integrity.
+                  </div>
+
+                  <div style={{ color: colors.textMuted, fontSize: 11, lineHeight: 1.6, marginTop: 6 }}>
+                    This is a high-level summary provided in-app for convenience.
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Left slide-in panel */}
       <div
@@ -604,6 +861,47 @@ export default function TrustTransparencySidebar({
                 </div>
               )}
             </div>
+          </div>
+
+          <div
+            style={{
+              paddingTop: 10,
+              borderTop: `1px solid ${border}`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => openLegal("privacy")}
+              style={{
+                border: "none",
+                background: "transparent",
+                color: colors.textMuted,
+                cursor: "pointer",
+                fontSize: 11,
+                padding: 4,
+              }}
+            >
+              Privacy
+            </button>
+            <div style={{ color: colors.textMuted, fontSize: 11, opacity: 0.6 }}>|</div>
+            <button
+              type="button"
+              onClick={() => openLegal("terms")}
+              style={{
+                border: "none",
+                background: "transparent",
+                color: colors.textMuted,
+                cursor: "pointer",
+                fontSize: 11,
+                padding: 4,
+              }}
+            >
+              Terms
+            </button>
           </div>
         </div>
       </div>

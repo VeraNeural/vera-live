@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import type { AutoFix, ErrorLog, HealthCheck, SystemStatus } from '@/lib/vera/selfHealing/types';
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -136,24 +136,48 @@ export default function SelfHealingDashboard() {
 
   const overall = status?.overall || 'degraded';
 
-  const orderedChecks = useMemo(() => {
+  const groupedChecks = useMemo(() => {
     const checks = status?.checks || [];
-    const preferredOrder = ['Database', 'Auth', 'AI (Claude)', 'Voice (Hume)', 'Storage'];
+
+    const groups: Array<{ title: 'Infrastructure' | 'Business Logic' | 'APIs'; preferredOrder: string[] }> = [
+      {
+        title: 'Infrastructure',
+        preferredOrder: ['Database', 'Auth', 'AI (Claude)', 'Voice (Hume)', 'Storage'],
+      },
+      {
+        title: 'Business Logic',
+        preferredOrder: ['Message Counter', 'Anonymous Limit', 'Free Limit', 'Tier Resolver', 'Navigator'],
+      },
+      {
+        title: 'APIs',
+        preferredOrder: ['Chat API', 'Narrate API', 'Marketing Generator API'],
+      },
+    ];
 
     const byName = new Map<string, HealthCheck>();
     for (const c of checks) byName.set(c.name, c);
 
-    const ordered: HealthCheck[] = [];
-    for (const name of preferredOrder) {
-      const c = byName.get(name);
-      if (c) ordered.push(c);
+    const used = new Set<string>();
+
+    const out = groups.map((g) => {
+      const ordered: HealthCheck[] = [];
+      for (const name of g.preferredOrder) {
+        const c = byName.get(name);
+        if (c) {
+          ordered.push(c);
+          used.add(name);
+        }
+      }
+      return { title: g.title, checks: ordered };
+    });
+
+    // Anything not explicitly mapped goes into Infrastructure at the bottom.
+    const extras = checks.filter((c) => !used.has(c.name));
+    if (extras.length) {
+      out[0].checks.push(...extras);
     }
 
-    for (const c of checks) {
-      if (!preferredOrder.includes(c.name)) ordered.push(c);
-    }
-
-    return ordered;
+    return out;
   }, [status]);
 
   const unresolvedErrors = useMemo(() => errors.filter((e) => !e.resolved), [errors]);
@@ -262,7 +286,7 @@ export default function SelfHealingDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {orderedChecks.length === 0 && (
+                  {groupedChecks.every((g) => g.checks.length === 0) && (
                     <tr>
                       <td colSpan={3} style={{ padding: '12px 8px', opacity: 0.75 }}>
                         No checks yet. Click “Run Health Check”.
@@ -270,12 +294,32 @@ export default function SelfHealingDashboard() {
                     </tr>
                   )}
 
-                  {orderedChecks.map((c) => (
-                    <tr key={c.id}>
-                      <td style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontWeight: 800 }}>{c.name}</td>
-                      <td style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{checkEmoji(c.status)}</td>
-                      <td style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)', opacity: 0.9 }}>{c.message}</td>
-                    </tr>
+                  {groupedChecks.map((g) => (
+                    <Fragment key={g.title}>
+                      <tr>
+                        <td
+                          colSpan={3}
+                          style={{
+                            padding: '12px 8px 8px',
+                            fontSize: 12,
+                            fontWeight: 950,
+                            letterSpacing: 0.6,
+                            opacity: 0.75,
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          {g.title}
+                        </td>
+                      </tr>
+
+                      {g.checks.map((c) => (
+                        <tr key={c.id}>
+                          <td style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontWeight: 800 }}>{c.name}</td>
+                          <td style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{checkEmoji(c.status)}</td>
+                          <td style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)', opacity: 0.9 }}>{c.message}</td>
+                        </tr>
+                      ))}
+                    </Fragment>
                   ))}
                 </tbody>
               </table>

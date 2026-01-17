@@ -32,9 +32,10 @@ function safeJsonParse<T>(text: string): T | null {
 }
 
 function marketingBucket(): string {
-  // Per project convention: marketing posts live in the existing Supabase Storage bucket.
-  // Path: vera-live/marketing/posts/{id}.json
-  return 'vera-live';
+  // Marketing posts live in a Supabase Storage bucket.
+  // Default bucket is the main app bucket; override via SUPABASE_MARKETING_BUCKET if needed.
+  // Path: <bucket>/marketing/posts/{id}.json
+  return (process.env.SUPABASE_MARKETING_BUCKET || '').trim() || 'vera-live';
 }
 
 function postPath(id: string): string {
