@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback } from 'react';
+import { Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import StudioRoom from '@/components/sanctuary/StudioRoom';
 
-export default function StudioRoomPage() {
+function StudioRoomPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialView = searchParams.get('view') ?? undefined;
@@ -14,4 +14,12 @@ export default function StudioRoomPage() {
   }, [router]);
 
   return <StudioRoom onBack={onBack} initialView={initialView} />;
+}
+
+export default function StudioRoomPage() {
+  return (
+    <Suspense fallback={null}>
+      <StudioRoomPageInner />
+    </Suspense>
+  );
 }

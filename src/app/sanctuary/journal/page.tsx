@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import JournalRoom from '@/components/sanctuary/JournalRoom';
 
-export default function JournalRoomPage() {
+function JournalRoomPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialView = searchParams.get('view') ?? undefined;
@@ -14,4 +14,12 @@ export default function JournalRoomPage() {
   }, [router]);
 
   return <JournalRoom onBack={onBack} initialView={initialView} />;
+}
+
+export default function JournalRoomPage() {
+  return (
+    <Suspense fallback={null}>
+      <JournalRoomPageInner />
+    </Suspense>
+  );
 }

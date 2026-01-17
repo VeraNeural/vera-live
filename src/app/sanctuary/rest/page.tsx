@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback } from 'react';
+import { Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import RestChamber from '@/components/sanctuary/RestChamber';
 
-export default function RestRoomPage() {
+function RestRoomPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialView = searchParams.get('view') ?? undefined;
@@ -14,4 +14,12 @@ export default function RestRoomPage() {
   }, [router]);
 
   return <RestChamber onBack={onBack} initialView={initialView} />;
+}
+
+export default function RestRoomPage() {
+  return (
+    <Suspense fallback={null}>
+      <RestRoomPageInner />
+    </Suspense>
+  );
 }

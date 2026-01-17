@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback } from 'react';
+import { Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ZenRoom from '@/components/sanctuary/ZenRoom';
 
-export default function ZenRoomPage() {
+function ZenRoomPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialView = searchParams.get('view') ?? undefined;
@@ -14,4 +14,12 @@ export default function ZenRoomPage() {
   }, [router]);
 
   return <ZenRoom onBack={onBack} initialView={initialView} />;
+}
+
+export default function ZenRoomPage() {
+  return (
+    <Suspense fallback={null}>
+      <ZenRoomPageInner />
+    </Suspense>
+  );
 }

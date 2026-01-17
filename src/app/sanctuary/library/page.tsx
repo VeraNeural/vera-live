@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback } from 'react';
+import { Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import LibraryRoom from '@/components/sanctuary/LibraryRoom';
 
-export default function LibraryRoomPage() {
+function LibraryRoomPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialView = searchParams.get('view') ?? undefined;
@@ -21,5 +21,13 @@ export default function LibraryRoomPage() {
       onStartLesson={() => {}}
       onStartAssessment={() => {}}
     />
+  );
+}
+
+export default function LibraryRoomPage() {
+  return (
+    <Suspense fallback={null}>
+      <LibraryRoomPageInner />
+    </Suspense>
   );
 }
