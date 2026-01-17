@@ -31,26 +31,11 @@ function safeJsonParse<T>(text: string): T | null {
   }
 }
 
-function getBucketCandidates(): string[] {
+function marketingBucket(): string {
+  // Supabase bucket names are case-sensitive and typically lowercase.
+  // Default to the existing project bucket.
   const fromEnv = (process.env.SUPABASE_MARKETING_BUCKET || '').trim();
-  return Array.from(new Set([fromEnv, 'vera-live', 'Vera-live'].filter(Boolean)));
-}
-
-async function pickBucket(): Promise<string> {
-  const supabase = getSupabaseAdmin();
-  const candidates = getBucketCandidates();
-
-  let lastErr: string | null = null;
-  for (const bucket of candidates) {
-    const { data, error } = await supabase.storage.from(bucket).list('marketing', { limit: 1 });
-    if (!error) {
-      void data;
-      return bucket;
-    }
-    lastErr = error.message;
-  }
-
-  throw new Error(`No usable storage bucket found for marketing (tried: ${candidates.join(', ')}): ${lastErr || 'unknown error'}`);
+  return fromEnv || 'vera-live';
 }
 
 function postPath(id: string): string {
@@ -59,7 +44,7 @@ function postPath(id: string): string {
 
 export async function savePost(post: Post): Promise<Post> {
   const supabase = getSupabaseAdmin();
-  const bucket = await pickBucket();
+  const bucket = marketingBucket();
   const id = post.id || randomUUID();
   const toWrite: StoredPost = toStored({ ...post, id });
 
@@ -78,7 +63,7 @@ export async function savePost(post: Post): Promise<Post> {
 
 export async function listPosts(): Promise<Post[]> {
   const supabase = getSupabaseAdmin();
-  const bucket = await pickBucket();
+  const bucket = marketingBucket();
 
   const { data, error } = await supabase.storage.from(bucket).list('marketing/posts', {
     limit: 500,
@@ -104,7 +89,7 @@ export async function listPosts(): Promise<Post[]> {
 
 export async function getPost(id: string): Promise<Post> {
   const supabase = getSupabaseAdmin();
-  const bucket = await pickBucket();
+  const bucket = marketingBucket();
 
   const { data, error } = await supabase.storage.from(bucket).download(postPath(id));
   if (error) throw new Error(error.message);
@@ -118,7 +103,7 @@ export async function getPost(id: string): Promise<Post> {
 
 export async function deletePost(id: string): Promise<void> {
   const supabase = getSupabaseAdmin();
-  const bucket = await pickBucket();
+  const bucket = marketingBucket();
 
   const { error } = await supabase.storage.from(bucket).remove([postPath(id)]);
   if (error) throw new Error(error.message);

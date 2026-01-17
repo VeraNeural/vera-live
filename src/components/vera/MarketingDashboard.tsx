@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { CSSProperties } from 'react';
 import type { ContentTheme, Platform, Post, PostStatus, Performance } from '@/lib/vera/marketing/types';
 
 type Tab = 'generate' | 'ready' | 'posted' | 'analytics';
@@ -27,6 +28,20 @@ function prettyPlatform(p: Platform): string {
 function prettyTheme(t: ContentTheme): string {
   return t.replace(/-/g, ' ');
 }
+
+const SELECT_STYLE: CSSProperties = {
+  padding: 10,
+  borderRadius: 12,
+  background: '#1a1625',
+  color: '#e8e6f0',
+  colorScheme: 'dark',
+  border: '1px solid rgba(255,255,255,0.10)',
+};
+
+const OPTION_STYLE: CSSProperties = {
+  background: '#1a1625',
+  color: '#e8e6f0',
+};
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -261,10 +276,10 @@ export default function MarketingDashboard() {
                 <select
                   value={platform}
                   onChange={(e) => setPlatform(e.target.value as Platform)}
-                  style={{ padding: 10, borderRadius: 12, background: 'rgba(0,0,0,0.25)', color: 'white', border: '1px solid rgba(255,255,255,0.12)' }}
+                  style={SELECT_STYLE}
                 >
                   {PLATFORMS.map((p) => (
-                    <option key={p} value={p}>
+                    <option key={p} value={p} style={OPTION_STYLE}>
                       {prettyPlatform(p)}
                     </option>
                   ))}
@@ -276,10 +291,10 @@ export default function MarketingDashboard() {
                 <select
                   value={theme}
                   onChange={(e) => setTheme(e.target.value as ContentTheme)}
-                  style={{ padding: 10, borderRadius: 12, background: 'rgba(0,0,0,0.25)', color: 'white', border: '1px solid rgba(255,255,255,0.12)' }}
+                  style={SELECT_STYLE}
                 >
                   {THEMES.map((t) => (
-                    <option key={t} value={t}>
+                    <option key={t} value={t} style={OPTION_STYLE}>
                       {prettyTheme(t)}
                     </option>
                   ))}
