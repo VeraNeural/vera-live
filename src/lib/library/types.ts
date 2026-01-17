@@ -121,6 +121,9 @@ export type CategoryItem = {
   id: string;
   label: string;
   icon: string;
+  title?: string;
+  description?: string;
+  count?: number;
 };
 
 // ============================================================================

@@ -103,7 +103,7 @@ export function LearnTab({
               color: colors.text,
               marginBottom: 6,
             }}>
-              {category.title}
+              {category.title || category.label}
             </div>
             <div style={{
               fontSize: 12,
@@ -111,13 +111,13 @@ export function LearnTab({
               marginBottom: 8,
               lineHeight: 1.4,
             }}>
-              {category.description}
+              {category.description || ''}
             </div>
             <div style={{
               fontSize: 11,
               color: colors.accentDim,
             }}>
-              {category.count} lessons
+              {category.count ? `${category.count} lessons` : ''}
             </div>
           </button>
         ))}
