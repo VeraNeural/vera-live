@@ -43,6 +43,12 @@ import { MovementPrompt } from '@/lib/studio/experiences/body/MovementPrompt';
 import { PostureReset } from '@/lib/studio/experiences/body/PostureReset';
 import { HandRelease } from '@/lib/studio/experiences/body/HandRelease';
 
+// Sound & Vibe experiences
+import { AmbientCreator } from '@/lib/studio/experiences/sound/AmbientCreator';
+import { HumAndTone } from '@/lib/studio/experiences/sound/HumAndTone';
+import { SoundBath } from '@/lib/studio/experiences/sound/SoundBath';
+import { PlaylistBuilder } from '@/lib/studio/experiences/sound/PlaylistBuilder';
+
 export default function CreativeStudio({ onBack, onStartActivity }: CreativeStudioProps) {
   const { colors, isDark } = useTheme();
   const COLORS = getStudioColors(colors);
@@ -209,6 +215,11 @@ export default function CreativeStudio({ onBack, onStartActivity }: CreativeStud
   if (activeExperience === 'movement-prompt') return <MovementPrompt onBack={() => setActiveExperience(null)} onComplete={handleComplete} theme={theme} />;
   if (activeExperience === 'posture-reset') return <PostureReset onBack={() => setActiveExperience(null)} onComplete={handleComplete} theme={theme} />;
   if (activeExperience === 'hand-release') return <HandRelease onBack={() => setActiveExperience(null)} onComplete={handleComplete} theme={theme} />;
+
+  if (activeExperience === 'ambient-creator') return <AmbientCreator onBack={() => setActiveExperience(null)} onComplete={handleComplete} theme={theme} />;
+  if (activeExperience === 'hum-tone') return <HumAndTone onBack={() => setActiveExperience(null)} onComplete={handleComplete} theme={theme} />;
+  if (activeExperience === 'sound-bath') return <SoundBath onBack={() => setActiveExperience(null)} onComplete={handleComplete} theme={theme} />;
+  if (activeExperience === 'playlist-builder') return <PlaylistBuilder onBack={() => setActiveExperience(null)} onComplete={handleComplete} theme={theme} />;
 
   return (
     <>

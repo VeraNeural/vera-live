@@ -133,7 +133,8 @@ export const ACTIVITIES: Activity[] = [
     description: 'Create your own calming soundscape',
     duration: '10-20 min',
     category: 'sound',
-    hasExperience: false,
+    hasExperience: true,
+    experienceComponent: 'AmbientCreator',
   },
   {
     id: 'hum-tone',
@@ -141,7 +142,8 @@ export const ACTIVITIES: Activity[] = [
     description: 'Use your voice to regulate',
     duration: '5-10 min',
     category: 'sound',
-    hasExperience: false,
+    hasExperience: true,
+    experienceComponent: 'HumAndTone',
   },
   {
     id: 'sound-bath',
@@ -149,7 +151,8 @@ export const ACTIVITIES: Activity[] = [
     description: 'Immersive sound experience',
     duration: '15-30 min',
     category: 'sound',
-    hasExperience: false,
+    hasExperience: true,
+    experienceComponent: 'SoundBath',
   },
   {
     id: 'playlist-builder',
@@ -157,7 +160,8 @@ export const ACTIVITIES: Activity[] = [
     description: 'Build a regulation playlist',
     duration: '15-25 min',
     category: 'sound',
-    hasExperience: false,
+    hasExperience: true,
+    experienceComponent: 'PlaylistBuilder',
   },
 
   // Written Release (4 activities)

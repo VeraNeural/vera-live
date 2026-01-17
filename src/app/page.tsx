@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from 'next/navigation';
 import { useUser, UserButton } from "@clerk/nextjs";
 import { useTheme, ThemeToggle } from "@/contexts/ThemeContext";
 import TrustTransparencySidebar from "@/components/TrustTransparencySidebar";
@@ -22,7 +21,6 @@ const QUICK_STARTS = [
 
 export default function Page() {
   const { isLoaded, isSignedIn } = useUser();
-  const router = useRouter();
   const { isDark, colors, timeOfDay } = useTheme();
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -41,19 +39,6 @@ export default function Page() {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      fetch('/api/user/tier')
-        .then(res => res.json())
-        .then(data => {
-          if (data.tier === 'sanctuary') {
-            router.push('/sanctuary');
-          }
-        })
-        .catch(err => console.error('Tier check failed:', err));
-    }
-  }, [isLoaded, isSignedIn, router]);
 
   // Stay on / for all users. Access gating comes from /api/chat responses.
 
