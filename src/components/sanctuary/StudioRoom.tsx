@@ -38,8 +38,9 @@ import { StreamOfConsciousness } from '@/lib/studio/experiences/written/StreamOf
 import { BurnList } from '@/lib/studio/experiences/written/BurnList';
 
 export default function CreativeStudio({ onBack, onStartActivity }: CreativeStudioProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const COLORS = getStudioColors(colors);
+  const theme = isDark ? 'dark' : 'light';
 
   const [activeTab, setActiveTab] = useState<Tab>('activities');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -193,10 +194,10 @@ export default function CreativeStudio({ onBack, onStartActivity }: CreativeStud
   if (activeExperience === 'blank-canvas') return <BlankCanvas onBack={() => setActiveExperience(null)} onComplete={handleComplete} />;
   if (activeExperience === 'stream-create') return <StreamOfCreation onBack={() => setActiveExperience(null)} onComplete={handleComplete} />;
 
-  if (activeExperience === 'brain-dump') return <BrainDump onBack={() => setActiveExperience(null)} onComplete={handleComplete} />;
-  if (activeExperience === 'unsent-letter') return <UnsentLetter onBack={() => setActiveExperience(null)} onComplete={handleComplete} />;
-  if (activeExperience === 'stream-of-consciousness') return <StreamOfConsciousness onBack={() => setActiveExperience(null)} onComplete={handleComplete} />;
-  if (activeExperience === 'burn-list') return <BurnList onBack={() => setActiveExperience(null)} onComplete={handleComplete} />;
+  if (activeExperience === 'brain-dump') return <BrainDump onBack={() => setActiveExperience(null)} onComplete={handleComplete} theme={theme} />;
+  if (activeExperience === 'unsent-letter') return <UnsentLetter onBack={() => setActiveExperience(null)} onComplete={handleComplete} theme={theme} />;
+  if (activeExperience === 'stream-of-consciousness') return <StreamOfConsciousness onBack={() => setActiveExperience(null)} onComplete={handleComplete} theme={theme} />;
+  if (activeExperience === 'burn-list') return <BurnList onBack={() => setActiveExperience(null)} onComplete={handleComplete} theme={theme} />;
 
   return (
     <>

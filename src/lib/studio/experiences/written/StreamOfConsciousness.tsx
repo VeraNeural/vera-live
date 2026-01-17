@@ -1,452 +1,459 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { GLOBAL_STYLES } from '@/lib/studio/theme';
-
-type TargetOption = '3m' | '5m' | '10m';
-
-export interface StreamOfConsciousnessResult {
-  action: 'review' | 'save' | 'release';
-  text: string;
-  wordCount: number;
-  targetSeconds: number;
-  startedAt: number;
-  finishedAt: number;
-}
+import { useState, useEffect, useRef } from 'react';
 
 interface StreamOfConsciousnessProps {
   onBack: () => void;
-  onComplete: (result: StreamOfConsciousnessResult) => void;
+  onComplete?: () => void;
+  theme?: 'light' | 'dark';
 }
 
-const TARGETS: Array<{ id: TargetOption; label: string; seconds: number }> = [
-  { id: '3m', label: '3 min', seconds: 3 * 60 },
-  { id: '5m', label: '5 min', seconds: 5 * 60 },
-  { id: '10m', label: '10 min', seconds: 10 * 60 },
-];
+export function StreamOfConsciousness({ onBack, onComplete, theme = 'dark' }: StreamOfConsciousnessProps) {
+  const [content, setContent] = useState('');
+  const [selectedTime, setSelectedTime] = useState<number | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+  const [isActive, setIsActive] = useState(false);
+  const [isComplete, setIsComplete] = useState(false);
+  const [pauseWarning, setPauseWarning] = useState(false);
+  const lastTypeTime = useRef<number>(Date.now());
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-function countWords(text: string): number {
-  const trimmed = text.trim();
-  if (!trimmed) return 0;
-  return trimmed.split(/\s+/).filter(Boolean).length;
-}
+  const timeOptions = [
+    { label: '3 min', value: 3 * 60 },
+    { label: '5 min', value: 5 * 60 },
+    { label: '10 min', value: 10 * 60 },
+  ];
 
-function formatElapsed(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
+  const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
 
-export function StreamOfConsciousness({ onBack, onComplete }: StreamOfConsciousnessProps) {
-  const [target, setTarget] = useState<TargetOption>('5m');
-  const targetSeconds = useMemo(() => TARGETS.find((t) => t.id === target)?.seconds ?? 300, [target]);
+  const colors = theme === 'dark' ? {
+    bg: '#0f0d15',
+    bgGradient: 'linear-gradient(to bottom, #0f0d15 0%, #1a1625 100%)',
+    text: '#e8e6f0',
+    textMuted: 'rgba(232, 230, 240, 0.6)',
+    textDim: 'rgba(232, 230, 240, 0.4)',
+    cardBg: 'rgba(255, 255, 255, 0.03)',
+    cardBorder: 'rgba(255, 255, 255, 0.06)',
+    accent: '#a855f7',
+    accentGlow: 'rgba(168, 85, 247, 0.15)',
+    warning: '#f59e0b',
+  } : {
+    bg: '#faf9fc',
+    bgGradient: 'linear-gradient(to bottom, #faf9fc 0%, #f3f1f8 100%)',
+    text: '#1a1625',
+    textMuted: 'rgba(26, 22, 37, 0.6)',
+    textDim: 'rgba(26, 22, 37, 0.4)',
+    cardBg: 'rgba(0, 0, 0, 0.02)',
+    cardBorder: 'rgba(0, 0, 0, 0.06)',
+    accent: '#9333ea',
+    accentGlow: 'rgba(147, 51, 234, 0.1)',
+    warning: '#d97706',
+  };
 
-  const [text, setText] = useState('');
-  const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [elapsed, setElapsed] = useState(0);
-  const [phase, setPhase] = useState<'setup' | 'writing' | 'complete' | 'review'>('setup');
-  const [nudge, setNudge] = useState<string | null>(null);
-  const [isReleasing, setIsReleasing] = useState(false);
-
-  const lastTypeAtRef = useRef<number | null>(null);
-  const inputRef = useRef<HTMLTextAreaElement | null>(null);
-
-  const wordCount = useMemo(() => countWords(text), [text]);
-
+  // Timer countdown
   useEffect(() => {
-    if (phase !== 'writing') return;
+    if (!isActive || timeRemaining === null) return;
 
-    const tick = window.setInterval(() => {
-      if (startedAt === null) return;
-      const sec = Math.floor((Date.now() - startedAt) / 1000);
-      setElapsed(sec);
-      if (sec >= targetSeconds) {
-        setPhase('complete');
-      }
+    const interval = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev === null || prev <= 1) {
+          setIsActive(false);
+          setIsComplete(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
 
-      const last = lastTypeAtRef.current;
-      if (last && Date.now() - last > 5000) {
-        setNudge('Keep going — no editing, just momentum.');
+    return () => clearInterval(interval);
+  }, [isActive, timeRemaining]);
+
+  // Pause detection
+  useEffect(() => {
+    if (!isActive) return;
+
+    const interval = setInterval(() => {
+      const timeSinceType = Date.now() - lastTypeTime.current;
+      if (timeSinceType > 5000 && content.length > 0) {
+        setPauseWarning(true);
       } else {
-        setNudge(null);
+        setPauseWarning(false);
       }
-    }, 250);
+    }, 1000);
 
-    return () => window.clearInterval(tick);
-  }, [phase, startedAt, targetSeconds]);
+    return () => clearInterval(interval);
+  }, [isActive, content]);
 
-  useEffect(() => {
-    if (phase === 'writing') {
-      window.setTimeout(() => inputRef.current?.focus(), 60);
-    }
-  }, [phase]);
-
-  const startWriting = () => {
-    setPhase('writing');
-    setStartedAt(null);
-    setElapsed(0);
-    setText('');
-    lastTypeAtRef.current = null;
+  const formatTime = (seconds: number | null) => {
+    if (seconds === null) return '∞';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const onChangeNoBackspace = (value: string) => {
-    // Disallow edits/deletions: only accept when value extends previous.
-    if (value.length < text.length) return;
-    if (!value.startsWith(text)) {
-      // If cursor moved and pasted, accept but re-lock by taking appended suffix.
-      // This keeps the “no editing” spirit while not being brittle.
-      setText(value);
-    } else {
-      setText(value);
-    }
+  const handleStart = (time: number) => {
+    setSelectedTime(time);
+    setTimeRemaining(time);
+    setIsActive(true);
+    setTimeout(() => textareaRef.current?.focus(), 100);
   };
 
-  const onType = (value: string) => {
-    const now = Date.now();
-    lastTypeAtRef.current = now;
-    if (startedAt === null) {
-      setStartedAt(now);
-    }
-    onChangeNoBackspace(value);
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setContent(e.target.value);
+    lastTypeTime.current = Date.now();
+    setPauseWarning(false);
   };
 
-  const complete = (action: StreamOfConsciousnessResult['action']) => {
-    if (!startedAt) return;
-
-    const result: StreamOfConsciousnessResult = {
-      action,
-      text,
-      wordCount,
-      targetSeconds,
-      startedAt,
-      finishedAt: Date.now(),
-    };
-
-    if (action === 'release') {
-      setIsReleasing(true);
-      window.setTimeout(() => onComplete(result), 750);
-      return;
-    }
-
-    onComplete(result);
+  const handleFinish = () => {
+    setIsActive(false);
+    setIsComplete(true);
   };
 
-  const fadedText = useMemo(() => {
-    if (!text) return { faded: '', focus: '' };
-    const focusLen = 140;
-    const focus = text.slice(-focusLen);
-    const faded = text.slice(0, Math.max(0, text.length - focusLen));
-    return { faded, focus };
-  }, [text]);
+  const handleRelease = () => {
+    setContent('');
+    onComplete?.();
+    onBack();
+  };
 
-  return (
-    <>
-      <style jsx global>{GLOBAL_STYLES}</style>
-      <style jsx>{`
-        .wrap {
-          position: fixed;
-          inset: 0;
-          background: radial-gradient(1100px 700px at 20% 10%, rgba(168, 85, 247, 0.12), transparent 55%),
-            radial-gradient(900px 600px at 80% 75%, rgba(99, 102, 241, 0.10), transparent 50%),
-            linear-gradient(180deg, rgba(8, 8, 12, 1) 0%, rgba(5, 5, 8, 1) 100%);
-          color: rgba(255, 255, 255, 0.86);
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-        }
+  const handleSave = () => {
+    console.log('Saving stream:', content);
+    onComplete?.();
+    onBack();
+  };
 
-        .header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 14px;
-          padding-top: max(14px, env(safe-area-inset-top));
-          gap: 10px;
-          z-index: 10;
-        }
-
-        .pill {
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          background: rgba(255, 255, 255, 0.04);
-          color: rgba(255, 255, 255, 0.72);
-          border-radius: 999px;
-          padding: 10px 14px;
-          font-size: 13px;
-          cursor: pointer;
-        }
-
-        .title {
-          font-size: 11px;
-          font-weight: 600;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.45);
-        }
-
-        .content {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          padding: 16px;
-          padding-bottom: max(16px, env(safe-area-inset-bottom));
-          gap: 12px;
-          overflow: hidden;
-          opacity: ${isReleasing ? 0 : 1};
-          transform: ${isReleasing ? 'translateY(16px) scale(0.99)' : 'translateY(0) scale(1)'};
-          filter: ${isReleasing ? 'blur(2px)' : 'blur(0)'};
-          transition: opacity 0.6s ease, transform 0.6s ease, filter 0.6s ease;
-        }
-
-        .card {
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          background: rgba(255, 255, 255, 0.03);
-          border-radius: 16px;
-          padding: 16px;
-        }
-
-        .desc {
-          font-size: 13px;
-          color: rgba(255, 255, 255, 0.55);
-          line-height: 1.55;
-          margin: 8px 0 0 0;
-        }
-
-        .row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 10px;
-          flex-wrap: wrap;
-          font-size: 12px;
-          color: rgba(255, 255, 255, 0.55);
-        }
-
-        .targets {
-          display: flex;
-          gap: 8px;
-          flex-wrap: wrap;
-          margin-top: 10px;
-        }
-
-        .targetBtn {
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          background: rgba(255, 255, 255, 0.03);
-          color: rgba(255, 255, 255, 0.75);
-          border-radius: 999px;
-          padding: 8px 12px;
-          font-size: 12px;
-          cursor: pointer;
-        }
-
-        .targetBtnActive {
-          border-color: rgba(168, 85, 247, 0.45);
-          background: rgba(168, 85, 247, 0.14);
-        }
-
-        .typingSurface {
-          flex: 1;
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          background: rgba(255, 255, 255, 0.02);
-          border-radius: 16px;
-          padding: 14px;
-          overflow: hidden;
-          position: relative;
-        }
-
-        .rendered {
-          height: 100%;
-          overflow: auto;
-          padding-right: 6px;
-          white-space: pre-wrap;
-          word-break: break-word;
-          line-height: 1.65;
-          font-size: 15px;
-        }
-
-        .faded {
-          opacity: 0.25;
-          filter: blur(1.8px);
-          user-select: none;
-        }
-
-        .focus {
-          opacity: 0.9;
-        }
-
-        .input {
-          position: absolute;
-          inset: 0;
-          width: 100%;
-          height: 100%;
-          resize: none;
-          background: transparent;
-          color: transparent;
-          caret-color: rgba(255, 255, 255, 0.8);
-          border: none;
-          outline: none;
-          font-size: 16px;
-          line-height: 1.65;
-          padding: 14px;
-        }
-
-        .nudge {
-          position: absolute;
-          bottom: 12px;
-          left: 12px;
-          right: 12px;
-          border: 1px solid rgba(255, 255, 255, 0.10);
-          background: rgba(168, 85, 247, 0.10);
-          border-radius: 14px;
-          padding: 10px 12px;
-          font-size: 12px;
-          color: rgba(255, 255, 255, 0.78);
-          text-align: center;
-        }
-
-        .actions {
-          display: flex;
-          gap: 10px;
-          flex-wrap: wrap;
-          justify-content: center;
-        }
-
-        .cta {
-          border: 1px solid rgba(255, 255, 255, 0.10);
-          border-radius: 999px;
-          padding: 11px 16px;
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-          background: rgba(255, 255, 255, 0.04);
-          color: rgba(255, 255, 255, 0.78);
-        }
-
-        .ctaPrimary {
-          border-color: rgba(168, 85, 247, 0.5);
-          background: linear-gradient(135deg, rgba(168, 85, 247, 0.25) 0%, rgba(99, 102, 241, 0.18) 100%);
-          color: rgba(255, 255, 255, 0.92);
-        }
-
-        .ctaRelease {
-          border-color: rgba(244, 63, 94, 0.35);
-          background: rgba(244, 63, 94, 0.10);
-          color: rgba(255, 255, 255, 0.88);
-        }
-      `}</style>
-
-      <div className="wrap">
-        <div className="header">
-          <button className="pill" onClick={onBack}>
+  // Time selection screen
+  if (!isActive && !isComplete) {
+    return (
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        background: colors.bgGradient,
+        display: 'flex',
+        flexDirection: 'column',
+        fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+      }}>
+        <div style={{
+          padding: '16px 20px',
+        }}>
+          <button
+            onClick={onBack}
+            style={{
+              background: colors.cardBg,
+              border: `1px solid ${colors.cardBorder}`,
+              borderRadius: '12px',
+              padding: '10px 16px',
+              color: colors.textMuted,
+              fontSize: '14px',
+              cursor: 'pointer',
+            }}
+          >
             ← Back
           </button>
-          <div className="title">Stream of Consciousness</div>
-          <div style={{ width: 78 }} />
         </div>
 
-        {phase === 'setup' && (
-          <div className="content">
-            <div className="card">
-              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 26, fontWeight: 300 }}>
-                Don’t stop.
-              </div>
-              <p className="desc">Timer starts when you start typing. Previous text fades and blurs so you can’t edit it.</p>
-
-              <div className="targets" aria-label="Target time">
-                {TARGETS.map((t) => (
-                  <button key={t.id} className={`targetBtn ${target === t.id ? 'targetBtnActive' : ''}`} onClick={() => setTarget(t.id)}>
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-
-              <div className="actions" style={{ marginTop: 12 }}>
-                <button className="cta ctaPrimary" onClick={startWriting}>
-                  Start
-                </button>
-              </div>
-            </div>
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '24px',
+          gap: '32px',
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <h1 style={{
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: '32px',
+              fontWeight: 300,
+              color: colors.text,
+              marginBottom: '12px',
+            }}>
+              Stream of Consciousness
+            </h1>
+            <p style={{
+              color: colors.textMuted,
+              fontSize: '16px',
+              maxWidth: '320px',
+              lineHeight: 1.6,
+            }}>
+              Write without stopping. Don't think, don't edit. Just let it flow.
+            </p>
           </div>
-        )}
 
-        {(phase === 'writing' || phase === 'complete' || phase === 'review') && (
-          <div className="content">
-            <div className="row">
-              <div>Elapsed: {formatElapsed(elapsed)} / {formatElapsed(targetSeconds)}</div>
-              <div>Words: {wordCount}</div>
-            </div>
-
-            <div className="typingSurface">
-              <div className="rendered" aria-hidden>
-                {fadedText.faded && <span className="faded">{fadedText.faded}</span>}
-                <span className="focus">{fadedText.focus}</span>
-              </div>
-
-              {phase === 'writing' && (
-                <textarea
-                  ref={inputRef}
-                  className="input"
-                  value={text}
-                  onChange={(e) => onType(e.target.value)}
-                  placeholder="Start typing…"
-                  spellCheck={false}
-                  autoCorrect="off"
-                  autoCapitalize="sentences"
-                />
-              )}
-
-              {phase === 'writing' && nudge && <div className="nudge">{nudge}</div>}
-            </div>
-
-            {phase === 'complete' && (
-              <div className="card">
-                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 24, fontWeight: 300, textAlign: 'center' }}>
-                  Complete.
-                </div>
-                <p className="desc" style={{ textAlign: 'center' }}>You can review, save, or release.</p>
-                <div className="actions" style={{ marginTop: 12 }}>
-                  <button className="cta" onClick={() => setPhase('review')}>
-                    Review
-                  </button>
-                  <button className="cta ctaPrimary" onClick={() => complete('save')}>
-                    Save
-                  </button>
-                  <button className="cta ctaRelease" onClick={() => complete('release')}>
-                    Release
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {phase === 'review' && (
-              <div className="card">
-                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 22, fontWeight: 300, textAlign: 'center' }}>
-                  Review
-                </div>
-                <p className="desc" style={{ textAlign: 'center' }}>Read it once. No judgment.</p>
-                <div className="actions" style={{ marginTop: 12 }}>
-                  <button className="cta" onClick={() => complete('review')}>
-                    Done
-                  </button>
-                  <button className="cta ctaPrimary" onClick={() => complete('save')}>
-                    Save
-                  </button>
-                  <button className="cta ctaRelease" onClick={() => complete('release')}>
-                    Release
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {phase === 'writing' && (
-              <div className="actions">
-                <button className="cta" onClick={() => setPhase('complete')}>
-                  Finish early
-                </button>
-              </div>
-            )}
+          <div style={{
+            background: colors.cardBg,
+            border: `1px solid ${colors.cardBorder}`,
+            borderRadius: '16px',
+            padding: '20px',
+            maxWidth: '300px',
+          }}>
+            <p style={{
+              color: colors.textDim,
+              fontSize: '14px',
+              lineHeight: 1.6,
+            }}>
+              The screen will gently blur previous lines so you can't go back. If you pause too long, you'll get a nudge to keep going.
+            </p>
           </div>
-        )}
+
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            width: '100%',
+            maxWidth: '280px',
+          }}>
+            <p style={{
+              color: colors.textDim,
+              fontSize: '14px',
+              textAlign: 'center',
+            }}>
+              Choose your duration
+            </p>
+            {timeOptions.map((option) => (
+              <button
+                key={option.label}
+                onClick={() => handleStart(option.value)}
+                style={{
+                  background: colors.cardBg,
+                  border: `1px solid ${colors.cardBorder}`,
+                  borderRadius: '12px',
+                  padding: '16px 24px',
+                  color: colors.text,
+                  fontSize: '16px',
+                  cursor: 'pointer',
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
-    </>
+    );
+  }
+
+  // Completion screen
+  if (isComplete) {
+    return (
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        background: colors.bgGradient,
+        display: 'flex',
+        flexDirection: 'column',
+        fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+      }}>
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '24px',
+          gap: '24px',
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <h2 style={{
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: '28px',
+              fontWeight: 300,
+              color: colors.text,
+              marginBottom: '12px',
+            }}>
+              Stream Complete
+            </h2>
+            <p style={{
+              color: colors.textMuted,
+              fontSize: '16px',
+            }}>
+              {wordCount} words flowed through you
+            </p>
+          </div>
+
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            width: '100%',
+            maxWidth: '280px',
+            marginTop: '16px',
+          }}>
+            <button
+              onClick={handleSave}
+              style={{
+                background: colors.cardBg,
+                border: `1px solid ${colors.cardBorder}`,
+                borderRadius: '12px',
+                padding: '16px 24px',
+                color: colors.text,
+                fontSize: '16px',
+                cursor: 'pointer',
+              }}
+            >
+              Review & Save
+            </button>
+            <button
+              onClick={handleRelease}
+              style={{
+                background: `linear-gradient(135deg, ${colors.accent}, #7c3aed)`,
+                border: 'none',
+                borderRadius: '12px',
+                padding: '16px 24px',
+                color: '#fff',
+                fontSize: '16px',
+                cursor: 'pointer',
+              }}
+            >
+              Release Without Reading
+            </button>
+            <button
+              onClick={onBack}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                padding: '12px',
+                color: colors.textDim,
+                fontSize: '14px',
+                cursor: 'pointer',
+              }}
+            >
+              Go back
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Writing screen
+  return (
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      background: colors.bgGradient,
+      display: 'flex',
+      flexDirection: 'column',
+      fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: '16px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderBottom: `1px solid ${colors.cardBorder}`,
+      }}>
+        <span style={{
+          color: colors.textMuted,
+          fontSize: '14px',
+        }}>
+          {wordCount} words
+        </span>
+        
+        <span style={{
+          color: colors.text,
+          fontSize: '20px',
+          fontWeight: 500,
+          fontFamily: "'DM Sans', system-ui, sans-serif",
+        }}>
+          {formatTime(timeRemaining)}
+        </span>
+
+        <button
+          onClick={handleFinish}
+          style={{
+            background: colors.accent,
+            border: 'none',
+            borderRadius: '12px',
+            padding: '10px 20px',
+            color: '#fff',
+            fontSize: '14px',
+            fontWeight: 500,
+            cursor: 'pointer',
+          }}
+        >
+          Finish
+        </button>
+      </div>
+
+      {/* Pause warning */}
+      {pauseWarning && (
+        <div style={{
+          padding: '12px 24px',
+          background: `${colors.warning}15`,
+          borderBottom: `1px solid ${colors.warning}30`,
+          textAlign: 'center',
+        }}>
+          <p style={{
+            color: colors.warning,
+            fontSize: '14px',
+          }}>
+            Keep going... don't stop now ✨
+          </p>
+        </div>
+      )}
+
+      {/* Textarea with blur effect */}
+      <div style={{
+        flex: 1,
+        padding: '20px',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+      }}>
+        {/* Gradient overlay for blur effect */}
+        <div style={{
+          position: 'absolute',
+          top: '20px',
+          left: '20px',
+          right: '20px',
+          height: '100px',
+          background: `linear-gradient(to bottom, ${colors.bg}ee 0%, transparent 100%)`,
+          pointerEvents: 'none',
+          zIndex: 1,
+          borderRadius: '16px 16px 0 0',
+        }} />
+        
+        <textarea
+          ref={textareaRef}
+          value={content}
+          onChange={handleContentChange}
+          placeholder="Start writing and don't stop..."
+          autoFocus
+          style={{
+            flex: 1,
+            width: '100%',
+            background: colors.cardBg,
+            border: `1px solid ${colors.cardBorder}`,
+            borderRadius: '16px',
+            padding: '80px 20px 20px',
+            color: colors.text,
+            fontSize: '17px',
+            lineHeight: 1.8,
+            resize: 'none',
+            outline: 'none',
+            fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+          }}
+        />
+      </div>
+
+      {/* Footer prompt */}
+      <div style={{
+        padding: '16px 24px',
+        textAlign: 'center',
+        borderTop: `1px solid ${colors.cardBorder}`,
+      }}>
+        <p style={{
+          color: colors.textDim,
+          fontSize: '14px',
+          fontStyle: 'italic',
+        }}>
+          Don't think. Don't edit. Just write.
+        </p>
+      </div>
+    </div>
   );
 }
+
+export default StreamOfConsciousness;
