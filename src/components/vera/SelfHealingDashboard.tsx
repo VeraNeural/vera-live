@@ -57,6 +57,7 @@ export default function SelfHealingDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<{ summary: string; dailyReport: string } | null>(null);
   const [selectedError, setSelectedError] = useState<ErrorLog | null>(null);
+  const [issueCreating, setIssueCreating] = useState(false);
 
   const refresh = useCallback(async () => {
     setError(null);
@@ -116,6 +117,22 @@ export default function SelfHealingDashboard() {
       setLoading(false);
     }
   }, [refresh]);
+
+  const createGitHubIssue = useCallback(async (err: ErrorLog) => {
+    setIssueCreating(true);
+    setError(null);
+    try {
+      const res = await api<{ url: string }>('/api/vera/github/issues', {
+        method: 'POST',
+        body: JSON.stringify({ error: err }),
+      });
+      if (res.url) window.open(res.url, '_blank', 'noopener,noreferrer');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Create issue failed');
+    } finally {
+      setIssueCreating(false);
+    }
+  }, []);
 
   const overall = status?.overall || 'degraded';
 
@@ -495,6 +512,12 @@ export default function SelfHealingDashboard() {
             )}
 
             <div style={{ marginTop: 12, display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <Button
+                label={issueCreating ? 'Creating Issue…' : 'Create Issue'}
+                onClick={() => createGitHubIssue(selectedError)}
+                tone="primary"
+                disabled={loading || issueCreating}
+              />
               {!selectedError.resolved && (
                 <Button label="Mark Resolved" onClick={() => markResolved(selectedError.id)} disabled={loading} />
               )}
