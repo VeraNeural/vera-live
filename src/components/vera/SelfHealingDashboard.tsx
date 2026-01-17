@@ -20,9 +20,15 @@ function statusColor(overall: SystemStatus['overall']): string {
 }
 
 function statusLabel(overall: SystemStatus['overall']): string {
-  if (overall === 'healthy') return 'Healthy';
-  if (overall === 'degraded') return 'Warning';
-  return 'Critical';
+  if (overall === 'healthy') return 'HEALTHY';
+  if (overall === 'degraded') return 'DEGRADED';
+  return 'DOWN';
+}
+
+function overallEmoji(overall: SystemStatus['overall']): string {
+  if (overall === 'healthy') return '🟢';
+  if (overall === 'degraded') return '🟡';
+  return '🔴';
 }
 
 function checkEmoji(status: HealthCheck['status']): string {
@@ -38,12 +44,19 @@ function fmtTime(ts?: string): string {
   return d.toLocaleString();
 }
 
+function truncate(text: string, max = 88): string {
+  const t = (text || '').trim();
+  if (t.length <= max) return t;
+  return `${t.slice(0, max - 1)}…`;
+}
+
 export default function SelfHealingDashboard() {
   const [status, setStatus] = useState<SystemStatus | null>(null);
   const [errors, setErrors] = useState<ErrorLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<{ summary: string; dailyReport: string } | null>(null);
+  const [selectedError, setSelectedError] = useState<ErrorLog | null>(null);
 
   const refresh = useCallback(async () => {
     setError(null);
@@ -106,11 +119,37 @@ export default function SelfHealingDashboard() {
 
   const overall = status?.overall || 'degraded';
 
-  const checksByName = useMemo(() => {
-    const m = new Map<string, HealthCheck>();
-    for (const c of status?.checks || []) m.set(c.name, c);
-    return m;
+  const orderedChecks = useMemo(() => {
+    const checks = status?.checks || [];
+    const preferredOrder = ['Database', 'Auth', 'AI (Claude)', 'Voice (Hume)', 'Storage'];
+
+    const byName = new Map<string, HealthCheck>();
+    for (const c of checks) byName.set(c.name, c);
+
+    const ordered: HealthCheck[] = [];
+    for (const name of preferredOrder) {
+      const c = byName.get(name);
+      if (c) ordered.push(c);
+    }
+
+    for (const c of checks) {
+      if (!preferredOrder.includes(c.name)) ordered.push(c);
+    }
+
+    return ordered;
   }, [status]);
+
+  const unresolvedErrors = useMemo(() => errors.filter((e) => !e.resolved), [errors]);
+
+  const criticalChecks = useMemo(
+    () => (status?.checks || []).filter((c) => c.status === 'critical'),
+    [status]
+  );
+
+  const warningChecks = useMemo(
+    () => (status?.checks || []).filter((c) => c.status === 'warning'),
+    [status]
+  );
 
   const Card = ({ children }: { children: any }) => (
     <div
@@ -122,6 +161,13 @@ export default function SelfHealingDashboard() {
       }}
     >
       {children}
+    </div>
+  );
+
+  const SectionTitle = ({ title, subtitle }: { title: string; subtitle?: string }) => (
+    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
+      <div style={{ fontWeight: 900 }}>{title}</div>
+      {subtitle ? <div style={{ fontSize: 12, opacity: 0.7 }}>{subtitle}</div> : null}
     </div>
   );
 
@@ -164,17 +210,20 @@ export default function SelfHealingDashboard() {
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <div
             style={{
-              padding: '10px 12px',
-              borderRadius: 12,
-              border: '1px solid rgba(255,255,255,0.10)',
-              background: 'rgba(255,255,255,0.03)',
+              padding: '10px 14px',
+              borderRadius: 14,
+              border: '1px solid rgba(255,255,255,0.12)',
+              background: 'rgba(0,0,0,0.25)',
               display: 'flex',
               alignItems: 'center',
               gap: 10,
+              fontWeight: 950,
+              letterSpacing: 0.4,
             }}
+            aria-label={`Overall status ${statusLabel(overall)}`}
           >
-            <span style={{ width: 10, height: 10, borderRadius: 999, background: statusColor(overall), display: 'inline-block' }} />
-            <span style={{ fontWeight: 800 }}>{statusLabel(overall)}</span>
+            <span style={{ fontSize: 14 }}>{overallEmoji(overall)}</span>
+            <span style={{ color: statusColor(overall) }}>{statusLabel(overall)}</span>
           </div>
           <Button label={loading ? 'Running…' : 'Run Health Check'} onClick={runChecks} tone="primary" disabled={loading} />
         </div>
@@ -182,86 +231,277 @@ export default function SelfHealingDashboard() {
 
       {error && <div style={{ marginTop: 12, color: 'rgba(255,120,120,0.95)' }}>{error}</div>}
 
-      <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 12 }}>
-        {[{ k: 'Database' }, { k: 'Auth' }, { k: 'AI (Claude)' }, { k: 'Voice (Hume)' }, { k: 'Storage' }].map(({ k }) => {
-          const c = checksByName.get(k);
-          return (
-            <Card key={k}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'baseline' }}>
-                <div style={{ fontWeight: 800 }}>{k}</div>
-                <div style={{ fontSize: 13 }}>{c ? checkEmoji(c.status) : '—'}</div>
-              </div>
-              <div style={{ marginTop: 8, fontSize: 12, opacity: 0.85 }}>{c?.message || 'No data yet.'}</div>
-              <div style={{ marginTop: 10, fontSize: 11, opacity: 0.6 }}>{c ? fmtTime(c.lastCheck) : ''}</div>
-            </Card>
-          );
-        })}
-      </div>
-
       <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
-        <Card>
-          <div style={{ fontWeight: 800 }}>Recent Errors</div>
-          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {errors.length === 0 && <div style={{ opacity: 0.75, fontSize: 13 }}>No recent errors.</div>}
-
-            {errors.map((e) => {
-              const fix: AutoFix | undefined = (e as any).fix;
-              const canAutoFix = fix?.fix?.kind === 'create_bucket';
-
-              return (
-                <div key={e.id} style={{ border: '1px solid rgba(255,255,255,0.10)', borderRadius: 12, padding: 12 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'baseline' }}>
-                    <div style={{ fontSize: 13, fontWeight: 800, opacity: 0.95 }}>{e.message}</div>
-                    <div style={{ fontSize: 12, opacity: 0.7 }}>{e.resolved ? 'resolved' : e.type}</div>
-                  </div>
-
-                  <div style={{ marginTop: 6, fontSize: 12, opacity: 0.75 }}>
-                    {e.file ? <span>{e.file} • </span> : null}
-                    <span>{fmtTime(e.timestamp)}</span>
-                  </div>
-
-                  {fix && (
-                    <div style={{ marginTop: 8, fontSize: 12, opacity: 0.85 }}>
-                      <div style={{ fontWeight: 700 }}>{fix.fix.title}</div>
-                      <div style={{ marginTop: 4, opacity: 0.85, whiteSpace: 'pre-wrap' }}>{fix.fix.details}</div>
-                      {fix.fix.sql && (
-                        <div style={{ marginTop: 8, padding: 10, borderRadius: 12, background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.10)', whiteSpace: 'pre-wrap', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' }}>
-                          {fix.fix.sql}
-                        </div>
-                      )}
-                    </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <Card>
+            <SectionTitle title="Health Checks" subtitle={status ? `Last run: ${fmtTime(status.checks[0]?.lastCheck)}` : '—'} />
+            <div style={{ marginTop: 10, overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ textAlign: 'left' }}>
+                    <th style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.10)', opacity: 0.8 }}>Service</th>
+                    <th style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.10)', opacity: 0.8, width: 90 }}>Status</th>
+                    <th style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.10)', opacity: 0.8 }}>Message</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orderedChecks.length === 0 && (
+                    <tr>
+                      <td colSpan={3} style={{ padding: '12px 8px', opacity: 0.75 }}>
+                        No checks yet. Click “Run Health Check”.
+                      </td>
+                    </tr>
                   )}
 
-                  <div style={{ marginTop: 10, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                    {!e.resolved && (
-                      <Button label="Mark Resolved" onClick={() => markResolved(e.id)} disabled={loading} />
-                    )}
-                    {fix && (
-                      <Button
-                        label={canAutoFix ? 'Auto-Fix' : 'Fix Available'}
-                        onClick={() => (canAutoFix ? applyAutoFix(e.id) : void 0)}
-                        tone={canAutoFix ? 'primary' : 'default'}
-                        disabled={loading || !canAutoFix}
-                      />
-                    )}
+                  {orderedChecks.map((c) => (
+                    <tr key={c.id}>
+                      <td style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontWeight: 800 }}>{c.name}</td>
+                      <td style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{checkEmoji(c.status)}</td>
+                      <td style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)', opacity: 0.9 }}>{c.message}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+
+          <Card>
+            <SectionTitle title="Recent Errors" subtitle={`${errors.length} shown`} />
+            <div style={{ marginTop: 10, overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ textAlign: 'left' }}>
+                    <th style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.10)', opacity: 0.8, width: 190 }}>Timestamp</th>
+                    <th style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.10)', opacity: 0.8, width: 160 }}>Type</th>
+                    <th style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.10)', opacity: 0.8 }}>Message</th>
+                    <th style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.10)', opacity: 0.8, width: 110 }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {errors.length === 0 && (
+                    <tr>
+                      <td colSpan={4} style={{ padding: '12px 8px', opacity: 0.75 }}>
+                        No recent errors.
+                      </td>
+                    </tr>
+                  )}
+
+                  {errors.map((e) => (
+                    <tr
+                      key={e.id}
+                      onClick={() => setSelectedError(e)}
+                      style={{ cursor: 'pointer' }}
+                      aria-label="View error details"
+                    >
+                      <td style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)', opacity: 0.85 }}>{fmtTime(e.timestamp)}</td>
+                      <td style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)', opacity: 0.9 }}>{e.type}</td>
+                      <td style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)', opacity: 0.95 }}>{truncate(e.message, 96)}</td>
+                      <td style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)', opacity: 0.85 }}>{e.resolved ? 'resolved' : 'open'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ marginTop: 10, fontSize: 12, opacity: 0.7 }}>
+              Tip: click a row to see full details.
+            </div>
+          </Card>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <Card>
+            <SectionTitle title="Overall Status" subtitle={report?.summary ? 'Auto-summary available' : undefined} />
+            <div style={{ marginTop: 12 }}>
+              <div
+                style={{
+                  padding: '14px 14px',
+                  borderRadius: 16,
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  background: 'rgba(0,0,0,0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                }}
+              >
+                <div style={{ fontSize: 18 }}>{overallEmoji(overall)}</div>
+                <div>
+                  <div style={{ fontWeight: 950, letterSpacing: 0.4, color: statusColor(overall) }}>{statusLabel(overall)}</div>
+                  <div style={{ marginTop: 4, fontSize: 12, opacity: 0.78 }}>
+                    {criticalChecks.length > 0
+                      ? `${criticalChecks.length} critical check(s) failing.`
+                      : warningChecks.length > 0
+                        ? `${warningChecks.length} warning check(s).`
+                        : 'All checks look good.'}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </Card>
+              </div>
+            </div>
 
-        <Card>
-          <div style={{ fontWeight: 800 }}>Daily Report</div>
-          <div style={{ marginTop: 10, fontSize: 12, opacity: 0.85, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
-            {report?.dailyReport || 'Loading…'}
-          </div>
-        </Card>
+            {report?.summary && (
+              <div style={{ marginTop: 10, fontSize: 12, opacity: 0.75, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                {report.summary}
+              </div>
+            )}
+          </Card>
+
+          <Card>
+            <SectionTitle title="Critical Issues" subtitle={`${criticalChecks.length + unresolvedErrors.length} detected`} />
+            <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {criticalChecks.length === 0 && unresolvedErrors.length === 0 && (
+                <div style={{ opacity: 0.75, fontSize: 13 }}>No critical issues right now.</div>
+              )}
+
+              {criticalChecks.map((c) => (
+                <details key={c.id} style={{ border: '1px solid rgba(255,255,255,0.10)', borderRadius: 12, padding: 12, background: 'rgba(0,0,0,0.18)' }}>
+                  <summary style={{ cursor: 'pointer', listStyle: 'none' as any, display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'baseline' }}>
+                    <div style={{ fontWeight: 900 }}>{checkEmoji(c.status)} {c.name}</div>
+                    <div style={{ fontSize: 12, opacity: 0.7 }}>{fmtTime(c.lastCheck)}</div>
+                  </summary>
+                  <div style={{ marginTop: 8, fontSize: 12, opacity: 0.9, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{c.message}</div>
+                </details>
+              ))}
+
+              {unresolvedErrors.map((e) => {
+                const fix: AutoFix | undefined = (e as any).fix;
+                const canAutoFix = fix?.fix?.kind === 'create_bucket';
+
+                return (
+                  <details key={e.id} style={{ border: '1px solid rgba(255,255,255,0.10)', borderRadius: 12, padding: 12, background: 'rgba(0,0,0,0.18)' }}>
+                    <summary style={{ cursor: 'pointer', listStyle: 'none' as any, display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'baseline' }}>
+                      <div style={{ fontWeight: 900 }}>🔴 {truncate(e.message, 56)}</div>
+                      <div style={{ fontSize: 12, opacity: 0.7 }}>{fmtTime(e.timestamp)}</div>
+                    </summary>
+
+                    <div style={{ marginTop: 10, fontSize: 12, opacity: 0.85 }}>
+                      <div><span style={{ opacity: 0.75 }}>Type:</span> {e.type}</div>
+                      {e.file ? <div><span style={{ opacity: 0.75 }}>File:</span> {e.file}</div> : null}
+                    </div>
+
+                    {fix && (
+                      <div style={{ marginTop: 10, fontSize: 12, opacity: 0.9 }}>
+                        <div style={{ fontWeight: 800 }}>{fix.fix.title}</div>
+                        <div style={{ marginTop: 4, opacity: 0.85, whiteSpace: 'pre-wrap' }}>{fix.fix.details}</div>
+                        {fix.fix.sql && (
+                          <div style={{ marginTop: 8, padding: 10, borderRadius: 12, background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.10)', whiteSpace: 'pre-wrap', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' }}>
+                            {fix.fix.sql}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div style={{ marginTop: 10, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      <Button label="View Details" onClick={() => setSelectedError(e)} disabled={loading} />
+                      <Button label="Mark Resolved" onClick={() => markResolved(e.id)} disabled={loading} />
+                      {fix && (
+                        <Button
+                          label={canAutoFix ? 'Auto-Fix' : 'Fix Available'}
+                          onClick={() => (canAutoFix ? applyAutoFix(e.id) : void 0)}
+                          tone={canAutoFix ? 'primary' : 'default'}
+                          disabled={loading || !canAutoFix}
+                        />
+                      )}
+                    </div>
+                  </details>
+                );
+              })}
+            </div>
+          </Card>
+        </div>
       </div>
 
       <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
         <Button label="Refresh" onClick={() => refresh().catch(() => null)} disabled={loading} />
       </div>
+
+      {selectedError && (
+        <div
+          onClick={() => setSelectedError(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.62)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 18,
+            zIndex: 50,
+          }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 'min(980px, 100%)',
+              maxHeight: 'min(82dvh, 720px)',
+              overflow: 'auto',
+              borderRadius: 16,
+              border: '1px solid rgba(255,255,255,0.12)',
+              background: 'radial-gradient(1200px 600px at 20% 10%, rgba(139,92,246,0.14), transparent 60%), rgba(10,10,18,0.96)',
+              padding: 16,
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'baseline' }}>
+              <div style={{ fontWeight: 950, fontSize: 14 }}>Error Details</div>
+              <button
+                onClick={() => setSelectedError(null)}
+                style={{
+                  padding: '8px 10px',
+                  borderRadius: 12,
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  background: 'rgba(255,255,255,0.06)',
+                  color: 'rgba(255,255,255,0.92)',
+                  cursor: 'pointer',
+                  fontWeight: 800,
+                }}
+              >
+                Close
+              </button>
+            </div>
+
+            <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ fontSize: 12, opacity: 0.85 }}><span style={{ opacity: 0.7 }}>Timestamp:</span> {fmtTime(selectedError.timestamp)}</div>
+              <div style={{ fontSize: 12, opacity: 0.85 }}><span style={{ opacity: 0.7 }}>Type:</span> {selectedError.type}</div>
+              <div style={{ fontSize: 12, opacity: 0.85 }}><span style={{ opacity: 0.7 }}>Status:</span> {selectedError.resolved ? 'resolved' : 'open'}</div>
+              <div style={{ fontSize: 12, opacity: 0.85 }}><span style={{ opacity: 0.7 }}>File:</span> {selectedError.file || '—'}</div>
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontWeight: 900, fontSize: 13 }}>Message</div>
+              <div style={{ marginTop: 6, fontSize: 13, opacity: 0.95, whiteSpace: 'pre-wrap', lineHeight: 1.55 }}>{selectedError.message}</div>
+            </div>
+
+            {selectedError.stack && (
+              <div style={{ marginTop: 12 }}>
+                <div style={{ fontWeight: 900, fontSize: 13 }}>Stack</div>
+                <pre
+                  style={{
+                    marginTop: 6,
+                    padding: 12,
+                    borderRadius: 12,
+                    background: 'rgba(0,0,0,0.25)',
+                    border: '1px solid rgba(255,255,255,0.10)',
+                    whiteSpace: 'pre-wrap',
+                    fontSize: 12,
+                    lineHeight: 1.45,
+                    overflowX: 'auto',
+                    fontFamily:
+                      'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                  }}
+                >
+                  {selectedError.stack}
+                </pre>
+              </div>
+            )}
+
+            <div style={{ marginTop: 12, display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              {!selectedError.resolved && (
+                <Button label="Mark Resolved" onClick={() => markResolved(selectedError.id)} disabled={loading} />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
