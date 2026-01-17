@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { generateStoryAudio } from '@/lib/library/generation/audioGenerator';
 
 interface TheQuietVillageProps {
   onBack: () => void;
@@ -37,6 +38,29 @@ export default function TheQuietVillage({ onBack, onComplete }: TheQuietVillageP
   const [text, setText] = useState('');
   const [volume, setVolume] = useState(0.6);
   const [showIntro, setShowIntro] = useState(true);
+  const [narrationUrl, setNarrationUrl] = useState<string>('');
+  const [isNarrating, setIsNarrating] = useState(false);
+  const [narrationError, setNarrationError] = useState<string | null>(null);
+
+  const narrationText = STORY.map((s) => s.text).join('\n\n');
+
+  const handleListenWithVera = async () => {
+    if (narrationUrl || isNarrating) return;
+    setIsNarrating(true);
+    setNarrationError(null);
+    try {
+      const { audioUrl } = await generateStoryAudio({
+        text: narrationText,
+        storyId: 'rest-the-quiet-village',
+        chapterId: 'full',
+      });
+      setNarrationUrl(audioUrl);
+    } catch (err) {
+      setNarrationError(err instanceof Error ? err.message : 'Narration failed');
+    } finally {
+      setIsNarrating(false);
+    }
+  };
 
   const initAudio = useCallback(async () => {
     if (audioContextRef.current) return;
@@ -119,7 +143,56 @@ export default function TheQuietVillage({ onBack, onComplete }: TheQuietVillageP
             <div style={{ fontSize: 48, marginBottom: 24 }}>🏘️</div>
             <h1 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 'clamp(1.8rem,7vw,2.5rem)', color: 'white', marginBottom: 8, fontWeight: 300 }}>The Quiet Village</h1>
             <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: 40 }}>A Sleep Story · 20 min</p>
-            <button onClick={start} style={{ padding: '14px 36px', background: 'rgba(200,180,255,0.15)', border: '1px solid rgba(200,180,255,0.3)', borderRadius: 25, color: 'white', fontSize: 15, cursor: 'pointer' }}>Begin Story</button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+              <button onClick={start} style={{ padding: '14px 36px', background: 'rgba(200,180,255,0.15)', border: '1px solid rgba(200,180,255,0.3)', borderRadius: 25, color: 'white', fontSize: 15, cursor: 'pointer' }}>Begin Story</button>
+
+              {!narrationUrl && (
+                <button
+                  onClick={handleListenWithVera}
+                  disabled={isNarrating}
+                  style={{
+                    padding: '12px 28px',
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.18)',
+                    borderRadius: 25,
+                    color: 'white',
+                    fontSize: 14,
+                    cursor: isNarrating ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                  }}
+                >
+                  {isNarrating ? (
+                    <>
+                      <svg width="14" height="14" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                        <g fill="none" fillRule="evenodd">
+                          <g transform="translate(1 1)" stroke="rgba(200,180,255,0.9)" strokeWidth="2">
+                            <circle strokeOpacity=".25" cx="18" cy="18" r="18" />
+                            <path d="M36 18c0-9.94-8.06-18-18-18">
+                              <animateTransform attributeName="transform" type="rotate" from="0 18 18" to="360 18 18" dur="1s" repeatCount="indefinite" />
+                            </path>
+                          </g>
+                        </g>
+                      </svg>
+                      <span>VERA is narrating...</span>
+                    </>
+                  ) : (
+                    <span>Listen with VERA</span>
+                  )}
+                </button>
+              )}
+
+              {narrationUrl && (
+                <audio controls src={narrationUrl} style={{ width: 280, marginTop: 4 }} />
+              )}
+
+              {narrationError && (
+                <div style={{ marginTop: 6, color: 'rgba(255,255,255,0.6)', fontSize: 12, maxWidth: 320 }}>
+                  {narrationError}
+                </div>
+              )}
+            </div>
           </div>
         ) : (
           <p style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 'clamp(1.2rem,5vw,1.6rem)', color: 'rgba(255,255,255,0.9)', textAlign: 'center', lineHeight: 1.7, maxWidth: 500 }}>{text}</p>

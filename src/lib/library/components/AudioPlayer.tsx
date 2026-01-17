@@ -34,6 +34,7 @@ export function AudioPlayer({
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const currentChapter = story.chapters[currentChapterIndex];
+  const hasAudio = Boolean(currentChapter?.audioUrl);
 
   // Audio event handlers
   useEffect(() => {
@@ -80,6 +81,7 @@ export function AudioPlayer({
 
   // Playback controls
   const togglePlayPause = () => {
+    if (!hasAudio) return;
     const audio = audioRef.current;
     if (!audio) return;
     if (isPlaying) {
@@ -180,6 +182,7 @@ export function AudioPlayer({
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
         <button
           onClick={togglePlayPause}
+          disabled={!hasAudio}
           style={{
             width: 72,
             height: 72,
@@ -192,7 +195,8 @@ export function AudioPlayer({
                 ? 'rgba(255, 180, 100, 0.4)'
                 : 'rgba(255, 180, 100, 0.25)'
             }`,
-            cursor: 'pointer',
+            cursor: hasAudio ? 'pointer' : 'not-allowed',
+            opacity: hasAudio ? 1 : 0.55,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -215,6 +219,12 @@ export function AudioPlayer({
           )}
         </button>
       </div>
+
+      {!hasAudio && (
+        <div style={{ textAlign: 'center', fontSize: 12, color: textDimColor, marginBottom: 18 }}>
+          Voice not generated yet.
+        </div>
+      )}
 
       {/* Audio Element */}
       <audio

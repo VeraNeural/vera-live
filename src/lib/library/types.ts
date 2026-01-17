@@ -18,6 +18,7 @@ export type Chapter = {
   title: string;
   duration: string;
   audioUrl: string;
+  text?: string;
 };
 
 export type Story = {
@@ -65,6 +66,7 @@ export type DBStory = {
     title: string;
     duration: string;
     text: string;
+    audioUrl?: string;
   }[];
   created_at?: string;
 };

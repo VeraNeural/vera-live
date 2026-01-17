@@ -10,6 +10,7 @@ import type { Story, CategoryItem, DBStory } from '../types';
 import { STORY_CATEGORIES, STORIES } from '../data/stories';
 import { StoryCategoryIcon } from '../icons';
 import { AudioPlayer } from './AudioPlayer';
+import { generateStoryAudio } from '../generation/audioGenerator';
 
 interface StoryTabProps {
   colors: {
@@ -29,6 +30,8 @@ export function StoryTab({ colors, dbStories = [] }: StoryTabProps) {
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
   const [selectedStory, setSelectedStory] = React.useState<Story | null>(null);
   const [currentChapterIndex, setCurrentChapterIndex] = React.useState(0);
+  const [isGenerating, setIsGenerating] = React.useState(false);
+  const [generationError, setGenerationError] = React.useState<string | null>(null);
 
   // Combine hardcoded and database stories
   const allStories: Story[] = [
@@ -42,7 +45,8 @@ export function StoryTab({ colors, dbStories = [] }: StoryTabProps) {
         id: ch.id,
         title: ch.title,
         duration: ch.duration,
-        audioUrl: '', // DB stories use text-to-speech
+        audioUrl: typeof (ch as any).audioUrl === 'string' ? (ch as any).audioUrl : '',
+        text: ch.text,
       }))
     }))
   ];
@@ -60,10 +64,44 @@ export function StoryTab({ colors, dbStories = [] }: StoryTabProps) {
   const handleStoryClick = (story: Story) => {
     setSelectedStory(story);
     setCurrentChapterIndex(0);
+    setGenerationError(null);
   };
 
   const handleChapterChange = (index: number) => {
     setCurrentChapterIndex(index);
+    setGenerationError(null);
+  };
+
+  const handleGenerateVoice = async () => {
+    if (!selectedStory) return;
+    const chapter = selectedStory.chapters[currentChapterIndex];
+    if (!chapter || chapter.audioUrl) return;
+    if (!chapter.text) {
+      setGenerationError('This story has no text available for narration.');
+      return;
+    }
+
+    setIsGenerating(true);
+    setGenerationError(null);
+    try {
+      const { audioUrl } = await generateStoryAudio({
+        text: chapter.text,
+        storyId: selectedStory.id,
+        chapterId: chapter.id,
+      });
+
+      setSelectedStory((prev) => {
+        if (!prev) return prev;
+        const nextChapters = prev.chapters.map((ch, idx) =>
+          idx === currentChapterIndex ? { ...ch, audioUrl } : ch
+        );
+        return { ...prev, chapters: nextChapters };
+      });
+    } catch (err) {
+      setGenerationError(err instanceof Error ? err.message : 'Narration failed');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   // Category Grid View
@@ -232,6 +270,9 @@ export function StoryTab({ colors, dbStories = [] }: StoryTabProps) {
 
   // Story Player View
   if (selectedStory) {
+    const current = selectedStory.chapters[currentChapterIndex];
+    const needsVoice = Boolean(current && !current.audioUrl);
+
     return (
       <div style={{
         width: '100%',
@@ -262,6 +303,52 @@ export function StoryTab({ colors, dbStories = [] }: StoryTabProps) {
         }}>
           {selectedStory.title}
         </h1>
+
+        {needsVoice && (
+          <div style={{ marginBottom: 18 }}>
+            <button
+              onClick={handleGenerateVoice}
+              disabled={isGenerating}
+              style={{
+                width: '100%',
+                padding: '12px 14px',
+                borderRadius: 12,
+                border: `1px solid ${colors.cardBorder}`,
+                background: colors.cardBg,
+                color: colors.text,
+                cursor: isGenerating ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+              }}
+            >
+              {isGenerating ? (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                    <g fill="none" fillRule="evenodd">
+                      <g transform="translate(1 1)" stroke={colors.accent} strokeWidth="2">
+                        <circle strokeOpacity=".25" cx="18" cy="18" r="18" />
+                        <path d="M36 18c0-9.94-8.06-18-18-18">
+                          <animateTransform attributeName="transform" type="rotate" from="0 18 18" to="360 18 18" dur="1s" repeatCount="indefinite" />
+                        </path>
+                      </g>
+                    </g>
+                  </svg>
+                  <span>VERA is narrating...</span>
+                </>
+              ) : (
+                <span>🎙️ Generate Voice</span>
+              )}
+            </button>
+
+            {generationError && (
+              <div style={{ marginTop: 10, fontSize: 12, color: colors.textDim, textAlign: 'center' }}>
+                {generationError}
+              </div>
+            )}
+          </div>
+        )}
 
         <AudioPlayer
           story={selectedStory}

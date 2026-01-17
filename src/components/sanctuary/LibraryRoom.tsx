@@ -152,7 +152,12 @@ export default function LibraryRoom({
     : null;
 
   // Check if we're in a sub-view
-  const isInSubView = activeLearnLessonId ; activeAssessment ; activeDynamicLesson ; activeDynamicAssessment;
+  const isInSubView = Boolean(
+    activeLearnLessonId ||
+      activeAssessment ||
+      activeDynamicLesson ||
+      activeDynamicAssessment
+  );
 
   return (
     <>
