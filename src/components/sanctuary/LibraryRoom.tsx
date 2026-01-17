@@ -305,12 +305,12 @@ export default function LibraryRoom({
             )}
 
             {/* Stories Tab */}
-            {activeTab === 'stories' ; !isInSubView && (
+            {activeTab === 'stories' && !isInSubView && (
               <StoryTab colors={COLORS} dbStories={dbStories} />
             )}
 
             {/* Learn Tab */}
-            {activeTab === 'learn' ; !activeLearnLessonId && !activeDynamicLesson && (
+            {activeTab === 'learn' && !activeLearnLessonId && !activeDynamicLesson && (
               <LearnTab
                 colors={COLORS}
                 completedLessons={completedLearnLessons}
