@@ -224,6 +224,7 @@ export default function LibraryRoom({
               alignItems: 'center',
               gap: 6,
               padding: '10px 18px',
+              minHeight: 44,
               background: COLORS.cardBg,
               border: `1px solid ${COLORS.cardBorder}`,
               borderRadius: 50,

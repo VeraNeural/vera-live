@@ -230,6 +230,7 @@ export default function RecalibrationRoom({
               alignItems: 'center',
               gap: 6,
               padding: '10px 18px',
+              minHeight: 44,
               background: colors.cardBg,
               border: `1px solid ${colors.cardBorder}`,
               borderRadius: 50,

@@ -141,6 +141,7 @@ export default function CreativeStudio({ onBack, onStartActivity, initialView }:
               alignItems: 'center',
               gap: 6,
               padding: '10px 18px',
+              minHeight: 44,
               background: COLORS.cardBg,
               border: `1px solid ${COLORS.cardBorder}`,
               borderRadius: 50,
@@ -290,7 +291,7 @@ export default function CreativeStudio({ onBack, onStartActivity, initialView }:
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 50,
         }}>
           <button onClick={onBack} style={{
-            display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px',
+            display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px', minHeight: 44,
             background: COLORS.cardBg, border: `1px solid ${COLORS.cardBorder}`, borderRadius: 50,
             cursor: 'pointer', fontSize: 14, fontWeight: 500, color: COLORS.textMuted,
           }}>

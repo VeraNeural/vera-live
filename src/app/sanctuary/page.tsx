@@ -906,8 +906,8 @@ export default function VeraSanctuary() {
           <button
             onClick={() => setSidebarOpen(true)}
             style={{
-              width: 40,
-              height: 40,
+              width: 44,
+              height: 44,
               borderRadius: '50%',
               border: 'none',
               background: isDark
@@ -1492,6 +1492,8 @@ export default function VeraSanctuary() {
                     style={{
                       marginLeft: 12,
                       padding: 0,
+                      width: 44,
+                      height: 44,
                       border: 'none',
                       background: 'transparent',
                       cursor: !isGated && inputValue.trim() ? 'pointer' : 'default',

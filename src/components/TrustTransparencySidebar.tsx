@@ -560,7 +560,7 @@ export default function TrustTransparencySidebar({
             boxShadow: isDark
               ? "20px 0 60px rgba(0,0,0,0.55)"
               : "20px 0 60px rgba(0,0,0,0.15)",
-            padding: "14px 14px 16px",
+            padding: "max(14px, env(safe-area-inset-top)) 14px max(16px, env(safe-area-inset-bottom))",
             display: "flex",
             flexDirection: "column",
             gap: 10,
@@ -586,8 +586,8 @@ export default function TrustTransparencySidebar({
               onClick={() => onOpenChange(false)}
               aria-label="Close sidebar"
               style={{
-                width: 34,
-                height: 34,
+                width: 44,
+                height: 44,
                 borderRadius: 999,
                 border: `1px solid ${border}`,
                 background: isDark ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.65)",

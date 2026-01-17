@@ -257,7 +257,7 @@ export default function JournalNook({ onBack, initialView }: JournalNookProps) {
           <button
             onClick={onBack}
             className="prompt-btn"
-            style={{ display: 'flex', alignItems: 'center', gap: 'clamp(6px, 1.2vw, 10px)', padding: 'clamp(7px, 1.8vw, 11px) clamp(11px, 2.8vw, 16px)', background: colors.cardBg, border: `1px solid ${colors.cardBorder}`, borderRadius: 50, fontSize: 'clamp(11px, 2.8vw, 13px)', fontWeight: 450, color: colors.textMuted, backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 'clamp(6px, 1.2vw, 10px)', padding: 'clamp(7px, 1.8vw, 11px) clamp(11px, 2.8vw, 16px)', minHeight: 44, background: colors.cardBg, border: `1px solid ${colors.cardBorder}`, borderRadius: 50, fontSize: 'clamp(11px, 2.8vw, 13px)', fontWeight: 450, color: colors.textMuted, backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
           >
             <JournalIcons.BackArrowIcon size={16} color={colors.textMuted} />
             <span>Sanctuary</span>

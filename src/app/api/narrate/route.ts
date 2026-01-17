@@ -65,8 +65,6 @@ function getUtteranceTuning(profile: NarrationProfile): { speed?: number; descri
 async function synthesizeWithHumeTts(input: { text: string; profile: NarrationProfile }): Promise<{ audio: Buffer; contentType: string }> {
   const { name: apiKeyEnv, value: apiKey } = getRequiredEnvAny(['HUMEAI_API_KEY', 'HUME_API_KEY']);
 
-  const provider = getHumeVoiceProvider();
-
   const voiceName = getVoiceNameForProfile(input.profile);
   const tuning = getUtteranceTuning(input.profile);
 
@@ -83,7 +81,6 @@ async function synthesizeWithHumeTts(input: { text: string; profile: NarrationPr
           ...tuning,
           voice: {
             name: voiceName,
-            provider,
           },
         },
       ],

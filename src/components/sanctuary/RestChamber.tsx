@@ -139,6 +139,13 @@ const GLOBAL_STYLES = `
     background: rgba(255, 255, 255, 0.08);
     border-radius: 3px;
   }
+
+  @media (max-width: 428px) {
+    .rest-category-grid {
+      grid-template-columns: 1fr !important;
+      max-width: 420px !important;
+    }
+  }
 `;
 
 // ============================================================================
@@ -297,6 +304,7 @@ export default function RestChamber({ onBack, initialView }: RestChamberProps) {
               alignItems: 'center',
               gap: 6,
               padding: '10px 18px',
+              minHeight: 44,
               background: COLORS.cardBg,
               border: `1px solid ${COLORS.cardBorder}`,
               borderRadius: 50,
@@ -377,7 +385,7 @@ export default function RestChamber({ onBack, initialView }: RestChamberProps) {
                 maxWidth: 360,
                 width: '100%',
                 animation: 'fadeIn 0.4s ease-out',
-              }}>
+              }} className="rest-category-grid">
                 {CATEGORIES.map((cat) => (
                   <button
                     key={cat.id}
@@ -385,6 +393,7 @@ export default function RestChamber({ onBack, initialView }: RestChamberProps) {
                     onClick={() => setSelectedCategory(cat.id)}
                     style={{
                       padding: '22px 16px',
+                      minHeight: 44,
                       background: COLORS.cardBg,
                       border: `1px solid ${COLORS.cardBorder}`,
                       borderRadius: 16,
@@ -433,6 +442,7 @@ export default function RestChamber({ onBack, initialView }: RestChamberProps) {
                   style={{
                     marginBottom: 20,
                     padding: '8px 16px',
+                    minHeight: 44,
                     background: 'transparent',
                     border: `1px solid ${COLORS.cardBorder}`,
                     borderRadius: 20,
