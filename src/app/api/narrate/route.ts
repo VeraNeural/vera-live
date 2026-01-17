@@ -11,6 +11,8 @@ type NarrateRequestBody = {
   chapterId?: string;
 };
 
+type NarrationProfile = 'default' | 'rest';
+
 function getRequiredEnv(name: string): string {
   const value = process.env[name];
   if (!value) {
@@ -41,9 +43,45 @@ function getAudioBucketCandidates(): string[] {
   return Array.from(new Set(candidates));
 }
 
-async function synthesizeWithHumeTts(input: { text: string }): Promise<{ audio: Buffer; contentType: string }>
-{
+function isRestChamberStoryId(storyId: string): boolean {
+  return storyId.toLowerCase().startsWith('rest-');
+}
+
+function isRestfulStoryCategory(category: string): boolean {
+  const normalized = category.trim().toLowerCase();
+  return normalized === 'rest-sleep' || normalized === 'guided-journeys' || normalized === 'meditative-tales';
+}
+
+function getHumeVoiceProvider(): string {
+  return (process.env.HUME_TTS_VOICE_PROVIDER || 'HUME_AI').trim() || 'HUME_AI';
+}
+
+function getVoiceNameForProfile(profile: NarrationProfile): string {
+  const envName =
+    profile === 'rest'
+      ? (process.env.HUME_TTS_VOICE_NAME_REST || '').trim()
+      : (process.env.HUME_TTS_VOICE_NAME_DEFAULT || '').trim();
+
+  // Keep the existing hardcoded voice as a safe fallback.
+  return envName || 'Male English Actor';
+}
+
+function getUtteranceTuning(profile: NarrationProfile): { speed?: number; description?: string } {
+  if (profile !== 'rest') return {};
+
+  return {
+    speed: 0.85,
+    description:
+      'Soft, calm, soothing bedtime narration. Warm and gentle tone. Unhurried pace with natural pauses. Low energy, reassuring, intimate. Avoid sharp emphasis.',
+  };
+}
+
+async function synthesizeWithHumeTts(input: { text: string; profile: NarrationProfile }): Promise<{ audio: Buffer; contentType: string }> {
   const { name: apiKeyEnv, value: apiKey } = getRequiredEnvAny(['HUMEAI_API_KEY', 'HUME_API_KEY']);
+
+  const provider = getHumeVoiceProvider();
+  const voiceName = getVoiceNameForProfile(input.profile);
+  const tuning = getUtteranceTuning(input.profile);
 
   const resp = await fetch('https://api.hume.ai/v0/tts/stream/file', {
     method: 'POST',
@@ -55,10 +93,11 @@ async function synthesizeWithHumeTts(input: { text: string }): Promise<{ audio: 
       utterances: [
         {
           text: input.text,
+          ...tuning,
           voice: {
             // Works with Hume Voice Library voices
-            name: 'Male English Actor',
-            provider: 'HUME_AI',
+            name: voiceName,
+            provider,
           },
         },
       ],
@@ -112,8 +151,22 @@ export async function POST(req: NextRequest) {
   try {
     const supabaseAdmin = getSupabaseAdmin();
 
+    // Best-effort: if this storyId is a DB story (often a UUID), use its category to choose a narration profile.
+    // Rest Chamber content may not be backed by a `stories` row, so we do not hard-fail.
+    const { data: storyMeta } = await supabaseAdmin
+      .from('stories')
+      .select('category, chapters')
+      .eq('id', storyId)
+      .maybeSingle();
+
+    const storyCategory = typeof (storyMeta as any)?.category === 'string' ? ((storyMeta as any).category as string) : '';
+    const chaptersRawFromMeta = (storyMeta as any)?.chapters;
+
+    const profile: NarrationProfile =
+      isRestChamberStoryId(storyId) || (storyCategory && isRestfulStoryCategory(storyCategory)) ? 'rest' : 'default';
+
     // 1) Synthesize audio with Hume (server-side key)
-    const { audio, contentType } = await synthesizeWithHumeTts({ text });
+    const { audio, contentType } = await synthesizeWithHumeTts({ text, profile });
 
     // 2) Upload to Supabase Storage
     const bucketCandidates = getAudioBucketCandidates();
@@ -150,13 +203,7 @@ export async function POST(req: NextRequest) {
 
     // 3) Best-effort: update story record with audioUrl (stored on chapter object in `chapters` JSON)
     // Rest Chamber content isn't necessarily backed by a `stories` row, so we don't hard-fail.
-    const { data: storyRow } = await supabaseAdmin
-      .from('stories')
-      .select('chapters')
-      .eq('id', storyId)
-      .maybeSingle();
-
-    const chaptersRaw = (storyRow as any)?.chapters;
+    const chaptersRaw = chaptersRawFromMeta;
     const chapters = Array.isArray(chaptersRaw) ? chaptersRaw : null;
 
     if (chapters && chapters.length > 0) {

@@ -149,21 +149,35 @@ export async function checkMessageLimit(
 /**
  * Record a message after successful response
  */
-export async function recordMessage(userId: string): Promise<void> {
-  if (!userId) return;
+export async function recordMessage(meteringId: string, sessionId: string): Promise<void> {
+  if (!meteringId) return;
+  const sid = (sessionId || '').trim();
 
   const supabase = await createClient();
 
   try {
-    const { error } = await supabase.rpc("record_message", { p_user_id: userId });
+    const payloadWithSession = sid ? { p_user_id: meteringId, p_session_id: sid } : { p_user_id: meteringId };
+
+    let { error } = await supabase.rpc('record_message', payloadWithSession);
+
+    // Backward-compat: if the RPC signature doesn't accept p_session_id, retry.
+    if (
+      error &&
+      sid &&
+      /Could not find the function|schema cache|no function matches/i.test(error.message)
+    ) {
+      ({ error } = await supabase.rpc('record_message', { p_user_id: meteringId }));
+    }
+
     if (error) {
-      console.error("[messageCounter] record_message RPC failed", {
-        userId,
+      console.error('[messageCounter] record_message RPC failed', {
+        userId: meteringId,
+        sessionId: sid || null,
         error: error.message,
       });
     }
   } catch (err) {
-    console.error("[messageCounter] record_message RPC threw", { userId, err });
+    console.error('[messageCounter] record_message RPC threw', { userId: meteringId, sessionId: sid || null, err });
   }
 }
 

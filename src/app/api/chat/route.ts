@@ -75,10 +75,10 @@ export async function POST(req: Request) {
     // 7.5 Record metering for tiers that are limited (best-effort)
     try {
       if (tierResult.tier === 'anonymous') {
-        await recordMessage(meteringIdFromSessionId(sessionId));
+        await recordMessage(meteringIdFromSessionId(sessionId), sessionId);
       } else if (tierResult.tier === 'free' && tierResult.userId) {
         const meteringId = await resolveMeteringIdForClerkUserId(tierResult.userId);
-        await recordMessage(meteringId);
+        await recordMessage(meteringId, sessionId);
       }
     } catch (e) {
       console.error('CHAT_METERING_RECORD_FAILED:', e);
