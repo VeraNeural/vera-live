@@ -324,7 +324,7 @@ export default function LibraryRoom({
             )}
 
             {/* Active Lesson Component */}
-            {activeTab === 'learn' ; activeLearnLesson ; (
+            {activeTab === 'learn' && activeLearnLesson && (
               <activeLearnLesson.Component
                 onBack={() => setActiveLearnLessonId(null)}
                 onComplete={() => markLearnLessonComplete(activeLearnLesson.id)}
@@ -332,7 +332,7 @@ export default function LibraryRoom({
             )}
 
             {/* Dynamic Lesson Viewer */}
-            {activeDynamicLesson ; (
+            {activeDynamicLesson && (
               <DynamicLessonViewer
                 lesson={activeDynamicLesson as any}
                 onBack={() => setActiveDynamicLesson(null)}
@@ -353,7 +353,7 @@ export default function LibraryRoom({
             )}
 
             {/* Discover Tab */}
-            {activeTab === 'discover' ; !activeAssessment && !activeDynamicAssessment && (
+            {activeTab === 'discover' && !activeAssessment && !activeDynamicAssessment && (
               <DiscoverTab
                 colors={COLORS}
                 completedAssessments={completedAssessments}
@@ -365,7 +365,7 @@ export default function LibraryRoom({
             )}
 
             {/* Active Assessment Component */}
-            {activeTab === 'discover' ; activeDiscoverAssessment ; (
+            {activeTab === 'discover' && activeDiscoverAssessment && (
               <activeDiscoverAssessment.Component
                 onBack={() => setActiveAssessment(null)}
                 onComplete={() => markAssessmentComplete(activeDiscoverAssessment.id)}
@@ -373,7 +373,7 @@ export default function LibraryRoom({
             )}
 
             {/* Dynamic Assessment Viewer */}
-            {activeDynamicAssessment ; (
+            {activeDynamicAssessment && (
               <DynamicAssessmentViewer
                 assessment={activeDynamicAssessment}
                 onBack={() => setActiveDynamicAssessment(null)}
