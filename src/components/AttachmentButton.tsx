@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { Paperclip } from "lucide-react";
 
 export function AttachmentButton(props: {
   disabled?: boolean;
@@ -31,40 +32,29 @@ export function AttachmentButton(props: {
           width: 44,
           height: 44,
           borderRadius: 12,
-          background: "rgba(139, 92, 246, 0.1)",
-          border: "1px solid rgba(139, 92, 246, 0.2)",
+          background: "transparent",
+          border: "none",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           cursor: props.disabled ? "not-allowed" : "pointer",
-          transition: "all 0.2s ease",
-          opacity: props.disabled ? 0.4 : 1,
+          transition: "opacity 0.2s ease",
+          opacity: props.disabled ? 0.4 : 0.6,
           marginRight: 8,
         }}
         onMouseEnter={(e) => {
           if (props.disabled) return;
-          e.currentTarget.style.background = "rgba(139, 92, 246, 0.2)";
-          e.currentTarget.style.borderColor = "rgba(139, 92, 246, 0.4)";
-          e.currentTarget.style.transform = "scale(1.05)";
+          e.currentTarget.style.opacity = "1";
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = "rgba(139, 92, 246, 0.1)";
-          e.currentTarget.style.borderColor = "rgba(139, 92, 246, 0.2)";
-          e.currentTarget.style.transform = "scale(1)";
+          e.currentTarget.style.opacity = "0.6";
         }}
       >
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#a78bfa"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M21.44 11.05 12 20.5a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-        </svg>
+        <Paperclip 
+          size={20} 
+          strokeWidth={1.5}
+          style={{ transform: 'rotate(45deg)' }}
+        />
       </button>
     </>
   );

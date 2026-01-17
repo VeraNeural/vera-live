@@ -2,8 +2,22 @@ import React from 'react';
 import { ActionItem } from '../types';
 import { OpsIcon } from '../icons';
 
+// Make DynamicForm accept activities with either field structure
+type FlexibleAction = Omit<ActionItem, 'fields'> & {
+  fields?: Array<{
+    id?: string;
+    name?: string;
+    label: string;
+    type: 'text' | 'textarea' | 'select' | 'number';
+    placeholder?: string;
+    options?: { value: string; label: string }[];
+    required?: boolean;
+  }>;
+  disclaimer?: string;
+};
+
 interface DynamicFormProps {
-  action: ActionItem;
+  action: FlexibleAction;
   simpleInput: string;
   formFields: Record<string, string>;
   onSimpleInputChange: (value: string) => void;
@@ -33,6 +47,11 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
   colors,
   isDark,
 }) => {
+  // Helper to get field key (supports both 'id' and 'name' properties)
+  const getFieldKey = (field: any): string => {
+    return field.id || field.name || '';
+  };
+
   return (
     <div style={{ width: '100%', maxWidth: 700, animation: 'fadeIn 0.4s ease-out' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
@@ -69,7 +88,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
       {action.fields ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {action.fields.map((field) => (
-            <div key={field.id}>
+            <div key={getFieldKey(field)}>
               <label
                 style={{
                   display: 'block',
@@ -86,8 +105,8 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
                 <input
                   type="text"
                   className="input-field"
-                  value={formFields[field.id] || ''}
-                  onChange={(e) => onFormFieldChange(field.id, e.target.value)}
+                  value={formFields[getFieldKey(field)] || ''}
+                  onChange={(e) => onFormFieldChange(getFieldKey(field), e.target.value)}
                   placeholder={field.placeholder}
                   style={{
                     width: '100%',
@@ -103,8 +122,8 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
               {field.type === 'textarea' && (
                 <textarea
                   className="input-field"
-                  value={formFields[field.id] || ''}
-                  onChange={(e) => onFormFieldChange(field.id, e.target.value)}
+                  value={formFields[getFieldKey(field)] || ''}
+                  onChange={(e) => onFormFieldChange(getFieldKey(field), e.target.value)}
                   placeholder={field.placeholder}
                   rows={12}
                   style={{
@@ -124,8 +143,8 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
               {field.type === 'select' && field.options && (
                 <select
                   className="input-field"
-                  value={formFields[field.id] || ''}
-                  onChange={(e) => onFormFieldChange(field.id, e.target.value)}
+                  value={formFields[getFieldKey(field)] || ''}
+                  onChange={(e) => onFormFieldChange(getFieldKey(field), e.target.value)}
                   style={{
                     width: '100%',
                     padding: '14px 16px',
@@ -207,6 +226,22 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
           </>
         )}
       </button>
+
+      {action.disclaimer && (
+        <div style={{ 
+          marginTop: 16, 
+          padding: '12px 16px', 
+          background: isDark ? 'rgba(255, 180, 100, 0.05)' : 'rgba(200, 160, 100, 0.08)',
+          border: `1px solid ${isDark ? 'rgba(255, 180, 100, 0.1)' : 'rgba(200, 160, 100, 0.15)'}`,
+          borderRadius: 10,
+          fontSize: 12,
+          color: colors.textMuted,
+          textAlign: 'center',
+          lineHeight: 1.5,
+        }}>
+          {action.disclaimer}
+        </div>
+      )}
     </div>
   );
 };

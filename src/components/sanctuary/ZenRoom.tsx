@@ -282,7 +282,7 @@ export default function ZenRoom({ onBack, onComplete, initialView }: ZenRoomProp
 
   return (
     <>
-      <style jsx global>{`${GLOBAL_STYLES.globalCss}`}</style>
+      <style dangerouslySetInnerHTML={{ __html: GLOBAL_STYLES.globalCss }} />
       <div style={{ position: 'fixed', inset: 0, background: COLORS.bg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: '20%', left: '50%', transform: 'translateX(-50%)', width: '150%', height: '60%', background: `radial-gradient(ellipse at center, ${COLORS.accentGlow} 0%, transparent 60%)`, borderRadius: '50%' }} />

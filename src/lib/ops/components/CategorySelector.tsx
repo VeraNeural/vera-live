@@ -2,9 +2,17 @@ import React from 'react';
 import { Category } from '../types';
 import { OpsIcon } from '../icons';
 
+// Accept any object with these properties
+interface CategoryLike {
+  id: string;
+  title: string;
+  icon: string;
+  description: string;
+}
+
 interface CategorySelectorProps {
-  categories: { id: Category; title: string; icon: string; description: string }[];
-  onSelectCategory: (categoryId: Category) => void;
+  categories: CategoryLike[];
+  onSelectCategory: (categoryId: string) => void;
   colors: {
     text: string;
     textMuted: string;

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
-import TrustTransparencySidebar from '@/components/TrustTransparencySidebar';
+import { TrustTransparencySidebar } from '@/components/sidebar';
 import { useVeraNavigator } from '@/lib/vera/navigator/hooks/useVeraNavigator';
 
 // ============================================================================
@@ -93,6 +93,17 @@ const RoomIcon = ({ type, color, size = 18 }: { type: string; color: string; siz
         <line x1="8" y1="23" x2="16" y2="23" />
       </svg>
     ),
+    'paperclip': (
+      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
+      </svg>
+    ),
+    'plus': (
+      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+    ),
     'send': (
       <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
         <line x1="22" y1="2" x2="11" y2="13" />
@@ -169,6 +180,8 @@ const TIME_COLORS = {
     cardBorder: 'rgba(0, 0, 0, 0.06)',
     glow: 'rgba(255, 200, 120, 0.2)',
     inputBg: 'rgba(255, 255, 255, 0.8)',
+    hover: 'rgba(0, 0, 0, 0.04)',
+    border: 'rgba(0, 0, 0, 0.06)',
   },
   afternoon: {
     bg: 'linear-gradient(180deg, #f5f2ed 0%, #ebe3d5 30%, #dfd5c2 100%)',
@@ -180,6 +193,8 @@ const TIME_COLORS = {
     cardBorder: 'rgba(0, 0, 0, 0.05)',
     glow: 'rgba(255, 180, 100, 0.15)',
     inputBg: 'rgba(255, 255, 255, 0.75)',
+    hover: 'rgba(0, 0, 0, 0.04)',
+    border: 'rgba(0, 0, 0, 0.05)',
   },
   evening: {
     bg: 'linear-gradient(180deg, #1e1a28 0%, #15121c 50%, #0e0b14 100%)',
@@ -191,6 +206,8 @@ const TIME_COLORS = {
     cardBorder: 'rgba(255, 255, 255, 0.08)',
     glow: 'rgba(255, 180, 100, 0.08)',
     inputBg: 'rgba(255, 255, 255, 0.08)',
+    hover: 'rgba(255, 255, 255, 0.08)',
+    border: 'rgba(255, 255, 255, 0.08)',
   },
   night: {
     bg: 'linear-gradient(180deg, #0a0810 0%, #06050a 50%, #030305 100%)',
@@ -202,6 +219,8 @@ const TIME_COLORS = {
     cardBorder: 'rgba(255, 255, 255, 0.06)',
     glow: 'rgba(255, 200, 120, 0.05)',
     inputBg: 'rgba(255, 255, 255, 0.06)',
+    hover: 'rgba(255, 255, 255, 0.06)',
+    border: 'rgba(255, 255, 255, 0.06)',
   },
 };
 
@@ -430,13 +449,27 @@ export default function VeraSanctuary() {
   const [chatGate, setChatGate] = useState<string | null>(null);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isFirstMessage, setIsFirstMessage] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimeoutRef = useRef<number | null>(null);
   
   const chatRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    const textarea = inputRef.current;
+    if (!textarea) return;
+
+    // Reset height to get accurate scrollHeight
+    textarea.style.height = 'auto';
+    // Set new height based on content
+    const newHeight = Math.min(textarea.scrollHeight, 200);
+    textarea.style.height = `${newHeight}px`;
+  }, [inputValue]);
 
   const [navHint, setNavHint] = useState(() => {
     const idx = Math.floor(Math.random() * NAV_HINT_ROTATIONS.length);
@@ -840,11 +873,26 @@ export default function VeraSanctuary() {
   return (
     <>
       <style jsx global>{GLOBAL_STYLES}</style>
+      
+      {/* Hidden file input for attachments */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const file = e.currentTarget.files?.[0];
+          e.currentTarget.value = '';
+          if (!file) return;
+          showToast('Attachment functionality coming soon');
+        }}
+      />
 
       <div style={{
         position: 'fixed',
         inset: 0,
         background: colors.bg,
+         zIndex: 1,
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -985,6 +1033,7 @@ export default function VeraSanctuary() {
           flexDirection: 'column',
           overflow: 'hidden',
           padding: '0 16px',
+          paddingBottom: 180,
         }}>
           
           {/* VERA Chat Area */}
@@ -1010,7 +1059,7 @@ export default function VeraSanctuary() {
                 flexDirection: 'column',
               }}
             >
-              {/* Welcome State (no messages yet) */}
+              {/* Welcome State (no messages yet) - Centered Layout */}
               {!hasMessages && (
                 <div style={{
                   flex: 1,
@@ -1022,33 +1071,226 @@ export default function VeraSanctuary() {
                   animation: 'fadeInUp 0.6s ease-out',
                   padding: '0 20px',
                 }}>
-                  <h1 style={{
-                    fontFamily: "'Cormorant Garamond', Georgia, serif",
-                    fontSize: 'clamp(2.8rem, 12vw, 4rem)',
-                    fontWeight: 300,
-                    color: colors.text,
-                    marginBottom: 16,
-                    letterSpacing: '-0.02em',
+                  {/* Greeting Section */}
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 16,
+                    marginBottom: 32,
                   }}>
-                    {getGreeting(timeOfDay)}
-                  </h1>
-                  
-                  <p style={{
-                    fontSize: 'clamp(16px, 4vw, 20px)',
-                    color: colors.textMuted,
-                    marginBottom: 40,
-                    lineHeight: 1.6,
-                  }}>
-                    {getVeraGreeting(timeOfDay)}
-                  </p>
+                    <h1 style={{
+                      fontFamily: "'Cormorant Garamond', Georgia, serif",
+                      fontSize: 'clamp(2.8rem, 12vw, 4rem)',
+                      fontWeight: 300,
+                      color: colors.text,
+                      margin: 0,
+                      letterSpacing: '-0.02em',
+                    }}>
+                      {getGreeting(timeOfDay)}
+                    </h1>
+                    
+                    <p style={{
+                      fontSize: 'clamp(16px, 4vw, 20px)',
+                      color: colors.textMuted,
+                      margin: 0,
+                      lineHeight: 1.6,
+                    }}>
+                      {getVeraGreeting(timeOfDay)}
+                    </p>
+                  </div>
 
-                  {/* Quick Prompts - Centered Wrap */}
+                  {/* Chat Input - Centered (Welcome State Only) */}
+                  <div style={{
+                    width: '100%',
+                    maxWidth: 600,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 12,
+                    marginBottom: 12,
+                  }}>
+                    {/* Input Container */}
+                    <div style={{
+                      position: 'relative',
+                      display: 'flex',
+                      alignItems: 'flex-end',
+                      background: colors.inputBg,
+                      border: `1.5px solid ${colors.cardBorder}`,
+                      borderRadius: 24,
+                      padding: '12px 20px',
+                      backdropFilter: 'blur(10px)',
+                      boxShadow: isDark 
+                        ? '0 4px 16px rgba(0, 0, 0, 0.3)'
+                        : '0 4px 16px rgba(0, 0, 0, 0.08)',
+                      gap: 12,
+                      minHeight: 52,
+                    }}>
+                      {/* Plus Button with Hover Menu */}
+                      <div style={{ position: 'relative', flexShrink: 0 }}>
+                        <button
+                          onMouseEnter={() => setShowAttachMenu(true)}
+                          onMouseLeave={() => setShowAttachMenu(false)}
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: '50%',
+                            border: 'none',
+                            background: 'transparent',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            color: colors.textMuted,
+                            transition: 'all 200ms ease',
+                          }}
+                        >
+                          <RoomIcon type="plus" color="currentColor" size={20} />
+                        </button>
+
+                        {/* Hover Menu */}
+                        {showAttachMenu && (
+                          <div
+                            onMouseEnter={() => setShowAttachMenu(true)}
+                            onMouseLeave={() => setShowAttachMenu(false)}
+                            style={{
+                              position: 'absolute',
+                              bottom: '100%',
+                              left: '50%',
+                              transform: 'translateX(-50%)',
+                              marginBottom: 12,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: 8,
+                              padding: 8,
+                              background: isDark 
+                                ? 'rgba(30, 30, 35, 0.95)' 
+                                : 'rgba(255, 255, 255, 0.95)',
+                              border: `1px solid ${colors.cardBorder}`,
+                              borderRadius: 12,
+                              backdropFilter: 'blur(10px)',
+                              boxShadow: isDark
+                                ? '0 8px 24px rgba(0, 0, 0, 0.4)'
+                                : '0 8px 24px rgba(0, 0, 0, 0.1)',
+                              zIndex: 100,
+                            }}
+                          >
+                            {/* Microphone Option */}
+                            <button
+                              onClick={() => {
+                                setShowAttachMenu(false);
+                                router.push('/voice');
+                              }}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 10,
+                                padding: '10px 16px',
+                                borderRadius: 8,
+                                border: 'none',
+                                background: 'transparent',
+                                color: colors.text,
+                                fontSize: 13,
+                                fontWeight: 500,
+                                cursor: 'pointer',
+                                transition: 'background 150ms ease',
+                                whiteSpace: 'nowrap',
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = colors.hover}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                            >
+                              <RoomIcon type="mic" color="currentColor" size={18} />
+                              <span>Voice</span>
+                            </button>
+
+                            {/* Attachment Option */}
+                            <button
+                              onClick={() => {
+                                setShowAttachMenu(false);
+                                fileInputRef.current?.click();
+                              }}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 10,
+                                padding: '10px 16px',
+                                borderRadius: 8,
+                                border: 'none',
+                                background: 'transparent',
+                                color: colors.text,
+                                fontSize: 13,
+                                fontWeight: 500,
+                                cursor: 'pointer',
+                                transition: 'background 150ms ease',
+                                whiteSpace: 'nowrap',
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = colors.hover}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                            >
+                              <RoomIcon type="paperclip" color="currentColor" size={18} />
+                              <span>Attach</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Text Input */}
+                      <textarea
+                        ref={inputRef}
+                        className="input-field"
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Share what's on your mind..."
+                        disabled={isGated}
+                        rows={1}
+                        style={{
+                          flex: 1,
+                          border: 'none',
+                          background: 'transparent',
+                          color: colors.text,
+                          fontSize: 16,
+                          lineHeight: 1.5,
+                          resize: 'none',
+                          maxHeight: 200,
+                          minHeight: 24,
+                          overflow: 'hidden',
+                          opacity: isGated ? 0.6 : 1,
+                        }}
+                      />
+
+                      {/* Send Button */}
+                      <button
+                        onClick={() => handleSend()}
+                        disabled={isGated || !inputValue.trim()}
+                        style={{
+                          flexShrink: 0,
+                          padding: 0,
+                          width: 36,
+                          height: 36,
+                          border: 'none',
+                          background: 'transparent',
+                          cursor: !isGated && inputValue.trim() ? 'pointer' : 'default',
+                          opacity: !isGated && inputValue.trim() ? 1 : 0.4,
+                          color: colors.accent,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <RoomIcon type="send" color="currentColor" size={24} />
+                      </button>
+                    </div>
+
+                    {/* AI Disclaimer - Removed from here */}
+                  </div>
+
+                  {/* Quick Prompts - Below Input */}
                   <div style={{
                     display: 'flex',
                     flexWrap: 'wrap',
                     justifyContent: 'center',
                     gap: 12,
-                    maxWidth: 500,
+                    maxWidth: '100%',
                   }}>
                       {quickPrompts.map((prompt, index) => (
                         <button
@@ -1065,12 +1307,13 @@ export default function VeraSanctuary() {
                             fontWeight: 500,
                             cursor: 'pointer',
                             backdropFilter: 'blur(10px)',
+                            whiteSpace: 'nowrap',
                           }}
                         >
                           {prompt.text}
                         </button>
                       ))}
-                    </div>
+                  </div>
                 </div>
               )}
 
@@ -1395,250 +1638,260 @@ export default function VeraSanctuary() {
           </div>
         </main>
 
-        {/* Bottom Section - Input + Room Pills */}
-        <footer style={{
-          padding: '16px 20px',
-          paddingBottom: 'max(20px, env(safe-area-inset-bottom))',
-          zIndex: 50,
-        }}>
-          <div style={{
-            maxWidth: 640,
-            margin: '0 auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 16,
+        {/* Fixed Bottom Input - Only show when chat has started */}
+        {hasMessages && (
+          <footer style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            padding: '16px 20px',
+            paddingBottom: 'max(20px, env(safe-area-inset-bottom))',
+            background: colors.bg,
+            borderTop: `1px solid ${colors.border}`,
+            zIndex: 100,
           }}>
-            
-            {/* Input Area */}
             <div style={{
+              maxWidth: 760,
+              margin: '0 auto',
               display: 'flex',
-              alignItems: 'flex-end',
-              gap: 12,
+              flexDirection: 'column',
+              gap: 16,
             }}>
-              {/* Audio Controls */}
-              <button style={{
-                width: 52,
-                height: 52,
-                borderRadius: '50%',
-                border: `1.5px solid ${colors.cardBorder}`,
-                background: colors.cardBg,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                flexShrink: 0,
-                color: colors.textMuted,
-              }}>
-                <RoomIcon type="headphones" color="currentColor" size={22} />
-              </button>
-
-              <button style={{
-                width: 52,
-                height: 52,
-                borderRadius: '50%',
-                border: `1.5px solid ${colors.cardBorder}`,
-                background: colors.cardBg,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                flexShrink: 0,
-                color: colors.textMuted,
-              }}>
-                <RoomIcon type="mic" color="currentColor" size={22} />
-              </button>
-
-              {/* Text Input + Hint */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'flex-end',
-                  background: colors.inputBg,
-                  border: `1.5px solid ${colors.cardBorder}`,
-                  borderRadius: 28,
-                  padding: '14px 20px',
-                  backdropFilter: 'blur(10px)',
-                }}>
-                  <textarea
-                    ref={inputRef}
-                    className="input-field"
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder={
-                      isGated
-                        ? chatGate === 'upgrade_required'
-                          ? 'Daily limit reached — upgrade to keep chatting…'
-                          : 'Create a free account to keep chatting…'
-                        : "Share what's on your mind..."
-                    }
-                    disabled={isGated}
-                    rows={1}
-                    style={{
-                      flex: 1,
-                      border: 'none',
-                      background: 'transparent',
-                      color: colors.text,
-                      fontSize: 16,
-                      lineHeight: 1.5,
-                      resize: 'none',
-                      maxHeight: 120,
-                      opacity: isGated ? 0.6 : 1,
-                    }}
-                  />
-                  <button
-                    onClick={() => handleSend()}
-                    disabled={isGated || !inputValue.trim()}
-                    style={{
-                      marginLeft: 12,
-                      padding: 0,
-                      width: 44,
-                      height: 44,
-                      border: 'none',
-                      background: 'transparent',
-                      cursor: !isGated && inputValue.trim() ? 'pointer' : 'default',
-                      opacity: !isGated && inputValue.trim() ? 1 : 0.4,
-                      color: colors.accent,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <RoomIcon type="send" color="currentColor" size={24} />
-                  </button>
-                </div>
-
-                <div style={{
-                  color: colors.textDim,
-                  fontSize: 12,
-                  marginTop: 8,
-                  paddingLeft: 20,
-                  paddingRight: 20,
-                }}>
-                  {navHint}
-                </div>
-              </div>
-            </div>
-
-            {/* Room Pills - More Prominent */}
+              
+              {/* Input Area */}
             <div style={{
               display: 'flex',
               flexDirection: 'column',
-              alignItems: 'center',
-              gap: 14,
+              gap: 12,
             }}>
-              {/* Section Label */}
+              {/* Input Container */}
               <div style={{
+                position: 'relative',
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-end',
+                background: colors.inputBg,
+                border: `1.5px solid ${colors.cardBorder}`,
+                borderRadius: 24,
+                padding: '12px 20px',
+                backdropFilter: 'blur(10px)',
+                boxShadow: isDark 
+                  ? '0 4px 16px rgba(0, 0, 0, 0.3)'
+                  : '0 4px 16px rgba(0, 0, 0, 0.08)',
                 gap: 12,
-                width: '100%',
+                minHeight: 52,
               }}>
-                <div style={{
-                  flex: 1,
-                  height: 1,
-                  background: colors.cardBorder,
-                }} />
-                <span style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                  color: colors.textMuted,
-                }}>
-                  Explore Rooms
-                </span>
-                <div style={{
-                  flex: 1,
-                  height: 1,
-                  background: colors.cardBorder,
-                }} />
-              </div>
-
-              {/* Room Pills Grid */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 10,
-                flexWrap: 'wrap',
-              }}>
-                {ROOMS.slice(0, showAllRooms ? ROOMS.length : 5).map((room) => (
+                {/* Plus Button with Hover Menu */}
+                <div style={{ position: 'relative', flexShrink: 0 }}>
                   <button
-                    key={room.id}
-                    className="room-pill"
-                    onClick={() => handleRoomClick(room.id)}
+                    onMouseEnter={() => setShowAttachMenu(true)}
+                    onMouseLeave={() => setShowAttachMenu(false)}
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '12px 20px',
-                      background: isDark 
-                        ? 'rgba(255, 255, 255, 0.08)' 
-                        : 'rgba(255, 255, 255, 0.85)',
-                      border: `1.5px solid ${isDark 
-                        ? 'rgba(255, 255, 255, 0.12)' 
-                        : 'rgba(0, 0, 0, 0.08)'}`,
-                      borderRadius: 50,
-                      cursor: 'pointer',
-                      color: colors.text,
-                      fontSize: 15,
-                      fontWeight: 500,
-                      backdropFilter: 'blur(10px)',
-                      boxShadow: isDark 
-                        ? 'none' 
-                        : '0 2px 8px rgba(0, 0, 0, 0.04)',
-                    }}
-                  >
-                    <span style={{ 
-                      display: 'flex', 
-                      color: colors.accent,
-                      opacity: 0.9,
-                    }}>
-                      {room.icon}
-                    </span>
-                    <span>{room.shortName}</span>
-                  </button>
-                ))}
-                
-                {!showAllRooms && ROOMS.length > 5 && (
-                  <button
-                    className="room-pill"
-                    onClick={() => setShowAllRooms(true)}
-                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: '50%',
+                      border: 'none',
+                      background: 'transparent',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      width: 48,
-                      height: 48,
-                      padding: 0,
-                      background: isDark 
-                        ? 'rgba(255, 255, 255, 0.08)' 
-                        : 'rgba(255, 255, 255, 0.85)',
-                      border: `1.5px solid ${isDark 
-                        ? 'rgba(255, 255, 255, 0.12)' 
-                        : 'rgba(0, 0, 0, 0.08)'}`,
-                      borderRadius: '50%',
                       cursor: 'pointer',
                       color: colors.textMuted,
+                      transition: 'all 200ms ease',
                     }}
                   >
-                    <RoomIcon type="more" color="currentColor" size={20} />
+                    <RoomIcon type="plus" color="currentColor" size={20} />
                   </button>
-                )}
+
+                  {/* Hover Menu */}
+                  {showAttachMenu && (
+                    <div
+                      onMouseEnter={() => setShowAttachMenu(true)}
+                      onMouseLeave={() => setShowAttachMenu(false)}
+                      style={{
+                        position: 'absolute',
+                        bottom: '100%',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        marginBottom: 12,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 8,
+                        padding: 8,
+                        background: isDark 
+                          ? 'rgba(30, 30, 35, 0.95)' 
+                          : 'rgba(255, 255, 255, 0.95)',
+                        border: `1px solid ${colors.cardBorder}`,
+                        borderRadius: 12,
+                        backdropFilter: 'blur(10px)',
+                        boxShadow: isDark
+                          ? '0 8px 24px rgba(0, 0, 0, 0.4)'
+                          : '0 8px 24px rgba(0, 0, 0, 0.1)',
+                        zIndex: 100,
+                      }}
+                    >
+                      {/* Microphone Option */}
+                      <button
+                        onClick={() => {
+                          setShowAttachMenu(false);
+                          router.push('/voice');
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 10,
+                          padding: '10px 16px',
+                          borderRadius: 8,
+                          border: 'none',
+                          background: 'transparent',
+                          color: colors.text,
+                          fontSize: 13,
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          transition: 'background 150ms ease',
+                          whiteSpace: 'nowrap',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = colors.hover}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <RoomIcon type="mic" color="currentColor" size={18} />
+                        <span>Voice</span>
+                      </button>
+
+                      {/* Attachment Option */}
+                      <button
+                        onClick={() => {
+                          setShowAttachMenu(false);
+                          fileInputRef.current?.click();
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 10,
+                          padding: '10px 16px',
+                          borderRadius: 8,
+                          border: 'none',
+                          background: 'transparent',
+                          color: colors.text,
+                          fontSize: 13,
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          transition: 'background 150ms ease',
+                          whiteSpace: 'nowrap',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = colors.hover}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <RoomIcon type="paperclip" color="currentColor" size={18} />
+                        <span>Attach</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Text Input */}
+                <textarea
+                  ref={inputRef}
+                  className="input-field"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder={
+                    isGated
+                      ? chatGate === 'upgrade_required'
+                        ? 'Daily limit reached — upgrade to keep chatting…'
+                        : 'Create a free account to keep chatting…'
+                      : "Share what's on your mind..."
+                  }
+                  disabled={isGated}
+                  rows={1}
+                  style={{
+                    flex: 1,
+                    border: 'none',
+                    background: 'transparent',
+                    color: colors.text,
+                    fontSize: 16,
+                    lineHeight: 1.5,
+                    resize: 'none',
+                    maxHeight: 200,
+                    minHeight: 24,
+                    overflow: 'hidden',
+                    opacity: isGated ? 0.6 : 1,
+                  }}
+                />
+
+                {/* Send Button */}
+                <button
+                  onClick={() => handleSend()}
+                  disabled={isGated || !inputValue.trim()}
+                  style={{
+                    flexShrink: 0,
+                    padding: 0,
+                    width: 36,
+                    height: 36,
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: !isGated && inputValue.trim() ? 'pointer' : 'default',
+                    opacity: !isGated && inputValue.trim() ? 1 : 0.4,
+                    color: colors.accent,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <RoomIcon type="send" color="currentColor" size={24} />
+                </button>
+              </div>
+
+              {/* AI Disclaimer */}
+              <div style={{
+                paddingTop: 12,
+                paddingLeft: 20,
+                paddingRight: 20,
+                borderTop: `1px solid ${colors.cardBorder}`,
+                textAlign: 'center',
+              }}>
+                <p style={{
+                  color: colors.textDim,
+                  fontSize: 11,
+                  lineHeight: 1.5,
+                  margin: 0,
+                  fontStyle: 'italic',
+                }}>
+                  VERA is an AI assistant. While she strives for accuracy, please verify important information independently.
+                </p>
               </div>
             </div>
           </div>
-        </footer>
+          </footer>
+        )}
 
-        {/* Trust & Transparency Sidebar */}
+        {/* Fixed Disclaimer at Bottom - Only show in welcome state */}
+        {!hasMessages && (
+          <div style={{
+            position: 'fixed',
+            bottom: 16,
+            left: 0,
+            right: 0,
+            textAlign: 'center',
+            padding: '0 20px',
+            zIndex: 50,
+          }}>
+            <p style={{
+              color: colors.textDim,
+              fontSize: 11,
+              lineHeight: 1.5,
+              margin: 0,
+              fontStyle: 'italic',
+              opacity: 0.5,
+            }}>
+              VERA is an AI assistant. While she strives for accuracy, please verify important information independently.
+            </p>
+          </div>
+        )}
+
         <TrustTransparencySidebar
           isDark={isDark}
-          colors={{
-            bg: colors.cardBg,
-            text: colors.text,
-            textMuted: colors.textMuted,
-          }}
           open={sidebarOpen}
           onOpenChange={setSidebarOpen}
         />

@@ -7,10 +7,20 @@ import OpsRoom from '@/components/sanctuary/OpsRoom';
 function OpsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialView = searchParams.get('view') ?? undefined;
+  
+  const view = searchParams.get('view') ?? undefined;
+  const category = searchParams.get('category') ?? undefined;
+  const activity = searchParams.get('activity') ?? undefined;
+  const option = searchParams.get('option') ?? undefined;
 
   return (
-    <OpsRoom onBack={() => router.push('/sanctuary')} initialView={initialView} />
+    <OpsRoom 
+      onBack={() => router.push('/sanctuary')} 
+      initialView={view}
+      initialCategory={category}
+      initialActivity={activity}
+      initialOption={option}
+    />
   );
 }
 

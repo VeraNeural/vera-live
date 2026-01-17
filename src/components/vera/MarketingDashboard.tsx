@@ -26,14 +26,14 @@ function prettyPlatform(p: Platform): string {
 }
 
 function prettyTheme(t: ContentTheme): string {
-  return t.replace(/-/g, ' ');
+  return t.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function platformIcon(p: Platform): string {
-  if (p === 'instagram') return '📸';
+  if (p === 'instagram') return '◎';
   if (p === 'twitter') return '𝕏';
-  if (p === 'tiktok') return '🎬';
-  return '💼';
+  if (p === 'tiktok') return '♪';
+  return '▣';
 }
 
 function themeGroup(t: ContentTheme): 'Wellness' | 'Product' | 'Social Proof' | 'Behind the Scenes' {
@@ -65,20 +65,6 @@ function truncate(text: string, max = 180): string {
   return `${t.slice(0, max - 1)}…`;
 }
 
-const SELECT_STYLE: CSSProperties = {
-  padding: 10,
-  borderRadius: 12,
-  background: '#1a1625',
-  color: '#e8e6f0',
-  colorScheme: 'dark',
-  border: '1px solid rgba(255,255,255,0.10)',
-};
-
-const OPTION_STYLE: CSSProperties = {
-  background: '#1a1625',
-  color: '#e8e6f0',
-};
-
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
     ...init,
@@ -88,6 +74,307 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
   if (!res.ok) throw new Error(data?.error || `Request failed (${res.status})`);
   return data as T;
 }
+
+// Styled Components
+const styles = {
+  container: {
+    minHeight: '100vh',
+    color: 'rgba(255,255,255,0.92)',
+    padding: '32px',
+  } as CSSProperties,
+  
+  header: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: '16px',
+    marginBottom: '32px',
+  } as CSSProperties,
+  
+  title: {
+    fontFamily: 'var(--font-serif, Georgia, serif)',
+    fontSize: '28px',
+    fontWeight: 400,
+    letterSpacing: '-0.02em',
+    color: 'rgba(255,255,255,0.95)',
+  } as CSSProperties,
+  
+  subtitle: {
+    marginTop: '8px',
+    fontSize: '14px',
+    color: 'rgba(255,255,255,0.45)',
+    letterSpacing: '0.01em',
+  } as CSSProperties,
+  
+  refreshBtn: {
+    padding: '10px 16px',
+    borderRadius: '10px',
+    border: '1px solid rgba(255,255,255,0.08)',
+    background: 'rgba(255,255,255,0.03)',
+    color: 'rgba(255,255,255,0.7)',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: 500,
+    transition: 'all 0.2s ease',
+  } as CSSProperties,
+  
+  statsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: '16px',
+    marginBottom: '28px',
+  } as CSSProperties,
+  
+  statCard: {
+    padding: '20px',
+    borderRadius: '14px',
+    border: '1px solid rgba(255,255,255,0.06)',
+    background: 'rgba(255,255,255,0.02)',
+    transition: 'all 0.3s ease',
+  } as CSSProperties,
+  
+  statLabel: {
+    fontSize: '12px',
+    color: 'rgba(255,255,255,0.45)',
+    letterSpacing: '0.03em',
+    textTransform: 'uppercase' as const,
+    marginBottom: '8px',
+  } as CSSProperties,
+  
+  statValue: {
+    fontSize: '28px',
+    fontWeight: 300,
+    color: 'rgba(255,255,255,0.9)',
+    letterSpacing: '-0.02em',
+  } as CSSProperties,
+  
+  tabsContainer: {
+    display: 'flex',
+    gap: '6px',
+    padding: '4px',
+    borderRadius: '12px',
+    background: 'rgba(255,255,255,0.02)',
+    border: '1px solid rgba(255,255,255,0.06)',
+    marginBottom: '24px',
+    width: 'fit-content',
+  } as CSSProperties,
+  
+  tab: (active: boolean): CSSProperties => ({
+    padding: '10px 18px',
+    borderRadius: '8px',
+    border: 'none',
+    background: active ? 'rgba(139,92,246,0.2)' : 'transparent',
+    color: active ? 'rgba(167,139,250,1)' : 'rgba(255,255,255,0.5)',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: 500,
+    transition: 'all 0.2s ease',
+  }),
+  
+  card: {
+    padding: '24px',
+    borderRadius: '16px',
+    border: '1px solid rgba(255,255,255,0.06)',
+    background: 'rgba(255,255,255,0.02)',
+  } as CSSProperties,
+  
+  cardTitle: {
+    fontSize: '16px',
+    fontWeight: 600,
+    color: 'rgba(255,255,255,0.9)',
+    marginBottom: '20px',
+  } as CSSProperties,
+  
+  select: {
+    padding: '12px 14px',
+    borderRadius: '10px',
+    background: 'rgba(0,0,0,0.3)',
+    color: 'rgba(255,255,255,0.9)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    fontSize: '14px',
+    width: '100%',
+    cursor: 'pointer',
+    appearance: 'none' as const,
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'right 12px center',
+    paddingRight: '36px',
+  } as CSSProperties,
+  
+  option: {
+    background: '#1a1625',
+    color: '#e8e6f0',
+  } as CSSProperties,
+  
+  generateBtn: {
+    width: '100%',
+    padding: '14px 20px',
+    borderRadius: '12px',
+    border: 'none',
+    background: 'linear-gradient(135deg, rgba(139,92,246,0.4) 0%, rgba(109,40,217,0.4) 100%)',
+    color: 'white',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: 600,
+    transition: 'all 0.2s ease',
+    marginTop: '16px',
+  } as CSSProperties,
+  
+  actionBtn: (variant: 'default' | 'primary' | 'danger' = 'default'): CSSProperties => ({
+    padding: '8px 14px',
+    borderRadius: '8px',
+    border: '1px solid rgba(255,255,255,0.08)',
+    background: variant === 'primary' 
+      ? 'rgba(139,92,246,0.25)' 
+      : variant === 'danger' 
+        ? 'rgba(239,68,68,0.15)' 
+        : 'rgba(255,255,255,0.04)',
+    color: variant === 'danger' ? 'rgba(252,165,165,1)' : 'rgba(255,255,255,0.85)',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: 500,
+    transition: 'all 0.2s ease',
+  }),
+  
+  postCard: {
+    padding: '18px',
+    borderRadius: '12px',
+    border: '1px solid rgba(255,255,255,0.06)',
+    background: 'rgba(255,255,255,0.015)',
+    marginBottom: '12px',
+    transition: 'all 0.2s ease',
+  } as CSSProperties,
+  
+  postHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '12px',
+  } as CSSProperties,
+  
+  postMeta: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    fontSize: '13px',
+  } as CSSProperties,
+  
+  platformBadge: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    fontWeight: 600,
+    color: 'rgba(255,255,255,0.85)',
+  } as CSSProperties,
+  
+  themeBadge: {
+    padding: '4px 10px',
+    borderRadius: '6px',
+    background: 'rgba(139,92,246,0.12)',
+    color: 'rgba(167,139,250,0.9)',
+    fontSize: '12px',
+    fontWeight: 500,
+  } as CSSProperties,
+  
+  postContent: {
+    fontSize: '14px',
+    lineHeight: 1.6,
+    color: 'rgba(255,255,255,0.75)',
+    whiteSpace: 'pre-wrap' as const,
+  } as CSSProperties,
+  
+  postActions: {
+    display: 'flex',
+    gap: '8px',
+    marginTop: '14px',
+    flexWrap: 'wrap' as const,
+  } as CSSProperties,
+  
+  dateText: {
+    fontSize: '12px',
+    color: 'rgba(255,255,255,0.4)',
+  } as CSSProperties,
+  
+  input: {
+    padding: '12px 14px',
+    borderRadius: '10px',
+    background: 'rgba(0,0,0,0.3)',
+    color: 'rgba(255,255,255,0.9)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    fontSize: '14px',
+    width: '100%',
+  } as CSSProperties,
+  
+  textarea: {
+    padding: '14px',
+    borderRadius: '12px',
+    background: 'rgba(0,0,0,0.3)',
+    color: 'rgba(255,255,255,0.9)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    fontSize: '14px',
+    lineHeight: 1.6,
+    width: '100%',
+    resize: 'vertical' as const,
+    fontFamily: 'inherit',
+  } as CSSProperties,
+  
+  error: {
+    padding: '14px 18px',
+    borderRadius: '10px',
+    background: 'rgba(239,68,68,0.1)',
+    border: '1px solid rgba(239,68,68,0.2)',
+    color: 'rgba(252,165,165,1)',
+    fontSize: '14px',
+    marginBottom: '20px',
+  } as CSSProperties,
+  
+  emptyState: {
+    padding: '40px 20px',
+    textAlign: 'center' as const,
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: '14px',
+  } as CSSProperties,
+  
+  tableHeader: {
+    padding: '12px 14px',
+    borderBottom: '1px solid rgba(255,255,255,0.08)',
+    fontSize: '12px',
+    fontWeight: 500,
+    color: 'rgba(255,255,255,0.5)',
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.04em',
+    textAlign: 'left' as const,
+  } as CSSProperties,
+  
+  tableCell: {
+    padding: '14px',
+    borderBottom: '1px solid rgba(255,255,255,0.04)',
+    fontSize: '13px',
+    color: 'rgba(255,255,255,0.8)',
+  } as CSSProperties,
+  
+  modal: {
+    position: 'fixed' as const,
+    inset: 0,
+    background: 'rgba(0,0,0,0.7)',
+    backdropFilter: 'blur(8px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '20px',
+    zIndex: 50,
+  } as CSSProperties,
+  
+  modalContent: {
+    width: 'min(720px, 100%)',
+    maxHeight: '85vh',
+    overflow: 'auto',
+    borderRadius: '20px',
+    border: '1px solid rgba(255,255,255,0.1)',
+    background: 'linear-gradient(180deg, rgba(20,16,32,0.98) 0%, rgba(12,10,20,0.98) 100%)',
+    padding: '28px',
+  } as CSSProperties,
+};
 
 export default function MarketingDashboard() {
   const [tab, setTab] = useState<Tab>('generate');
@@ -123,13 +410,6 @@ export default function MarketingDashboard() {
     const signups = posts.reduce((sum, p) => sum + (p.performance?.signups ?? 0), 0);
     return { generatedCount, readyCount, postedCount, signups };
   }, [posts]);
-
-  const filtered = useMemo(() => {
-    if (tab === 'ready') return posts.filter((p) => p.status === 'ready' || p.status === 'scheduled');
-    if (tab === 'posted') return posts.filter((p) => p.status === 'posted');
-    if (tab === 'analytics') return posts;
-    return posts;
-  }, [posts, tab]);
 
   const drafts = useMemo(() => posts.filter((p) => p.status === 'draft'), [posts]);
   const readyQueue = useMemo(
@@ -190,7 +470,6 @@ export default function MarketingDashboard() {
 
   const saveEdits = useCallback(async () => {
     if (!editPost) return;
-
     setLoading(true);
     setError(null);
     try {
@@ -296,8 +575,6 @@ export default function MarketingDashboard() {
       const [moved] = next.splice(from, 1);
       next.splice(to, 0, moved);
 
-      // Persist the ordering by writing ascending scheduledFor timestamps.
-      // Keep status as 'ready' (scheduling uses /schedule which flips to scheduled).
       const base = new Date();
       for (let i = 0; i < next.length; i++) {
         const scheduledFor = new Date(base.getTime() + i * 60_000);
@@ -378,326 +655,261 @@ export default function MarketingDashboard() {
     return { byPlatform, series, top };
   }, [posted, posts]);
 
-  const Card = ({ children }: { children: any }) => (
-    <div
-      style={{
-        border: '1px solid rgba(255,255,255,0.10)',
-        background: 'rgba(255,255,255,0.04)',
-        borderRadius: 16,
-        padding: 16,
-      }}
-    >
-      {children}
-    </div>
-  );
-
-  const Pill = ({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) => (
-    <button
-      onClick={onClick}
-      style={{
-        padding: '8px 12px',
-        borderRadius: 999,
-        border: '1px solid rgba(255,255,255,0.12)',
-        background: active ? 'rgba(139,92,246,0.25)' : 'transparent',
-        color: 'rgba(255,255,255,0.92)',
-        cursor: 'pointer',
-        fontSize: 13,
-      }}
-    >
-      {label}
-    </button>
-  );
-
   return (
-    <div style={{ color: 'rgba(255,255,255,0.92)' }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16 }}>
+    <div style={styles.container}>
+      {/* Header */}
+      <div style={styles.header}>
         <div>
-          <div style={{ fontSize: 22, fontWeight: 700 }}>VERA Marketing Engine</div>
-          <div style={{ opacity: 0.75, marginTop: 4, fontSize: 13 }}>
-            Generate posts, queue them as ready, and track performance (manual for now).
-          </div>
+          <h1 style={styles.title}>
+            VERA <span style={{ color: 'rgba(167,139,250,0.8)' }}>Marketing</span>
+          </h1>
+          <p style={styles.subtitle}>Generate content, schedule posts, track performance</p>
         </div>
         <button
           onClick={() => refresh().catch(() => null)}
-          style={{
-            padding: '10px 14px',
-            borderRadius: 12,
-            border: '1px solid rgba(255,255,255,0.12)',
-            background: 'rgba(255,255,255,0.06)',
-            color: 'rgba(255,255,255,0.92)',
-            cursor: 'pointer',
-            fontWeight: 600,
+          style={styles.refreshBtn}
+          onMouseOver={(e) => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+            e.currentTarget.style.borderColor = 'rgba(139,92,246,0.3)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
           }}
         >
-          Refresh
+          ↻ Refresh
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12, marginTop: 16 }}>
-        <Card>
-          <div style={{ opacity: 0.7, fontSize: 12 }}>📝 Posts generated</div>
-          <div style={{ fontSize: 20, fontWeight: 700, marginTop: 6 }}>{stats.generatedCount}</div>
-        </Card>
-        <Card>
-          <div style={{ opacity: 0.7, fontSize: 12 }}>📅 Ready/scheduled</div>
-          <div style={{ fontSize: 20, fontWeight: 700, marginTop: 6 }}>{stats.readyCount}</div>
-        </Card>
-        <Card>
-          <div style={{ opacity: 0.7, fontSize: 12 }}>✅ Published</div>
-          <div style={{ fontSize: 20, fontWeight: 700, marginTop: 6 }}>{stats.postedCount}</div>
-        </Card>
-        <Card>
-          <div style={{ opacity: 0.7, fontSize: 12 }}>👥 Signups (manual)</div>
-          <div style={{ fontSize: 20, fontWeight: 700, marginTop: 6 }}>{stats.signups}</div>
-        </Card>
+      {/* Stats */}
+      <div style={styles.statsGrid}>
+        <div style={styles.statCard}>
+          <div style={styles.statLabel}>Total Posts</div>
+          <div style={styles.statValue}>{stats.generatedCount}</div>
+        </div>
+        <div style={styles.statCard}>
+          <div style={styles.statLabel}>Ready / Scheduled</div>
+          <div style={styles.statValue}>{stats.readyCount}</div>
+        </div>
+        <div style={styles.statCard}>
+          <div style={styles.statLabel}>Published</div>
+          <div style={styles.statValue}>{stats.postedCount}</div>
+        </div>
+        <div style={styles.statCard}>
+          <div style={styles.statLabel}>Signups</div>
+          <div style={styles.statValue}>{stats.signups}</div>
+        </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
-        <Pill active={tab === 'generate'} label="Generate" onClick={() => setTab('generate')} />
-        <Pill active={tab === 'ready'} label="Ready to Post" onClick={() => setTab('ready')} />
-        <Pill active={tab === 'posted'} label="Posted" onClick={() => setTab('posted')} />
-        <Pill active={tab === 'analytics'} label="Analytics" onClick={() => setTab('analytics')} />
+      {/* Tabs */}
+      <div style={styles.tabsContainer}>
+        {(['generate', 'ready', 'posted', 'analytics'] as Tab[]).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            style={styles.tab(tab === t)}
+          >
+            {t === 'generate' && '✦ Generate'}
+            {t === 'ready' && '◎ Ready'}
+            {t === 'posted' && '✓ Posted'}
+            {t === 'analytics' && '◈ Analytics'}
+          </button>
+        ))}
       </div>
 
-      {error && (
-        <div style={{ marginTop: 12, color: 'rgba(255,120,120,0.95)' }}>{error}</div>
-      )}
+      {/* Error */}
+      {error && <div style={styles.error}>{error}</div>}
 
+      {/* Generate Tab */}
       {tab === 'generate' && (
-        <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: 12 }}>
-          <Card>
-            <div style={{ fontWeight: 800, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
-              <span>Generate</span>
-              {loading ? <span style={{ fontSize: 12, opacity: 0.75 }}>Generating…</span> : null}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          {/* Generate Form */}
+          <div style={styles.card}>
+            <div style={styles.cardTitle}>
+              Create New Post
+              {loading && <span style={{ fontWeight: 400, fontSize: '13px', color: 'rgba(167,139,250,0.8)', marginLeft: '12px' }}>Generating…</span>}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 12 }}>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, opacity: 0.9 }}>
-                Platform
-                <select
-                  value={platform}
-                  onChange={(e) => setPlatform(e.target.value as Platform)}
-                  style={SELECT_STYLE}
-                >
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Platform
+                </label>
+                <select value={platform} onChange={(e) => setPlatform(e.target.value as Platform)} style={styles.select}>
                   {PLATFORMS.map((p) => (
-                    <option key={p} value={p} style={OPTION_STYLE}>
+                    <option key={p} value={p} style={styles.option}>
                       {platformIcon(p)} {prettyPlatform(p)}
                     </option>
                   ))}
                 </select>
-              </label>
+              </div>
 
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, opacity: 0.9 }}>
-                Theme
-                <select
-                  value={theme}
-                  onChange={(e) => setTheme(e.target.value as ContentTheme)}
-                  style={SELECT_STYLE}
-                >
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Theme
+                </label>
+                <select value={theme} onChange={(e) => setTheme(e.target.value as ContentTheme)} style={styles.select}>
                   {(['Wellness', 'Product', 'Social Proof', 'Behind the Scenes'] as const).map((group) => (
                     <optgroup key={group} label={group}>
                       {THEMES.filter((t) => themeGroup(t) === group).map((t) => (
-                        <option key={t} value={t} style={OPTION_STYLE}>
+                        <option key={t} value={t} style={styles.option}>
                           {prettyTheme(t)}
                         </option>
                       ))}
                     </optgroup>
                   ))}
                 </select>
-              </label>
+              </div>
             </div>
 
-            <button
-              onClick={() => generate()}
-              disabled={loading}
-              style={{
-                marginTop: 12,
-                padding: '14px 16px',
-                borderRadius: 14,
-                border: '1px solid rgba(255,255,255,0.12)',
-                background: 'rgba(139,92,246,0.25)',
-                color: 'white',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                fontWeight: 900,
-                width: '100%',
-              }}
-            >
-              {loading ? 'Generating…' : 'Generate Post'}
+            <button onClick={() => generate()} disabled={loading} style={{ ...styles.generateBtn, opacity: loading ? 0.6 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}>
+              {loading ? 'Generating…' : '✦ Generate Post'}
             </button>
 
+            {/* Preview */}
             {generated && (
-              <div style={{ marginTop: 12 }}>
-                <div style={{ fontSize: 12, opacity: 0.7 }}>Preview</div>
-                <div style={{ marginTop: 8, whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: 13 }}>
-                  {generated.caption}
-                </div>
-                <div style={{ marginTop: 10, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                  <button
-                    onClick={() => saveToReady(generated)}
-                    disabled={loading}
-                    style={{ padding: '10px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: 'white', cursor: 'pointer', fontWeight: 700 }}
-                  >
+              <div style={{ marginTop: '24px', padding: '18px', borderRadius: '12px', background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.15)' }}>
+                <div style={{ fontSize: '12px', color: 'rgba(167,139,250,0.8)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Preview</div>
+                <div style={styles.postContent}>{generated.caption}</div>
+                <div style={styles.postActions}>
+                  <button onClick={() => saveToReady(generated)} disabled={loading} style={styles.actionBtn('primary')}>
                     Save to Ready
                   </button>
-                  <button
-                    onClick={() => copyToClipboard(generated.caption)}
-                    style={{ padding: '10px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: 'white', cursor: 'pointer', fontWeight: 700 }}
-                  >
+                  <button onClick={() => copyToClipboard(generated.caption)} style={styles.actionBtn()}>
                     Copy
                   </button>
-                  <button
-                    onClick={() => openEdit(generated)}
-                    style={{ padding: '10px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: 'white', cursor: 'pointer', fontWeight: 700 }}
-                  >
+                  <button onClick={() => openEdit(generated)} style={styles.actionBtn()}>
                     Edit
                   </button>
                 </div>
               </div>
             )}
-          </Card>
+          </div>
 
-          <Card>
-            <div style={{ fontWeight: 800 }}>Recent drafts</div>
-            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {drafts
-                .slice(0, 8)
-                .map((p) => (
-                  <div key={p.id} style={{ border: '1px solid rgba(255,255,255,0.10)', borderRadius: 12, padding: 12 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
-                      <div style={{ fontSize: 12, opacity: 0.9, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontSize: 14 }}>{platformIcon(p.platform)}</span>
-                        <span style={{ fontWeight: 800 }}>{prettyPlatform(p.platform)}</span>
-                        <span style={{ opacity: 0.65 }}>•</span>
-                        <span style={{ padding: '3px 8px', borderRadius: 999, border: '1px solid rgba(255,255,255,0.10)', background: 'rgba(255,255,255,0.04)' }}>
-                          {prettyTheme(p.theme)}
+          {/* Recent Drafts */}
+          <div style={styles.card}>
+            <div style={styles.cardTitle}>Recent Drafts</div>
+            {drafts.length === 0 ? (
+              <div style={styles.emptyState}>No drafts yet. Generate your first post!</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {drafts.slice(0, 6).map((p) => (
+                  <div key={p.id} style={styles.postCard}>
+                    <div style={styles.postHeader}>
+                      <div style={styles.postMeta}>
+                        <span style={styles.platformBadge}>
+                          {platformIcon(p.platform)} {prettyPlatform(p.platform)}
                         </span>
+                        <span style={styles.themeBadge}>{prettyTheme(p.theme)}</span>
                       </div>
-                      <div style={{ fontSize: 12, opacity: 0.65 }}>{p.scheduledFor.toLocaleDateString()}</div>
+                      <span style={styles.dateText}>{p.scheduledFor.toLocaleDateString()}</span>
                     </div>
-                    <div style={{ marginTop: 8, whiteSpace: 'pre-wrap', fontSize: 13, lineHeight: 1.5, opacity: 0.95 }}>
-                      {truncate(p.caption, 220)}
-                    </div>
-                    <div style={{ marginTop: 10, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                      <button onClick={() => openEdit(p)} style={{ padding: '8px 10px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: 'white', cursor: 'pointer' }}>
-                        Edit
-                      </button>
-                      <button onClick={() => copyToClipboard(p.caption)} style={{ padding: '8px 10px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: 'white', cursor: 'pointer' }}>
-                        Copy
-                      </button>
-                      <button onClick={() => saveToReady(p)} style={{ padding: '8px 10px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(139,92,246,0.25)', color: 'white', cursor: 'pointer', fontWeight: 700 }}>
-                        Post
-                      </button>
-                      <button onClick={() => deleteOne(p.id)} style={{ padding: '8px 10px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,60,60,0.12)', color: 'white', cursor: 'pointer' }}>
-                        Delete
-                      </button>
+                    <div style={styles.postContent}>{truncate(p.caption, 140)}</div>
+                    <div style={styles.postActions}>
+                      <button onClick={() => openEdit(p)} style={styles.actionBtn()}>Edit</button>
+                      <button onClick={() => copyToClipboard(p.caption)} style={styles.actionBtn()}>Copy</button>
+                      <button onClick={() => saveToReady(p)} style={styles.actionBtn('primary')}>Move to Ready</button>
+                      <button onClick={() => deleteOne(p.id)} style={styles.actionBtn('danger')}>Delete</button>
                     </div>
                   </div>
                 ))}
-
-              {drafts.length === 0 && (
-                <div style={{ opacity: 0.7, fontSize: 13 }}>No drafts yet.</div>
-              )}
-            </div>
-          </Card>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
+      {/* Ready Tab */}
       {tab === 'ready' && (
-        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <Card>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'baseline' }}>
-              <div style={{ fontWeight: 800 }}>Queue</div>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <button
-                  onClick={() => bulkMarkPosted()}
-                  disabled={loading || selectedInReady.length === 0}
-                  style={{ padding: '10px 12px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(139,92,246,0.25)', color: 'white', cursor: 'pointer', fontWeight: 800, opacity: selectedInReady.length === 0 ? 0.5 : 1 }}
-                >
-                  Bulk: Mark Posted ({selectedInReady.length})
-                </button>
-                <button
-                  onClick={() => bulkDelete()}
-                  disabled={loading || selectedInReady.length === 0}
-                  style={{ padding: '10px 12px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,60,60,0.12)', color: 'white', cursor: 'pointer', fontWeight: 800, opacity: selectedInReady.length === 0 ? 0.5 : 1 }}
-                >
-                  Bulk: Delete ({selectedInReady.length})
-                </button>
-              </div>
+        <div style={styles.card}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div style={styles.cardTitle}>Post Queue</div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => bulkMarkPosted()}
+                disabled={loading || selectedInReady.length === 0}
+                style={{ ...styles.actionBtn('primary'), opacity: selectedInReady.length === 0 ? 0.5 : 1 }}
+              >
+                Mark Posted ({selectedInReady.length})
+              </button>
+              <button
+                onClick={() => bulkDelete()}
+                disabled={loading || selectedInReady.length === 0}
+                style={{ ...styles.actionBtn('danger'), opacity: selectedInReady.length === 0 ? 0.5 : 1 }}
+              >
+                Delete ({selectedInReady.length})
+              </button>
             </div>
+          </div>
 
-            <div style={{ marginTop: 12, overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          {readyQueue.length === 0 ? (
+            <div style={styles.emptyState}>No posts in queue. Generate and save posts to see them here.</div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ textAlign: 'left' }}>
-                    <th style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.10)', opacity: 0.8, width: 42 }} />
-                    <th style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.10)', opacity: 0.8, width: 34 }} />
-                    <th style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.10)', opacity: 0.8, width: 140 }}>Platform</th>
-                    <th style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.10)', opacity: 0.8, width: 180 }}>Theme</th>
-                    <th style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.10)', opacity: 0.8 }}>Preview</th>
-                    <th style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.10)', opacity: 0.8, width: 210 }}>Schedule</th>
-                    <th style={{ padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.10)', opacity: 0.8, width: 210 }}>Actions</th>
+                  <tr>
+                    <th style={{ ...styles.tableHeader, width: '40px' }}></th>
+                    <th style={{ ...styles.tableHeader, width: '30px' }}></th>
+                    <th style={{ ...styles.tableHeader, width: '120px' }}>Platform</th>
+                    <th style={{ ...styles.tableHeader, width: '140px' }}>Theme</th>
+                    <th style={styles.tableHeader}>Preview</th>
+                    <th style={{ ...styles.tableHeader, width: '180px' }}>Schedule</th>
+                    <th style={{ ...styles.tableHeader, width: '200px' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {readyQueue.length === 0 && (
-                    <tr>
-                      <td colSpan={7} style={{ padding: '12px 8px', opacity: 0.75 }}>
-                        Nothing queued yet.
-                      </td>
-                    </tr>
-                  )}
-
                   {readyQueue.map((p) => {
                     const isSelected = Boolean(selectedIds[p.id]);
                     return (
                       <tr
                         key={p.id}
                         draggable={p.status === 'ready'}
-                        onDragStart={() => {
-                          draggingIdRef.current = p.id;
-                        }}
-                        onDragOver={(e) => {
-                          if (p.status !== 'ready') return;
-                          e.preventDefault();
-                        }}
+                        onDragStart={() => { draggingIdRef.current = p.id; }}
+                        onDragOver={(e) => { if (p.status === 'ready') e.preventDefault(); }}
                         onDrop={() => {
                           const dragged = draggingIdRef.current;
                           draggingIdRef.current = null;
                           if (dragged) reorderReady(dragged, p.id).catch(() => null);
                         }}
-                        style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
                       >
-                        <td style={{ padding: '10px 8px' }}>
+                        <td style={styles.tableCell}>
                           <input
                             type="checkbox"
                             checked={isSelected}
                             onChange={(e) => toggleSelected(p.id, e.target.checked)}
+                            style={{ accentColor: 'rgba(139,92,246,1)' }}
                           />
                         </td>
-                        <td style={{ padding: '10px 8px', opacity: 0.6 }}>{p.status === 'ready' ? '↕' : ''}</td>
-                        <td style={{ padding: '10px 8px', fontWeight: 800 }}>
-                          {platformIcon(p.platform)} {prettyPlatform(p.platform)}
+                        <td style={{ ...styles.tableCell, color: 'rgba(255,255,255,0.3)', cursor: p.status === 'ready' ? 'grab' : 'default' }}>
+                          {p.status === 'ready' ? '⋮⋮' : ''}
                         </td>
-                        <td style={{ padding: '10px 8px', opacity: 0.9 }}>{prettyTheme(p.theme)}</td>
-                        <td style={{ padding: '10px 8px', opacity: 0.95 }}>{truncate(p.caption, 80)}</td>
-                        <td style={{ padding: '10px 8px' }}>
+                        <td style={styles.tableCell}>
+                          <span style={styles.platformBadge}>{platformIcon(p.platform)} {prettyPlatform(p.platform)}</span>
+                        </td>
+                        <td style={styles.tableCell}>
+                          <span style={styles.themeBadge}>{prettyTheme(p.theme)}</span>
+                        </td>
+                        <td style={{ ...styles.tableCell, maxWidth: '300px' }}>
+                          <span style={{ ...styles.postContent, fontSize: '13px' }}>{truncate(p.caption, 80)}</span>
+                        </td>
+                        <td style={styles.tableCell}>
                           <input
                             type="datetime-local"
                             defaultValue={fmtDateTimeLocal(p.scheduledFor)}
                             onBlur={(e) => {
                               const d = parseDateTimeLocal(e.target.value);
-                              if (!d) return;
-                              setSchedule(p.id, d).catch(() => null);
+                              if (d) setSchedule(p.id, d).catch(() => null);
                             }}
-                            style={{ padding: 10, borderRadius: 12, background: '#1a1625', color: '#e8e6f0', border: '1px solid rgba(255,255,255,0.10)', width: '100%' }}
+                            style={{ ...styles.input, padding: '8px 10px', fontSize: '12px' }}
                           />
                         </td>
-                        <td style={{ padding: '10px 8px' }}>
-                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                            <button onClick={() => openEdit(p)} style={{ padding: '8px 10px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: 'white', cursor: 'pointer' }}>Edit</button>
-                            <button onClick={() => copyToClipboard(p.caption)} style={{ padding: '8px 10px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: 'white', cursor: 'pointer' }}>Copy</button>
-                            <button onClick={() => markPosted(p.id)} style={{ padding: '8px 10px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(139,92,246,0.25)', color: 'white', cursor: 'pointer', fontWeight: 700 }}>Mark Posted</button>
-                            <button onClick={() => deleteOne(p.id)} style={{ padding: '8px 10px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,60,60,0.12)', color: 'white', cursor: 'pointer' }}>Delete</button>
+                        <td style={styles.tableCell}>
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                            <button onClick={() => openEdit(p)} style={styles.actionBtn()}>Edit</button>
+                            <button onClick={() => copyToClipboard(p.caption)} style={styles.actionBtn()}>Copy</button>
+                            <button onClick={() => markPosted(p.id)} style={styles.actionBtn('primary')}>Posted</button>
+                            <button onClick={() => deleteOne(p.id)} style={styles.actionBtn('danger')}>✕</button>
                           </div>
                         </td>
                       </tr>
@@ -706,51 +918,47 @@ export default function MarketingDashboard() {
                 </tbody>
               </table>
             </div>
-
-            <div style={{ marginTop: 10, fontSize: 12, opacity: 0.7 }}>
-              Drag to reorder READY items. Changing schedule time moves it to SCHEDULED.
-            </div>
-          </Card>
+          )}
+          <div style={{ marginTop: '14px', fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>
+            Drag rows to reorder. Changing schedule time moves post to SCHEDULED status.
+          </div>
         </div>
       )}
 
+      {/* Posted Tab */}
       {tab === 'posted' && (
-        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {filtered.map((p) => (
-            <Card key={p.id}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'baseline' }}>
-                <div style={{ fontWeight: 700 }}>
-                  {prettyPlatform(p.platform)} • {prettyTheme(p.theme)}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {posted.length === 0 ? (
+            <div style={{ ...styles.card, ...styles.emptyState }}>No published posts yet.</div>
+          ) : (
+            posted.map((p) => (
+              <div key={p.id} style={styles.card}>
+                <div style={styles.postHeader}>
+                  <div style={styles.postMeta}>
+                    <span style={styles.platformBadge}>{platformIcon(p.platform)} {prettyPlatform(p.platform)}</span>
+                    <span style={styles.themeBadge}>{prettyTheme(p.theme)}</span>
+                  </div>
+                  <span style={styles.dateText}>
+                    Posted {(p.postedAt || p.scheduledFor).toLocaleDateString()}
+                  </span>
                 </div>
-                <div style={{ opacity: 0.7, fontSize: 12 }}>{p.status}</div>
-              </div>
 
-              <div style={{ marginTop: 8, whiteSpace: 'pre-wrap', fontSize: 13, lineHeight: 1.55 }}>
-                {p.caption}
-              </div>
+                <div style={styles.postContent}>{p.caption}</div>
 
-              <div style={{ marginTop: 10, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <button onClick={() => copyToClipboard(p.caption)} style={{ padding: '10px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: 'white', cursor: 'pointer', fontWeight: 700 }}>
-                  Copy to Clipboard
-                </button>
+                <div style={styles.postActions}>
+                  <button onClick={() => copyToClipboard(p.caption)} style={styles.actionBtn()}>Copy</button>
+                  <button onClick={() => deleteOne(p.id)} style={styles.actionBtn('danger')}>Delete</button>
+                </div>
 
-                {p.status !== 'posted' && (
-                  <button onClick={() => markPosted(p.id)} style={{ padding: '10px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(139,92,246,0.25)', color: 'white', cursor: 'pointer', fontWeight: 700 }}>
-                    Mark as Posted
-                  </button>
-                )}
-
-                <button onClick={() => deleteOne(p.id)} style={{ padding: '10px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,60,60,0.12)', color: 'white', cursor: 'pointer', fontWeight: 700 }}>
-                  Delete
-                </button>
-              </div>
-
-              {tab === 'posted' && (
-                <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 10 }}>
+                {/* Performance inputs */}
+                <div style={{ marginTop: '20px', display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px' }}>
                   {(['likes', 'comments', 'shares', 'clicks', 'signups'] as const).map((k) => (
-                    <label key={k} style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, opacity: 0.9 }}>
-                      {k}
+                    <div key={k}>
+                      <label style={{ display: 'block', fontSize: '11px', color: 'rgba(255,255,255,0.45)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        {k}
+                      </label>
                       <input
+                        type="number"
                         defaultValue={p.performance?.[k] ?? 0}
                         onBlur={(e) => {
                           const next = {
@@ -763,200 +971,153 @@ export default function MarketingDashboard() {
                           } as Performance;
                           updatePerformance(p.id, next).catch(() => null);
                         }}
-                        style={{ padding: 10, borderRadius: 12, background: 'rgba(0,0,0,0.25)', color: 'white', border: '1px solid rgba(255,255,255,0.12)' }}
+                        style={{ ...styles.input, padding: '10px 12px' }}
                       />
-                    </label>
+                    </div>
                   ))}
                 </div>
-              )}
-            </Card>
-          ))}
-
-          {filtered.length === 0 && <div style={{ opacity: 0.7, fontSize: 13 }}>Nothing here yet.</div>}
+              </div>
+            ))
+          )}
         </div>
       )}
 
+      {/* Analytics Tab */}
       {tab === 'analytics' && (
-        <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <Card>
-            <div style={{ fontWeight: 800 }}>Posts per platform</div>
-            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          {/* Posts by Platform */}
+          <div style={styles.card}>
+            <div style={styles.cardTitle}>Posts by Platform</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '8px' }}>
               {PLATFORMS.map((p) => {
                 const v = analytics.byPlatform[p];
                 const max = Math.max(1, ...Object.values(analytics.byPlatform));
                 const w = Math.round((v / max) * 100);
                 return (
-                  <div key={p} style={{ display: 'grid', gridTemplateColumns: '140px 1fr 40px', gap: 10, alignItems: 'center' }}>
-                    <div style={{ fontWeight: 800, opacity: 0.9 }}>{platformIcon(p)} {prettyPlatform(p)}</div>
-                    <div style={{ height: 10, borderRadius: 999, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${w}%`, background: 'rgba(139,92,246,0.55)' }} />
+                  <div key={p} style={{ display: 'grid', gridTemplateColumns: '100px 1fr 40px', gap: '14px', alignItems: 'center' }}>
+                    <span style={styles.platformBadge}>{platformIcon(p)} {prettyPlatform(p)}</span>
+                    <div style={{ height: '8px', borderRadius: '4px', background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${w}%`, background: 'linear-gradient(90deg, rgba(139,92,246,0.6), rgba(167,139,250,0.8))', borderRadius: '4px', transition: 'width 0.3s ease' }} />
                     </div>
-                    <div style={{ textAlign: 'right', opacity: 0.85 }}>{v}</div>
+                    <span style={{ textAlign: 'right', fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>{v}</span>
                   </div>
                 );
               })}
             </div>
-          </Card>
+          </div>
 
-          <Card>
-            <div style={{ fontWeight: 800 }}>Engagement (last 14 days)</div>
-            <div style={{ marginTop: 12 }}>
-              {analytics.series.length === 0 ? (
-                <div style={{ opacity: 0.7, fontSize: 13 }}>No posted performance data yet.</div>
-              ) : (
-                <svg viewBox="0 0 520 180" width="100%" height="180" style={{ display: 'block' }}>
-                  {(() => {
-                    const values = analytics.series.map(([, v]) => v);
-                    const max = Math.max(1, ...values);
-                    const pts = analytics.series
-                      .map(([, v], i) => {
-                        const x = (i / Math.max(1, analytics.series.length - 1)) * 500 + 10;
-                        const y = 160 - (v / max) * 130;
-                        return `${x},${y}`;
-                      })
-                      .join(' ');
-                    return (
-                      <>
-                        <rect x="0" y="0" width="520" height="180" fill="rgba(0,0,0,0.18)" rx="14" />
-                        <polyline points={pts} fill="none" stroke="rgba(139,92,246,0.85)" strokeWidth="3" />
-                        {analytics.series.map(([label], i) => (
-                          <text key={label} x={(i / Math.max(1, analytics.series.length - 1)) * 500 + 10} y={175} fontSize="10" fill="rgba(255,255,255,0.55)" textAnchor="middle">
-                            {label.slice(5)}
-                          </text>
-                        ))}
-                      </>
-                    );
-                  })()}
-                </svg>
-              )}
-            </div>
-          </Card>
+          {/* Engagement Chart */}
+          <div style={styles.card}>
+            <div style={styles.cardTitle}>Engagement (Last 14 Days)</div>
+            {analytics.series.length === 0 ? (
+              <div style={styles.emptyState}>No performance data yet.</div>
+            ) : (
+              <svg viewBox="0 0 500 160" width="100%" height="160" style={{ display: 'block', marginTop: '12px' }}>
+                <defs>
+                  <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="rgba(139,92,246,0.3)" />
+                    <stop offset="100%" stopColor="rgba(139,92,246,0)" />
+                  </linearGradient>
+                </defs>
+                <rect x="0" y="0" width="500" height="160" fill="rgba(0,0,0,0.2)" rx="8" />
+                {(() => {
+                  const values = analytics.series.map(([, v]) => v);
+                  const max = Math.max(1, ...values);
+                  const points = analytics.series.map(([, v], i) => {
+                    const x = (i / Math.max(1, analytics.series.length - 1)) * 480 + 10;
+                    const y = 130 - (v / max) * 100;
+                    return { x, y };
+                  });
+                  const pathD = points.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`).join(' ');
+                  const areaD = `${pathD} L ${points[points.length - 1].x} 130 L ${points[0].x} 130 Z`;
+                  return (
+                    <>
+                      <path d={areaD} fill="url(#chartGradient)" />
+                      <path d={pathD} fill="none" stroke="rgba(139,92,246,0.9)" strokeWidth="2" />
+                      {points.map((pt, i) => (
+                        <circle key={i} cx={pt.x} cy={pt.y} r="3" fill="rgba(167,139,250,1)" />
+                      ))}
+                      {analytics.series.map(([label], i) => (
+                        <text key={label} x={(i / Math.max(1, analytics.series.length - 1)) * 480 + 10} y={150} fontSize="9" fill="rgba(255,255,255,0.4)" textAnchor="middle">
+                          {label.slice(5)}
+                        </text>
+                      ))}
+                    </>
+                  );
+                })()}
+              </svg>
+            )}
+          </div>
 
-          <div style={{ gridColumn: '1 / -1' }}>
-            <Card>
-              <div style={{ fontWeight: 800 }}>Top performing content</div>
-              <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
-                {analytics.top.length === 0 && <div style={{ opacity: 0.7, fontSize: 13 }}>No posted posts with metrics yet.</div>}
+          {/* Top Posts */}
+          <div style={{ ...styles.card, gridColumn: '1 / -1' }}>
+            <div style={styles.cardTitle}>Top Performing Posts</div>
+            {analytics.top.length === 0 ? (
+              <div style={styles.emptyState}>No performance data yet. Add metrics to your posted content.</div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px' }}>
                 {analytics.top.map((p) => (
-                  <div key={p.id} style={{ border: '1px solid rgba(255,255,255,0.10)', borderRadius: 12, padding: 12 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'baseline' }}>
-                      <div style={{ fontWeight: 900 }}>{platformIcon(p.platform)} {prettyPlatform(p.platform)} • {prettyTheme(p.theme)}</div>
-                      <div style={{ fontSize: 12, opacity: 0.7 }}>{p.performance?.signups ?? 0} signups</div>
+                  <div key={p.id} style={styles.postCard}>
+                    <div style={styles.postHeader}>
+                      <div style={styles.postMeta}>
+                        <span style={styles.platformBadge}>{platformIcon(p.platform)} {prettyPlatform(p.platform)}</span>
+                        <span style={styles.themeBadge}>{prettyTheme(p.theme)}</span>
+                      </div>
+                      <span style={{ fontSize: '13px', color: 'rgba(167,139,250,0.9)', fontWeight: 600 }}>
+                        {p.performance?.signups ?? 0} signups
+                      </span>
                     </div>
-                    <div style={{ marginTop: 8, whiteSpace: 'pre-wrap', fontSize: 13, lineHeight: 1.5, opacity: 0.95 }}>{truncate(p.caption, 220)}</div>
+                    <div style={{ ...styles.postContent, fontSize: '13px' }}>{truncate(p.caption, 180)}</div>
                   </div>
                 ))}
               </div>
-            </Card>
+            )}
           </div>
         </div>
       )}
 
+      {/* Edit Modal */}
       {editPost && (
-        <div
-          onClick={() => setEditPost(null)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.62)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 18,
-            zIndex: 50,
-          }}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: 'min(980px, 100%)',
-              maxHeight: 'min(82dvh, 720px)',
-              overflow: 'auto',
-              borderRadius: 16,
-              border: '1px solid rgba(255,255,255,0.12)',
-              background: 'radial-gradient(1200px 600px at 20% 10%, rgba(139,92,246,0.14), transparent 60%), rgba(10,10,18,0.96)',
-              padding: 16,
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'baseline' }}>
-              <div style={{ fontWeight: 900 }}>Edit post</div>
-              <button
-                onClick={() => setEditPost(null)}
-                style={{
-                  padding: '8px 10px',
-                  borderRadius: 12,
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  background: 'rgba(255,255,255,0.06)',
-                  color: 'rgba(255,255,255,0.92)',
-                  cursor: 'pointer',
-                  fontWeight: 800,
-                }}
-              >
-                Close
-              </button>
+        <div onClick={() => setEditPost(null)} style={styles.modal} role="dialog" aria-modal="true">
+          <div onClick={(e) => e.stopPropagation()} style={styles.modalContent}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'rgba(255,255,255,0.9)' }}>Edit Post</h2>
+              <button onClick={() => setEditPost(null)} style={styles.actionBtn()}>✕ Close</button>
             </div>
 
-            <div style={{ marginTop: 10, fontSize: 12, opacity: 0.8 }}>
-              {platformIcon(editPost.platform)} {prettyPlatform(editPost.platform)} • {prettyTheme(editPost.theme)}
+            <div style={{ marginBottom: '16px' }}>
+              <span style={styles.platformBadge}>{platformIcon(editPost.platform)} {prettyPlatform(editPost.platform)}</span>
+              <span style={{ ...styles.themeBadge, marginLeft: '10px' }}>{prettyTheme(editPost.theme)}</span>
             </div>
 
-            <div style={{ marginTop: 12 }}>
-              <div style={{ fontWeight: 800, fontSize: 12, opacity: 0.9 }}>Caption</div>
+            <div style={{ marginBottom: '18px' }}>
+              <label style={{ display: 'block', fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Caption
+              </label>
               <textarea
                 value={editCaption}
                 onChange={(e) => setEditCaption(e.target.value)}
-                rows={10}
-                style={{
-                  marginTop: 6,
-                  width: '100%',
-                  padding: 12,
-                  borderRadius: 12,
-                  background: '#1a1625',
-                  color: '#e8e6f0',
-                  border: '1px solid rgba(255,255,255,0.10)',
-                  resize: 'vertical',
-                  fontSize: 13,
-                  lineHeight: 1.5,
-                }}
+                rows={8}
+                style={styles.textarea}
               />
             </div>
 
-            <div style={{ marginTop: 12 }}>
-              <div style={{ fontWeight: 800, fontSize: 12, opacity: 0.9 }}>Image prompt (optional)</div>
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Image Prompt (optional)
+              </label>
               <textarea
                 value={editImagePrompt}
                 onChange={(e) => setEditImagePrompt(e.target.value)}
                 rows={3}
-                style={{
-                  marginTop: 6,
-                  width: '100%',
-                  padding: 12,
-                  borderRadius: 12,
-                  background: '#1a1625',
-                  color: '#e8e6f0',
-                  border: '1px solid rgba(255,255,255,0.10)',
-                  resize: 'vertical',
-                  fontSize: 13,
-                  lineHeight: 1.5,
-                }}
+                style={styles.textarea}
               />
             </div>
 
-            <div style={{ marginTop: 12, display: 'flex', gap: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-              <button
-                onClick={() => copyToClipboard(editCaption)}
-                style={{ padding: '10px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: 'white', cursor: 'pointer', fontWeight: 800 }}
-              >
-                Copy
-              </button>
-              <button
-                onClick={() => saveEdits()}
-                disabled={loading}
-                style={{ padding: '10px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(139,92,246,0.25)', color: 'white', cursor: 'pointer', fontWeight: 900, opacity: loading ? 0.6 : 1 }}
-              >
-                Save
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button onClick={() => copyToClipboard(editCaption)} style={styles.actionBtn()}>Copy</button>
+              <button onClick={() => saveEdits()} disabled={loading} style={{ ...styles.actionBtn('primary'), opacity: loading ? 0.6 : 1 }}>
+                Save Changes
               </button>
             </div>
           </div>

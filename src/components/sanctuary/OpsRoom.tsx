@@ -1,24 +1,23 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import type { Category, TimeOfDay, ThemeMode, ActionItem, GenerationMode, AIProvider } from '@/lib/ops/types';
-import { TIME_COLORS, getTimeOfDay } from '@/lib/ops/theme';
+import { opsRoom, type Category, type Activity, type DropdownOption } from '@/app/sanctuary/ops/consolidatedData';
+import { ActionSelector } from '@/lib/ops/components/ActionSelector';
+import { DynamicForm } from '@/lib/ops/components/DynamicForm';
+import { ProviderSelector } from '@/lib/ops/components/ProviderSelector';
+import { ModeSelector } from '@/lib/ops/components/ModeSelector';
+import { FormattedOutput } from '@/lib/ops/components/FormattedOutput';
 import { OpsIcon } from '@/lib/ops/icons';
-import { CATEGORIES, ACTIONS_BY_CATEGORY } from '@/lib/ops/actions';
-import {
-  FormattedOutput,
-  CategorySelector,
-  ActionSelector,
-  ModeSelector,
-  ProviderSelector,
-  DynamicForm,
-} from '@/lib/ops/components';
-import { veraWatch } from '@/lib/ops/monitoring/veraWatch';
-import LanguageExperience from '@/lib/ops/experiences/Language';
+import { TIME_COLORS, getTimeOfDay } from '@/lib/ops/theme';
+import { type AIProvider, type GenerationMode, type TimeOfDay, type ThemeMode } from '@/lib/ops/types';
+import { default as LanguageExperience } from '@/lib/ops/experiences/Language';
 
 interface OpsRoomProps {
   onBack: () => void;
   initialView?: string;
+  initialCategory?: string;
+  initialActivity?: string;
+  initialOption?: string;
 }
 
 const GLOBAL_STYLES = `
@@ -116,13 +115,14 @@ const AI_PROVIDERS: Record<AIProvider, { name: string; color: string }> = {
   grok: { name: 'Grok', color: '#8B5CF6' },
 };
 
-export default function OpsRoom({ onBack, initialView }: OpsRoomProps) {
+export default function OpsRoom({ onBack, initialView, initialCategory, initialActivity, initialOption }: OpsRoomProps) {
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('afternoon');
   const [manualTheme, setManualTheme] = useState<ThemeMode>('auto');
   const [isLoaded, setIsLoaded] = useState(false);
 
-  const [activeCategory, setActiveCategory] = useState<Category | null>(null);
-  const [selectedAction, setSelectedAction] = useState<ActionItem | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [selectedAction, setSelectedAction] = useState<Activity | null>(null);
+  const [selectedDropdownOption, setSelectedDropdownOption] = useState<DropdownOption | null>(null);
 
   const [generationMode, setGenerationMode] = useState<GenerationMode>('specialist');
   const [selectedProvider, setSelectedProvider] = useState<AIProvider>('claude');
@@ -146,30 +146,21 @@ export default function OpsRoom({ onBack, initialView }: OpsRoomProps) {
     return () => clearInterval(interval);
   }, []);
 
-  const normalizeCategoryFromView = (view?: string): { category: Category; actionId?: string; languageTab?: 'learn' | 'translate' } | null => {
+  const normalizeCategoryFromView = (view?: string): { category: string; actionId?: string; languageTab?: 'learn' | 'translate' } | null => {
     const v = (view || '').toLowerCase().trim();
     if (!v) return null;
 
-    // Direct category IDs
-    if ((CATEGORIES as any[]).some((c) => c.id === v)) return { category: v as Category };
+    // Direct category IDs from new structure
+    if (opsRoom.categories.some((c) => c.id === v)) return { category: v };
 
-    // Map navigator-level views to Ops categories
+    // Map old category names to new ones
     if (v === 'communication') return { category: 'communication' };
-    if (v === 'work-career') return { category: 'work' };
-    if (v === 'money-finance') return { category: 'money' };
-    if (v === 'planning-goals') return { category: 'planning' };
-    if (v === 'reflect-connect') return { category: 'relationships' };
-
-    // Learning & Growth experiences
-    if (v === 'learning-growth' || v === 'language') {
-      return { category: 'learning', actionId: 'language-learning' };
-    }
-    if (v === 'learn-language') {
-      return { category: 'learning', actionId: 'language-learning', languageTab: 'learn' };
-    }
-    if (v === 'translate') {
-      return { category: 'learning', actionId: 'language-learning', languageTab: 'translate' };
-    }
+    if (v === 'work-career' || v === 'work') return { category: 'work-life' };
+    if (v === 'money-finance' || v === 'money') return { category: 'money' };
+    if (v === 'planning-goals' || v === 'planning') return { category: 'work-life' };
+    if (v === 'learning-growth' || v === 'learning') return { category: 'thinking-learning' };
+    if (v === 'reflect-connect' || v === 'relationships') return { category: 'relationships-wellness' };
+    if (v === 'creativity' || v === 'content') return { category: 'create' };
 
     return null;
   };
@@ -179,7 +170,8 @@ export default function OpsRoom({ onBack, initialView }: OpsRoomProps) {
     if (!mapped) return;
     setActiveCategory(mapped.category);
     if (mapped.actionId) {
-      const action = ACTIONS_BY_CATEGORY[mapped.category].find((a) => a.id === mapped.actionId) ?? null;
+      const category = opsRoom.categories.find((c) => c.id === mapped.category);
+      const action = category?.activities.find((a) => a.id === mapped.actionId) ?? null;
       setSelectedAction(action);
 
       if (mapped.actionId === 'language-learning' && mapped.languageTab) {
@@ -194,15 +186,44 @@ export default function OpsRoom({ onBack, initialView }: OpsRoomProps) {
     }
   }, [initialView]);
 
+  // Handle direct navigation from sidebar (category + activity + option)
+  useEffect(() => {
+    if (!initialCategory || !initialActivity) return;
+    
+    const category = opsRoom.categories.find(c => c.id === initialCategory);
+    if (!category) return;
+    
+    const activity = category.activities.find(a => a.id === initialActivity);
+    if (!activity) return;
+    
+    setActiveCategory(initialCategory);
+    setSelectedAction(activity);
+    
+    // Standalone or custom-component → form shows directly (selectedDropdownOption stays null)
+    // Dropdown without option param → shows option cards (selectedDropdownOption stays null)
+    // Dropdown with option param → go to specific option form
+    
+    if (activity.type === 'dropdown' && initialOption && activity.dropdownOptions) {
+      const option = activity.dropdownOptions.find(o => o.id === initialOption);
+      if (option) {
+        setSelectedDropdownOption(option);
+      }
+    }
+  }, [initialCategory, initialActivity, initialOption]);
+
   const isDark = manualTheme === 'dark' ? true : manualTheme === 'light' ? false : (timeOfDay === 'evening' || timeOfDay === 'night');
   const colors = isDark ? TIME_COLORS.evening : TIME_COLORS[timeOfDay];
 
   const handleGenerate = async () => {
     if (!selectedAction) return;
 
+    // Determine which fields and prompt to use (dropdown option takes precedence)
+    const effectiveFields = selectedDropdownOption?.fields || selectedAction.fields;
+    const effectivePrompt = selectedDropdownOption?.systemPrompt || selectedAction.systemPrompt;
+
     let userInput = '';
-    if (selectedAction.fields) {
-      userInput = selectedAction.fields.map(f => `${f.label}: ${formFields[f.id] || 'Not specified'}`).join('\n');
+    if (effectiveFields) {
+      userInput = effectiveFields.map(f => `${f.label}: ${formFields[f.name] || 'Not specified'}`).join('\n');
     } else {
       userInput = simpleInput;
     }
@@ -217,11 +238,11 @@ export default function OpsRoom({ onBack, initialView }: OpsRoomProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          systemPrompt: selectedAction.systemPrompt,
+          systemPrompt: effectivePrompt,
           userInput,
           mode: generationMode,
           provider: selectedProvider,
-          taskType: selectedAction.id,
+          taskType: selectedDropdownOption?.id || selectedAction.id,
         }),
       });
 
@@ -251,6 +272,7 @@ export default function OpsRoom({ onBack, initialView }: OpsRoomProps) {
 
   const handleReset = () => {
     setSelectedAction(null);
+    setSelectedDropdownOption(null);
     setSimpleInput('');
     setFormFields({});
     setOutput(null);
@@ -259,8 +281,19 @@ export default function OpsRoom({ onBack, initialView }: OpsRoomProps) {
   };
 
   const handleBack = () => {
+    // Came from sidebar - always go back to sanctuary
+    if (initialActivity) {
+      onBack();
+      return;
+    }
+    
+    // Normal navigation (user browsing within OpsRoom)
     if (output || compareOutputs) {
       handleReset();
+    } else if (selectedDropdownOption) {
+      setSelectedDropdownOption(null);
+      setSimpleInput('');
+      setFormFields({});
     } else if (selectedAction) {
       setSelectedAction(null);
       setSimpleInput('');
@@ -274,9 +307,10 @@ export default function OpsRoom({ onBack, initialView }: OpsRoomProps) {
 
   const isFormValid = () => {
     if (!selectedAction) return false;
-    if (selectedAction.fields) {
-      const required = selectedAction.fields.filter(f => f.required);
-      return required.every(f => formFields[f.id]?.trim());
+    const effectiveFields = selectedDropdownOption?.fields || selectedAction.fields;
+    if (effectiveFields) {
+      const required = effectiveFields.filter(f => f.required);
+      return required.every(f => formFields[f.name]?.trim());
     }
     return simpleInput.trim().length > 0;
   };
@@ -285,13 +319,21 @@ export default function OpsRoom({ onBack, initialView }: OpsRoomProps) {
     setFormFields(prev => ({ ...prev, [fieldId]: value }));
   };
 
-  const handleSelectCategory = (category: Category) => {
-    setActiveCategory(category);
+  const handleSelectCategory = (categoryId: string) => {
+    setActiveCategory(categoryId);
     setSelectedAction(null);
+    setSelectedDropdownOption(null);
   };
 
-  const handleSelectAction = (action: ActionItem) => {
+  const handleSelectAction = (action: Activity) => {
     setSelectedAction(action);
+    setSelectedDropdownOption(null);
+    setFormFields({});
+    setSimpleInput('');
+  };
+
+  const handleSelectDropdownOption = (option: DropdownOption) => {
+    setSelectedDropdownOption(option);
     setFormFields({});
     setSimpleInput('');
   };
@@ -347,7 +389,7 @@ export default function OpsRoom({ onBack, initialView }: OpsRoomProps) {
             <>
               <div style={{ textAlign: 'center', marginBottom: 28 }}>
                 <h1 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 40, fontWeight: 300, color: colors.text, marginBottom: 8 }}>Ops</h1>
-                <p style={{ fontSize: 15, color: colors.textMuted }}>Get things moving</p>
+                <p style={{ fontSize: 15, color: colors.textMuted }}>Select a category from the sidebar to get started</p>
               </div>
 
               <ProviderSelector
@@ -357,26 +399,23 @@ export default function OpsRoom({ onBack, initialView }: OpsRoomProps) {
                 colors={colors}
                 isDark={isDark}
               />
-
-              <CategorySelector
-                categories={CATEGORIES}
-                onSelectCategory={handleSelectCategory}
-                colors={colors}
-                isDark={isDark}
-              />
             </>
           )}
 
-          {activeCategory && !selectedAction && !output && !compareOutputs && (
-            <ActionSelector
-              category={activeCategory}
-              categoryTitle={CATEGORIES.find(c => c.id === activeCategory)?.title || ''}
-              actions={ACTIONS_BY_CATEGORY[activeCategory]}
-              onSelectAction={handleSelectAction}
-              colors={colors}
-              isDark={isDark}
-            />
-          )}
+          {activeCategory && !selectedAction && !output && !compareOutputs && (() => {
+            const category = opsRoom.categories.find(c => c.id === activeCategory);
+            if (!category) return null;
+            return (
+              <ActionSelector
+                category={activeCategory}
+                categoryTitle={category.name}
+                actions={category.activities}
+                onSelectAction={(action) => handleSelectAction(action as Activity)}
+                colors={colors}
+                isDark={isDark}
+              />
+            );
+          })()}
 
           {selectedAction?.id === 'language-learning' && !output && !compareOutputs && !isGenerating && (
             <LanguageExperience
@@ -387,18 +426,77 @@ export default function OpsRoom({ onBack, initialView }: OpsRoomProps) {
           )}
 
           {selectedAction && selectedAction.id !== 'language-learning' && !output && !compareOutputs && !isGenerating && (
-            <DynamicForm
-              action={selectedAction}
-              simpleInput={simpleInput}
-              formFields={formFields}
-              onSimpleInputChange={setSimpleInput}
-              onFormFieldChange={handleFormFieldChange}
-              onGenerate={handleGenerate}
-              isGenerating={isGenerating}
-              isValid={isFormValid()}
-              colors={colors}
-              isDark={isDark}
-            />
+            selectedAction.type === 'dropdown' && !selectedDropdownOption ? (
+              <div style={{ width: '100%', maxWidth: 600, animation: 'fadeIn 0.4s ease-out' }}>
+                <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                  <h2 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 28, fontWeight: 300, color: colors.text, marginBottom: 8 }}>
+                    {selectedAction.title}
+                  </h2>
+                  <p style={{ fontSize: 14, color: colors.textMuted }}>{selectedAction.description}</p>
+                </div>
+                <div style={{ display: 'grid', gap: 12 }}>
+                  {selectedAction.dropdownOptions?.map((option) => (
+                    <button
+                      key={option.id}
+                      className="card-btn"
+                      onClick={() => handleSelectDropdownOption(option)}
+                      style={{
+                        padding: '18px 20px',
+                        background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.85)',
+                        border: `1px solid ${colors.cardBorder}`,
+                        borderRadius: 14,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 14,
+                      }}
+                    >
+                      <div style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 10,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: isDark ? 'rgba(255, 180, 100, 0.1)' : 'rgba(200, 160, 100, 0.12)',
+                        border: `1px solid ${isDark ? 'rgba(255, 180, 100, 0.18)' : 'rgba(200, 160, 100, 0.2)'}`,
+                        flexShrink: 0,
+                      }}>
+                        <OpsIcon type={option.icon} color={colors.accent} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 15, fontWeight: 600, color: colors.text, marginBottom: 4 }}>
+                          {option.label}
+                        </div>
+                        <div style={{ fontSize: 13, color: colors.textMuted }}>
+                          {option.description}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <DynamicForm
+                action={selectedDropdownOption ? {
+                  ...selectedAction,
+                  title: selectedDropdownOption.label,
+                  description: selectedDropdownOption.description,
+                  placeholder: selectedDropdownOption.placeholder,
+                  fields: selectedDropdownOption.fields,
+                } : selectedAction}
+                simpleInput={simpleInput}
+                formFields={formFields}
+                onSimpleInputChange={setSimpleInput}
+                onFormFieldChange={handleFormFieldChange}
+                onGenerate={handleGenerate}
+                isGenerating={isGenerating}
+                isValid={isFormValid()}
+                colors={colors}
+                isDark={isDark}
+              />
+            )
           )}
 
           {isGenerating && (

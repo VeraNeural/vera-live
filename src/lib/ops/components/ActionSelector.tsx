@@ -2,11 +2,14 @@ import React from 'react';
 import { Category, ActionItem } from '../types';
 import { OpsIcon } from '../icons';
 
-interface ActionSelectorProps {
-  category: Category;
+// Allow both ActionItem and Activity types
+type ActionLike = Pick<ActionItem, 'id' | 'title' | 'description' | 'icon'>;
+
+interface ActionSelectorProps<T extends ActionLike = ActionLike> {
+  category: Category | string;
   categoryTitle: string;
-  actions: ActionItem[];
-  onSelectAction: (action: ActionItem) => void;
+  actions: T[];
+  onSelectAction: (action: T) => void;
   colors: {
     text: string;
     textMuted: string;
