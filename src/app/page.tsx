@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useUser, UserButton } from "@clerk/nextjs";
 import { useTheme, ThemeToggle } from "@/contexts/ThemeContext";
 import TrustTransparencySidebar from "@/components/TrustTransparencySidebar";
@@ -17,6 +18,35 @@ type ChatNudge = {
   text: string;
 };
 
+function normalizeAffirmative(input: string): string {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/[’']/g, "'")
+    .replace(/[^a-z0-9\s']/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isAffirmative(input: string): boolean {
+  const s = normalizeAffirmative(input);
+  const phrases = new Set([
+    "yes",
+    "ok",
+    "okay",
+    "sure",
+    "lets do it",
+    "let's do it",
+    "sign me up",
+  ]);
+  if (phrases.has(s)) return true;
+  // Allow short variants like "yes please" or "ok please".
+  if (s.startsWith("yes ") || s.startsWith("ok ") || s.startsWith("okay ") || s.startsWith("sure ")) {
+    return true;
+  }
+  return false;
+}
+
 const QUICK_STARTS = [
   "Help me process something",
   "Build something with me",
@@ -25,6 +55,7 @@ const QUICK_STARTS = [
 ];
 
 export default function Page() {
+  const router = useRouter();
   const { isLoaded, isSignedIn } = useUser();
   const { isDark, colors, timeOfDay } = useTheme();
   const [input, setInput] = useState("");
@@ -32,6 +63,7 @@ export default function Page() {
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [trustOpen, setTrustOpen] = useState(false);
+  const [awaitingSignupConfirm, setAwaitingSignupConfirm] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -59,6 +91,13 @@ export default function Page() {
   async function sendMessage(text?: string) {
     const content = (text ?? input).trim();
     if (!content || loading) return;
+
+    // If we just gave the anon message-5 close, an affirmative reply should jump to signup.
+    if (awaitingSignupConfirm && isAffirmative(content)) {
+      setAwaitingSignupConfirm(false);
+      router.push("/signup");
+      return;
+    }
 
     const userMessage: Message = { role: "user", content };
     setMessages((m) => [...m, userMessage]);
@@ -123,6 +162,10 @@ export default function Page() {
 
         return next;
       });
+
+      if (nudge?.kind === "signup_hard") {
+        setAwaitingSignupConfirm(true);
+      }
     } catch {
       setMessages((m) => [
         ...m,
