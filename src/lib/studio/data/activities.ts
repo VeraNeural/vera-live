@@ -167,7 +167,8 @@ export const ACTIVITIES: Activity[] = [
     description: 'Get everything out of your head',
     duration: '5-15 min',
     category: 'written',
-    hasExperience: false,
+    hasExperience: true,
+    experienceComponent: 'BrainDump',
   },
   {
     id: 'unsent-letter',
@@ -175,7 +176,8 @@ export const ACTIVITIES: Activity[] = [
     description: "Write what you can't say",
     duration: '10-20 min',
     category: 'written',
-    hasExperience: false,
+    hasExperience: true,
+    experienceComponent: 'UnsentLetter',
   },
   {
     id: 'stream-of-consciousness',
@@ -183,7 +185,8 @@ export const ACTIVITIES: Activity[] = [
     description: 'Write without stopping',
     duration: '5-12 min',
     category: 'written',
-    hasExperience: false,
+    hasExperience: true,
+    experienceComponent: 'StreamOfConsciousness',
   },
   {
     id: 'burn-list',
@@ -191,7 +194,8 @@ export const ACTIVITIES: Activity[] = [
     description: 'Write it, then release it',
     duration: '5-15 min',
     category: 'written',
-    hasExperience: false,
+    hasExperience: true,
+    experienceComponent: 'BurnList',
   },
 
   // Body Expression (4 activities)

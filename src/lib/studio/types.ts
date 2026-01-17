@@ -23,6 +23,7 @@ export type Activity = {
   duration: string;
   category: ActivityCategory;
   hasExperience?: boolean; // true if we've built the actual experience
+  experienceComponent?: string; // optional component identifier for built experiences
 };
 
 export type CategoryItem = {

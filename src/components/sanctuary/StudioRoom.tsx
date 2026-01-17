@@ -31,14 +31,21 @@ import ZentanglePatterns from './creative/ZentaglePatterns';
 import BlankCanvas from './creative/BlankCanvas';
 import StreamOfCreation from './creative/SteamOfCreation';
 
+// Written Release experiences
+import { BrainDump } from '@/lib/studio/experiences/written/BrainDump';
+import { UnsentLetter } from '@/lib/studio/experiences/written/UnsentLetter';
+import { StreamOfConsciousness } from '@/lib/studio/experiences/written/StreamOfConsciousness';
+import { BurnList } from '@/lib/studio/experiences/written/BurnList';
+
 export default function CreativeStudio({ onBack, onStartActivity }: CreativeStudioProps) {
   const { colors } = useTheme();
   const COLORS = getStudioColors(colors);
 
   const [activeTab, setActiveTab] = useState<Tab>('activities');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [activeActivity, setActiveActivity] = useState<string | null>(null);
+  const [activeExperience, setActiveExperience] = useState<string | null>(null);
   const [comingSoonActivityId, setComingSoonActivityId] = useState<string | null>(null);
+  const [completionMessage, setCompletionMessage] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -57,7 +64,7 @@ export default function CreativeStudio({ onBack, onStartActivity }: CreativeStud
     const activity = ACTIVITIES.find(a => a.id === activityId);
     
     if (activity?.hasExperience) {
-      setActiveActivity(activityId);
+      setActiveExperience(activityId);
     } else {
       if (onStartActivity) {
         onStartActivity(activityId);
@@ -67,9 +74,12 @@ export default function CreativeStudio({ onBack, onStartActivity }: CreativeStud
     }
   };
 
-  const handleActivityComplete = (data?: any) => {
+  const handleComplete = (data?: any) => {
     console.log('Activity completed:', data);
-    setActiveActivity(null);
+    const activity = activeExperience ? ACTIVITIES.find(a => a.id === activeExperience) : null;
+    setCompletionMessage(activity?.title ? `Completed: ${activity.title}` : 'Completed');
+    setActiveExperience(null);
+    window.setTimeout(() => setCompletionMessage(null), 2200);
   };
 
   const handleCloseComingSoon = () => {
@@ -169,25 +179,52 @@ export default function CreativeStudio({ onBack, onStartActivity }: CreativeStud
     );
   }
 
-  // Activity routing
-  if (activeActivity === 'emotion-colors') return <EmotionColorMap onBack={() => setActiveActivity(null)} onComplete={handleActivityComplete} />;
-  if (activeActivity === 'zentangle') return <ZentanglePatterns onBack={() => setActiveActivity(null)} onComplete={handleActivityComplete} />;
-  if (activeActivity === 'mandala') return <MandalaCreation onBack={() => setActiveActivity(null)} onComplete={handleActivityComplete} />;
-  if (activeActivity === 'sketch-feelings') return <SketchYourDay onBack={() => setActiveActivity(null)} onComplete={handleActivityComplete} />;
-  if (activeActivity === 'paper-folding') return <PaperFolding onBack={() => setActiveActivity(null)} onComplete={handleActivityComplete} />;
-  if (activeActivity === 'worry-stones') return <WorryStoneDesign onBack={() => setActiveActivity(null)} onComplete={handleActivityComplete} />;
-  if (activeActivity === 'gratitude-jar') return <GratitudeJar onBack={() => setActiveActivity(null)} onComplete={handleActivityComplete} />;
-  if (activeActivity === 'safe-space') return <DesignSafeSpace onBack={() => setActiveActivity(null)} onComplete={handleActivityComplete} />;
-  if (activeActivity === 'vision-board') return <DigitalVisionBoard onBack={() => setActiveActivity(null)} onComplete={handleActivityComplete} />;
-  if (activeActivity === 'comfort-kit') return <ComfortKitBuilder onBack={() => setActiveActivity(null)} onComplete={handleActivityComplete} />;
-  if (activeActivity === 'blank-canvas') return <BlankCanvas onBack={() => setActiveActivity(null)} onComplete={handleActivityComplete} />;
-  if (activeActivity === 'stream-create') return <StreamOfCreation onBack={() => setActiveActivity(null)} onComplete={handleActivityComplete} />;
+  // Experience routing
+  if (activeExperience === 'emotion-colors') return <EmotionColorMap onBack={() => setActiveExperience(null)} onComplete={handleComplete} />;
+  if (activeExperience === 'zentangle') return <ZentanglePatterns onBack={() => setActiveExperience(null)} onComplete={handleComplete} />;
+  if (activeExperience === 'mandala') return <MandalaCreation onBack={() => setActiveExperience(null)} onComplete={handleComplete} />;
+  if (activeExperience === 'sketch-feelings') return <SketchYourDay onBack={() => setActiveExperience(null)} onComplete={handleComplete} />;
+  if (activeExperience === 'paper-folding') return <PaperFolding onBack={() => setActiveExperience(null)} onComplete={handleComplete} />;
+  if (activeExperience === 'worry-stones') return <WorryStoneDesign onBack={() => setActiveExperience(null)} onComplete={handleComplete} />;
+  if (activeExperience === 'gratitude-jar') return <GratitudeJar onBack={() => setActiveExperience(null)} onComplete={handleComplete} />;
+  if (activeExperience === 'safe-space') return <DesignSafeSpace onBack={() => setActiveExperience(null)} onComplete={handleComplete} />;
+  if (activeExperience === 'vision-board') return <DigitalVisionBoard onBack={() => setActiveExperience(null)} onComplete={handleComplete} />;
+  if (activeExperience === 'comfort-kit') return <ComfortKitBuilder onBack={() => setActiveExperience(null)} onComplete={handleComplete} />;
+  if (activeExperience === 'blank-canvas') return <BlankCanvas onBack={() => setActiveExperience(null)} onComplete={handleComplete} />;
+  if (activeExperience === 'stream-create') return <StreamOfCreation onBack={() => setActiveExperience(null)} onComplete={handleComplete} />;
+
+  if (activeExperience === 'brain-dump') return <BrainDump onBack={() => setActiveExperience(null)} onComplete={handleComplete} />;
+  if (activeExperience === 'unsent-letter') return <UnsentLetter onBack={() => setActiveExperience(null)} onComplete={handleComplete} />;
+  if (activeExperience === 'stream-of-consciousness') return <StreamOfConsciousness onBack={() => setActiveExperience(null)} onComplete={handleComplete} />;
+  if (activeExperience === 'burn-list') return <BurnList onBack={() => setActiveExperience(null)} onComplete={handleComplete} />;
 
   return (
     <>
       <style jsx global>{GLOBAL_STYLES}</style>
 
       <div style={{ position: 'fixed', inset: 0, background: COLORS.bg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {completionMessage && (
+          <div style={{
+            position: 'fixed',
+            top: 'calc(env(safe-area-inset-top) + 72px)',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 999,
+            padding: '10px 14px',
+            borderRadius: 999,
+            background: COLORS.cardBg,
+            border: `1px solid ${COLORS.cardBorder}`,
+            color: COLORS.text,
+            fontSize: 12,
+            fontWeight: 600,
+            letterSpacing: '0.02em',
+            boxShadow: '0 12px 30px rgba(0,0,0,0.25)',
+            maxWidth: 340,
+            textAlign: 'center',
+          }}>
+            {completionMessage}
+          </div>
+        )}
         
         {/* Ambient background */}
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
