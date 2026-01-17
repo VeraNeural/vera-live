@@ -205,7 +205,7 @@ export const ACTIVITIES: Activity[] = [
     description: 'Physical release through shaking',
     duration: '2-5 min',
     category: 'body',
-    hasExperience: false,
+    hasExperience: true,
   },
   {
     id: 'movement-prompt',
@@ -213,7 +213,7 @@ export const ACTIVITIES: Activity[] = [
     description: 'Guided movement for regulation',
     duration: '5-10 min',
     category: 'body',
-    hasExperience: false,
+    hasExperience: true,
   },
   {
     id: 'posture-reset',
@@ -221,7 +221,7 @@ export const ACTIVITIES: Activity[] = [
     description: "Reset your body's state",
     duration: '2-6 min',
     category: 'body',
-    hasExperience: false,
+    hasExperience: true,
   },
   {
     id: 'hand-release',
@@ -229,6 +229,6 @@ export const ACTIVITIES: Activity[] = [
     description: 'Release tension through hands',
     duration: '3-7 min',
     category: 'body',
-    hasExperience: false,
+    hasExperience: true,
   },
 ];

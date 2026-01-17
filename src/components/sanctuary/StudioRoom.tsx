@@ -37,6 +37,12 @@ import { UnsentLetter } from '@/lib/studio/experiences/written/UnsentLetter';
 import { StreamOfConsciousness } from '@/lib/studio/experiences/written/StreamOfConsciousness';
 import { BurnList } from '@/lib/studio/experiences/written/BurnList';
 
+// Body Expression experiences
+import { ShakeItOut } from '@/lib/studio/experiences/body/ShakeItOut';
+import { MovementPrompt } from '@/lib/studio/experiences/body/MovementPrompt';
+import { PostureReset } from '@/lib/studio/experiences/body/PostureReset';
+import { HandRelease } from '@/lib/studio/experiences/body/HandRelease';
+
 export default function CreativeStudio({ onBack, onStartActivity }: CreativeStudioProps) {
   const { colors, isDark } = useTheme();
   const COLORS = getStudioColors(colors);
@@ -198,6 +204,11 @@ export default function CreativeStudio({ onBack, onStartActivity }: CreativeStud
   if (activeExperience === 'unsent-letter') return <UnsentLetter onBack={() => setActiveExperience(null)} onComplete={handleComplete} theme={theme} />;
   if (activeExperience === 'stream-of-consciousness') return <StreamOfConsciousness onBack={() => setActiveExperience(null)} onComplete={handleComplete} theme={theme} />;
   if (activeExperience === 'burn-list') return <BurnList onBack={() => setActiveExperience(null)} onComplete={handleComplete} theme={theme} />;
+
+  if (activeExperience === 'shake-it-out') return <ShakeItOut onBack={() => setActiveExperience(null)} onComplete={handleComplete} theme={theme} />;
+  if (activeExperience === 'movement-prompt') return <MovementPrompt onBack={() => setActiveExperience(null)} onComplete={handleComplete} theme={theme} />;
+  if (activeExperience === 'posture-reset') return <PostureReset onBack={() => setActiveExperience(null)} onComplete={handleComplete} theme={theme} />;
+  if (activeExperience === 'hand-release') return <HandRelease onBack={() => setActiveExperience(null)} onComplete={handleComplete} theme={theme} />;
 
   return (
     <>
