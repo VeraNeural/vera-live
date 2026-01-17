@@ -27,6 +27,8 @@ type Message = {
   content: string;
   timestamp: Date;
   isConsentPrompt?: boolean;
+  isSignupPrompt?: boolean;
+  isUpgradePrompt?: boolean;
 };
 
 type QuickPrompt = {
@@ -425,6 +427,7 @@ export default function VeraSanctuary() {
   
   // Consent & conversation state
   const [consentStatus, setConsentStatus] = useState<ConsentStatus>('unknown');
+  const [chatGate, setChatGate] = useState<string | null>(null);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isFirstMessage, setIsFirstMessage] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -598,6 +601,11 @@ export default function VeraSanctuary() {
     const messageText = (text ?? inputValue).trim();
     if (!messageText) return;
 
+    if (chatGate) {
+      showToast(chatGate === 'upgrade_required' ? 'Upgrade to keep chatting today.' : 'Please sign up to keep chatting.');
+      return;
+    }
+
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -690,6 +698,60 @@ export default function VeraSanctuary() {
 
       const data = await response.json();
 
+      if (data?.gate === 'signup_required') {
+        setChatGate('signup_required');
+
+        const gateText =
+          typeof data?.content === 'string'
+            ? data.content
+            : "I'm really enjoying our conversation. To keep chatting, create a free account - it only takes a moment. You'll get 20 messages per day.";
+
+        const gateMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: gateText,
+          timestamp: new Date(),
+        };
+
+        const signupPrompt: Message = {
+          id: (Date.now() + 2).toString(),
+          role: 'system',
+          content: 'signup_prompt',
+          timestamp: new Date(),
+          isSignupPrompt: true,
+        };
+
+        setMessages((prev) => [...prev, gateMessage, signupPrompt]);
+        return;
+      }
+
+      if (data?.gate === 'upgrade_required') {
+        setChatGate('upgrade_required');
+
+        const gateText =
+          typeof data?.content === 'string' && data.content.trim().length
+            ? data.content
+            : "You've used your daily messages. Upgrade to Sanctuary for unlimited access.";
+
+        const gateMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: gateText,
+          timestamp: new Date(),
+        };
+
+        const upgradePrompt: Message = {
+          id: (Date.now() + 2).toString(),
+          role: 'system',
+          content: 'upgrade_prompt',
+          timestamp: new Date(),
+          isUpgradePrompt: true,
+        };
+
+        setMessages((prev) => [...prev, gateMessage, upgradePrompt]);
+        return;
+      }
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -773,6 +835,7 @@ export default function VeraSanctuary() {
   }
 
   const hasMessages = messages.length > 0;
+  const isGated = chatGate === 'signup_required' || chatGate === 'upgrade_required';
 
   return (
     <>
@@ -1015,6 +1078,180 @@ export default function VeraSanctuary() {
               {hasMessages && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   {messages.map((message) => {
+                    // Render signup gate prompt
+                    if (message.isSignupPrompt) {
+                      return (
+                        <div
+                          key={message.id}
+                          className="message-appear"
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <div style={{
+                            maxWidth: '85%',
+                            width: 520,
+                            padding: '18px 20px',
+                            borderRadius: 20,
+                            background: colors.cardBg,
+                            border: `1px solid ${colors.cardBorder}`,
+                            backdropFilter: 'blur(10px)',
+                          }}>
+                            <div style={{
+                              color: colors.text,
+                              fontSize: 14,
+                              fontWeight: 600,
+                              marginBottom: 6,
+                              letterSpacing: '-0.01em',
+                            }}>
+                              Continue chatting
+                            </div>
+
+                            <div style={{
+                              color: colors.textMuted,
+                              fontSize: 13,
+                              lineHeight: 1.5,
+                              marginBottom: 14,
+                            }}>
+                              Create a free account to keep chatting. You’ll get 20 messages per day.
+                            </div>
+
+                            <div style={{
+                              display: 'flex',
+                              gap: 10,
+                              flexWrap: 'wrap',
+                            }}>
+                              <button
+                                onClick={() => router.push('/signup')}
+                                className="prompt-btn"
+                                style={{
+                                  padding: '10px 20px',
+                                  borderRadius: 50,
+                                  border: `1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.10)'}`,
+                                  background: isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+                                  color: 'rgba(0,0,0,0.9)',
+                                  fontSize: 14,
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                Create free account
+                              </button>
+
+                              <button
+                                onClick={() => router.push('/login')}
+                                className="prompt-btn"
+                                style={{
+                                  padding: '10px 20px',
+                                  borderRadius: 50,
+                                  border: `1px solid ${colors.cardBorder}`,
+                                  background: 'transparent',
+                                  color: colors.text,
+                                  fontSize: 14,
+                                  fontWeight: 500,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                Log in
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // Render upgrade gate prompt
+                    if (message.isUpgradePrompt) {
+                      return (
+                        <div
+                          key={message.id}
+                          className="message-appear"
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <div
+                            style={{
+                              maxWidth: '85%',
+                              width: 520,
+                              padding: '18px 20px',
+                              borderRadius: 20,
+                              background: colors.cardBg,
+                              border: `1px solid ${colors.cardBorder}`,
+                              backdropFilter: 'blur(10px)',
+                            }}
+                          >
+                            <div
+                              style={{
+                                color: colors.text,
+                                fontSize: 14,
+                                fontWeight: 600,
+                                marginBottom: 6,
+                                letterSpacing: '-0.01em',
+                              }}
+                            >
+                              Daily limit reached
+                            </div>
+
+                            <div
+                              style={{
+                                color: colors.textMuted,
+                                fontSize: 13,
+                                lineHeight: 1.5,
+                                marginBottom: 14,
+                              }}
+                            >
+                              You've used your daily messages. If you'd like to keep going today, Sanctuary gives you unlimited access.
+                            </div>
+
+                            <div
+                              style={{
+                                display: 'flex',
+                                gap: 10,
+                                flexWrap: 'wrap',
+                              }}
+                            >
+                              <button
+                                onClick={() => router.push('/sanctuary/upgrade')}
+                                className="prompt-btn"
+                                style={{
+                                  padding: '10px 20px',
+                                  borderRadius: 50,
+                                  border: `1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.10)'}`,
+                                  background: isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+                                  color: 'rgba(0,0,0,0.9)',
+                                  fontSize: 14,
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                Upgrade to Sanctuary
+                              </button>
+
+                              <button
+                                onClick={() => showToast("No rush — you can continue tomorrow.")}
+                                className="prompt-btn"
+                                style={{
+                                  padding: '10px 20px',
+                                  borderRadius: 50,
+                                  border: `1px solid ${colors.cardBorder}`,
+                                  background: 'transparent',
+                                  color: colors.text,
+                                  fontSize: 14,
+                                  fontWeight: 500,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                Continue tomorrow
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+
                     // Render consent prompt
                     if (message.isConsentPrompt) {
                       return (
@@ -1228,7 +1465,14 @@ export default function VeraSanctuary() {
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Share what's on your mind..."
+                    placeholder={
+                      isGated
+                        ? chatGate === 'upgrade_required'
+                          ? 'Daily limit reached — upgrade to keep chatting…'
+                          : 'Create a free account to keep chatting…'
+                        : "Share what's on your mind..."
+                    }
+                    disabled={isGated}
                     rows={1}
                     style={{
                       flex: 1,
@@ -1239,18 +1483,19 @@ export default function VeraSanctuary() {
                       lineHeight: 1.5,
                       resize: 'none',
                       maxHeight: 120,
+                      opacity: isGated ? 0.6 : 1,
                     }}
                   />
                   <button
                     onClick={() => handleSend()}
-                    disabled={!inputValue.trim()}
+                    disabled={isGated || !inputValue.trim()}
                     style={{
                       marginLeft: 12,
                       padding: 0,
                       border: 'none',
                       background: 'transparent',
-                      cursor: inputValue.trim() ? 'pointer' : 'default',
-                      opacity: inputValue.trim() ? 1 : 0.4,
+                      cursor: !isGated && inputValue.trim() ? 'pointer' : 'default',
+                      opacity: !isGated && inputValue.trim() ? 1 : 0.4,
                       color: colors.accent,
                       display: 'flex',
                       alignItems: 'center',

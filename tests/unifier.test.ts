@@ -75,6 +75,9 @@ describe('VERA unification compiler', () => {
     const d = decisionFor('regulated');
     const draft = 'Here is a clean answer.';
     const res = unifyVeraResponse({ draftText: draft, decision: d });
-    expect(res.text.toLowerCase()).toContain('at your pace');
+    expect(res.ok).toBe(true);
+    expect(res.text.toLowerCase()).toMatch(
+      /(let me know what feels most helpful next|one step at a time|keep this simple and gentle|don't have to decide anything right now)/i
+    );
   });
 });

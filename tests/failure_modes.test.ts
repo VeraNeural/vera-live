@@ -28,7 +28,7 @@ describe('Failure-mode handling (IBA overrides)', () => {
   test('Repeated fallbacks lock session to VERA-only + no questions', () => {
     const convo = [
       { role: 'assistant' as const, content: "I'm here with you. We can go one step at a time." },
-      { role: 'assistant' as const, content: 'We can take this at your pace.' },
+      { role: 'assistant' as const, content: 'We can keep this simple and gentle.' },
       { role: 'assistant' as const, content: 'Let me know what feels most helpful next.' },
       { role: 'user' as const, content: 'ok' },
     ];

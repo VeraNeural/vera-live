@@ -4,6 +4,7 @@ import { getOrCreateSession, normalizeConversationId, buildSessionCookie } from 
 import { resolveTier } from '@/lib/vera/auth/tierResolver';
 import { validateMessages } from '@/lib/vera/governance/messageValidator';
 import type { ChatRequestBody, ChatContext } from '@/lib/vera/core/types';
+import { meteringIdFromSessionId, recordMessage, resolveMeteringIdForClerkUserId } from '@/lib/auth/messageCounter';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -70,6 +71,18 @@ export async function POST(req: Request) {
 
     // 7. Handle message (all logic is in here)
     const result = await handleMessage(messages!, context);
+
+    // 7.5 Record metering for tiers that are limited (best-effort)
+    try {
+      if (tierResult.tier === 'anonymous') {
+        await recordMessage(meteringIdFromSessionId(sessionId));
+      } else if (tierResult.tier === 'free' && tierResult.userId) {
+        const meteringId = await resolveMeteringIdForClerkUserId(tierResult.userId);
+        await recordMessage(meteringId);
+      }
+    } catch (e) {
+      console.error('CHAT_METERING_RECORD_FAILED:', e);
+    }
 
     // 8. Build response
     const res = jsonResponse(result.content, { gate: result.gate });

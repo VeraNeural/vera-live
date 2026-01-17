@@ -33,9 +33,10 @@ const FORBIDDEN_PHRASES = [
 ];
 
 const AGENCY_CLOSINGS = [
-  'We can take this at your pace.',
   "You don’t have to decide anything right now.",
+  'We can take this one step at a time.',
   'Let me know what feels most helpful next.',
+  'We can keep this simple and gentle.',
 ];
 
 export type UnifyResult =
@@ -54,6 +55,24 @@ export type UnifyResult =
 
 function normalizeSpaces(s: string): string {
   return s.replace(/\s+/g, ' ').trim();
+}
+
+function stableIndex(seed: string, mod: number): number {
+  // Deterministic, non-cryptographic hash for stable “variation” without randomness.
+  let h = 5381;
+  const s = seed ?? '';
+  for (let i = 0; i < s.length; i++) {
+    h = (h * 33) ^ s.charCodeAt(i);
+  }
+  const n = Math.abs(h >>> 0);
+  return mod <= 0 ? 0 : n % mod;
+}
+
+function pickOne<T>(items: readonly T[], seed: string): T {
+  if (!items.length) {
+    throw new Error('pickOne called with empty array');
+  }
+  return items[stableIndex(seed, items.length)]!;
 }
 
 function stripTaggedBlocks(text: string): string {
@@ -336,15 +355,27 @@ function enforceQuestions(text: string, allowed: number, state: ArousalState, st
   return joinSentences(out);
 }
 
-function ensureAgencyEnding(text: string, strict: boolean): string {
+function ensureAgencyEnding(text: string, opts: { strict: boolean; maxSentences: number }): string {
   const t = (text ?? '').trim();
-  if (!t) return AGENCY_CLOSINGS[0];
+  if (!t) return pickOne(AGENCY_CLOSINGS, 'empty');
   const endings = AGENCY_CLOSINGS.map((s) => s.toLowerCase());
   const lower = t.toLowerCase();
   if (endings.some((e) => lower.endsWith(e.toLowerCase().replace(/\.$/, '')) || lower.endsWith(e))) {
     return t;
   }
-  const closing = strict ? AGENCY_CLOSINGS[0] : AGENCY_CLOSINGS[0];
+
+  // Avoid adding a whole new sentence if we're already at the cap.
+  if (splitSentences(t).length >= opts.maxSentences) {
+    return t;
+  }
+
+  const last = splitSentences(t).slice(-1)[0]?.toLowerCase() ?? '';
+  const alreadyInvitesAgency = /(let me know|most helpful next|you don\u2019t have to decide|your choice|we can keep this simple)/i.test(last);
+  if (!opts.strict && alreadyInvitesAgency) {
+    return t;
+  }
+
+  const closing = pickOne(AGENCY_CLOSINGS, t);
   return normalizeSpaces(`${t} ${closing}`);
 }
 
@@ -358,6 +389,8 @@ function runCompiler(draftText: string, decision: DecisionObject, strict: boolea
 
   const state = decision.state.arousal;
   const policy = decision.routing.iba_policy;
+  const caps = maxCapsForState(state);
+  const maxSentences = strict ? Math.max(2, caps.maxSentences - 1) : caps.maxSentences;
 
   // PASS 0 — remove tags and internal blocks (hard)
   let out = stripTaggedBlocks(draftText);
@@ -401,7 +434,7 @@ function runCompiler(draftText: string, decision: DecisionObject, strict: boolea
   out = governed.text;
 
   // PASS 8 — agency restoration
-  out = ensureAgencyEnding(out, strict);
+  out = ensureAgencyEnding(out, { strict, maxSentences });
 
   // Failure checks (hard fail)
   const postLeaks = containsLeak(out);
@@ -409,8 +442,6 @@ function runCompiler(draftText: string, decision: DecisionObject, strict: boolea
   if (hasIdentityLabel(out)) violations.push('identity_label_or_diagnosis');
   if (policy.challenge === 'none' && isConfrontational(out)) violations.push('challenge_slip');
 
-  const caps = maxCapsForState(state);
-  const maxSentences = strict ? Math.max(2, caps.maxSentences - 1) : caps.maxSentences;
   const finalSentenceCount = splitSentences(out).length;
   if (finalSentenceCount > maxSentences) violations.push('length_exceeds_state_cap');
 
@@ -438,11 +469,18 @@ export function unifyVeraResponse(input: { draftText: string; decision: Decision
   }
 
   // Block output (fallback) — do not revise further.
-  const fallback = "I'm here with you. We can go one step at a time. Let me know what feels most helpful next.";
+  const fallbackOptions = [
+    "I'm here with you. We can take this one step at a time.",
+    "I'm here with you. We can keep this simple and gentle.",
+    "I'm with you. You don’t have to decide anything right now.",
+  ] as const;
+
+  const mergedViolations = [...new Set([...first.violations, ...strict.violations])];
+  const fallback = pickOne(fallbackOptions, `${input.draftText}|${mergedViolations.join('|')}`);
   return {
     ok: false,
     text: fallback,
-    violations: [...new Set([...first.violations, ...strict.violations])],
+    violations: mergedViolations,
     strictApplied: true,
   };
 }

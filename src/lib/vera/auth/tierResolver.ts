@@ -33,7 +33,7 @@ export async function resolveTier(sessionId: string): Promise<ResolvedTier> {
         userId: null,
         gateResponse: {
           gate: 'signup_required',
-          text: "I'm really enjoying our conversation. Sign up free to keep chatting — it only takes a second.",
+          text: "I'm really enjoying our conversation. To keep chatting, create a free account - it only takes a moment. You'll get 20 messages per day.",
         },
       };
     }

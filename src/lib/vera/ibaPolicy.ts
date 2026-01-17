@@ -64,7 +64,10 @@ export function buildIbaPolicy(input: {
   const userDistress = /(too much|stop|can't breathe|panicking|freaking out|overwhelmed|don't do that)/i.test(input.userText);
   const assistantInsight = /(what may be happening is|one possibility is|the reason is|this means)/i.test(lastAssistant);
 
-  const isFallbackish = (t: string) => /(one step at a time|at your pace|get oriented without pushing|let me know what feels most helpful next)/i.test(t);
+  const isFallbackish = (t: string) =>
+    /(one step at a time|keep this simple and gentle|you don\u2019t have to decide anything right now|get oriented without pushing|let me know what feels most helpful next)/i.test(
+      t
+    );
   const recentFallbacks = input.convo
     .filter((m) => m.role === 'assistant')
     .slice(-5)
