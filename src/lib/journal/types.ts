@@ -10,7 +10,7 @@ export interface JournalNookProps {
 // CORE TYPES
 // ============================================================================
 
-export type Tab = 'write' | 'entries';
+export type Tab = 'write' | 'entries' | 'check-in' | 'patterns' | 'progress';
 
 export type Mood = 'calm' | 'anxious' | 'sad' | 'grateful' | 'hopeful' | 'tired';
 
@@ -58,16 +58,59 @@ export interface LeafData {
 // VERA INTEGRATION TYPES (AI-Enhanced Journaling)
 // ============================================================================
 
+// Daily Check-ins
+export interface CheckIn {
+  id: string;
+  date: Date;
+  mood: Mood;
+  energy: 1 | 2 | 3 | 4 | 5;
+  note?: string;
+  createdAt: Date;
+}
+
+export interface CheckInStreak {
+  currentStreak: number;
+  longestStreak: number;
+  lastCheckIn: Date;
+}
+
+// Conversation Saves
+export interface ConversationSave {
+  id: string;
+  conversationId: string;
+  highlight: string;
+  context: string;
+  savedAt: Date;
+  tags?: string[];
+}
+
+// Pattern Recognition
+export interface PatternAlert {
+  patternId: string;
+  message: string;
+  severity: 'info' | 'gentle' | 'attention';
+  dismissed: boolean;
+}
+
 /**
  * Journal prompt with source tracking
  */
 export interface JournalPrompt {
   id: string;
   text: string;
-  category: 'reflection' | 'gratitude' | 'emotional' | 'goal-setting' | 'mindfulness';
+  category: 'reflection' | 'gratitude' | 'emotional' | 'goal-setting' | 'mindfulness' | string;
   source: 'static' | 'vera_generated';
   generatedAt?: Date;
   userId?: string;
+}
+
+export interface GeneratedPrompt {
+  id: string;
+  text: string;
+  basedOn: 'pattern' | 'mood' | 'time' | 'random';
+  relatedPatternId?: string;
+  generatedAt: Date;
+  used: boolean;
 }
 
 /**
@@ -96,12 +139,21 @@ export interface EntryInsight {
  */
 export interface JournalPattern {
   id: string;
-  type: 'emotional_cycle' | 'trigger' | 'coping_strategy' | 'growth_indicator' | 'stress_signal';
+  type:
+    | 'emotional_cycle'
+    | 'trigger'
+    | 'coping_strategy'
+    | 'growth_indicator'
+    | 'stress_signal'
+    | 'mood'
+    | 'topic'
+    | 'time';
   description: string;
-  frequency: 'daily' | 'weekly' | 'occasional' | 'rare';
+  frequency: 'daily' | 'weekly' | 'occasional' | 'rare' | number;
   firstSeen: Date;
   lastSeen: Date;
   entries: string[]; // entry IDs
+  relatedEntries?: string[];
   confidence: number; // 0-1
 }
 
@@ -112,13 +164,25 @@ export interface JournalStats {
   totalEntries: number;
   streak: number; // consecutive days
   longestStreak: number;
-  topMoods: Array<{ mood: Mood; count: number }>;
+  topMoods: Array<{ mood: Mood; count: number }> | Record<Mood, number>;
   avgWordCount: number;
   totalWords: number;
   entriesThisWeek: number;
   entriesThisMonth: number;
   mostActiveDay: string; // day of week
   mostActiveTime: string; // time of day
+
+  // Expanded stats (VERA integration)
+  currentStreak?: number;
+  weeklyAvg?: number;
+  monthlyAvg?: number;
+}
+
+// Exports
+export interface ExportOptions {
+  format: 'pdf' | 'markdown' | 'json';
+  dateRange: { from: Date; to: Date };
+  includeAnalysis: boolean;
 }
 
 /**
