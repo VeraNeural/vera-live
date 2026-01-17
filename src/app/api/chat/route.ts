@@ -11,8 +11,11 @@ export const dynamic = 'force-dynamic';
 
 const UNAVAILABLE = 'VERA is temporarily unavailable. Please try again.';
 
-function jsonResponse(content: string, options?: { status?: number; gate?: string }) {
-  const payload: Record<string, unknown> = { content };
+function jsonResponse(
+  content: string,
+  options?: { status?: number; gate?: string; extras?: Record<string, unknown> }
+) {
+  const payload: Record<string, unknown> = { content, ...(options?.extras ?? {}) };
   if (options?.gate) payload.gate = options.gate;
   return NextResponse.json(payload, { status: options?.status ?? 200 });
 }
@@ -85,7 +88,12 @@ export async function POST(req: Request) {
     }
 
     // 8. Build response
-    const res = jsonResponse(result.content, { gate: result.gate });
+    const extras: Record<string, unknown> = {};
+    if (tierResult.tier === 'anonymous' && tierResult.nudge) {
+      extras.nudge = tierResult.nudge;
+    }
+
+    const res = jsonResponse(result.content, { gate: result.gate, extras });
 
     // 9. Set cookies
     if (shouldSetCookie) {

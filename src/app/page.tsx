@@ -12,6 +12,11 @@ type Message = {
   gate?: "signup" | "upgrade";
 };
 
+type ChatNudge = {
+  kind: "signup_soft" | "signup_hard";
+  text: string;
+};
+
 const QUICK_STARTS = [
   "Help me process something",
   "Build something with me",
@@ -79,8 +84,7 @@ export default function Page() {
           ...m,
           {
             role: "assistant",
-            content:
-              "I’m here with you.\nTo keep going, start free — it helps me remember and stay present with you.",
+            content: data?.content ?? "To keep going, start free.",
             gate: "signup",
           },
         ]);
@@ -92,21 +96,33 @@ export default function Page() {
           ...m,
           {
             role: "assistant",
-            content:
-              "I don’t have to leave — this is just a boundary.\nSanctuary unlocks unlimited space, memory, and deeper presence.",
+            content: data?.content ?? "Upgrade to keep chatting today.",
             gate: "upgrade",
           },
         ]);
         return;
       }
 
-      setMessages((m) => [
-        ...m,
-        {
-          role: "assistant",
-          content: data?.content ?? "Sorry — no response returned.",
-        },
-      ]);
+      const nudge: ChatNudge | null =
+        data?.nudge && typeof data.nudge?.text === "string" && (data.nudge?.kind === "signup_soft" || data.nudge?.kind === "signup_hard")
+          ? (data.nudge as ChatNudge)
+          : null;
+
+      setMessages((m) => {
+        const next: Message[] = [
+          ...m,
+          {
+            role: "assistant",
+            content: data?.content ?? "Sorry — no response returned.",
+          },
+        ];
+
+        if (nudge) {
+          next.push({ role: "assistant", content: nudge.text, gate: "signup" });
+        }
+
+        return next;
+      });
     } catch {
       setMessages((m) => [
         ...m,

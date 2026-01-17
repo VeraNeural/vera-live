@@ -11,7 +11,7 @@ export type ResolvedTier = {
   tier: 'anonymous' | 'free' | 'sanctuary' | 'build';
   userId: string | null;
   gateResponse?: { gate: string; text: string };
-  showSoftInvite?: boolean;
+  nudge?: { kind: 'signup_soft' | 'signup_hard'; text: string };
 };
 
 /**
@@ -33,17 +33,36 @@ export async function resolveTier(sessionId: string): Promise<ResolvedTier> {
         userId: null,
         gateResponse: {
           gate: 'signup_required',
-          text: "I'm really enjoying our conversation. To keep chatting, create a free account - it only takes a moment. You'll get 20 messages per day.",
+          text: "I'd love to keep going. To keep chatting, create a free account — it only takes a moment. You'll get 20 messages per day.",
         },
       };
     }
 
-    // Show soft invite on 5th message (count === 4 means next is 5th)
-    if (limitCheck.count === 4) {
+    // Anonymous soft-sell nudges are deterministic based on metering count.
+    // count is number of messages already recorded; next user message will be count + 1.
+    const nextMessageNumber = limitCheck.count + 1;
+
+    // Messages 3-4: light, natural invitation
+    if (nextMessageNumber === 3 || nextMessageNumber === 4) {
       return {
         tier: 'anonymous',
         userId: null,
-        showSoftInvite: true,
+        nudge: {
+          kind: 'signup_soft',
+          text: 'By the way, I can do so much more — breathing exercises, sleep stories, journaling. Want me to set you up with a free account? Takes 10 seconds 💜',
+        },
+      };
+    }
+
+    // Message 5: close the deal
+    if (nextMessageNumber === 5) {
+      return {
+        tier: 'anonymous',
+        userId: null,
+        nudge: {
+          kind: 'signup_hard',
+          text: "I'd love to keep going! Let me get you set up real quick — I'll be right here waiting for you.",
+        },
       };
     }
 
