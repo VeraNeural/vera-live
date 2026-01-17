@@ -25,6 +25,7 @@ import DynamicAssessmentViewer from './DynamicAssessmentViewer';
 // ============================================================================
 interface LibraryRoomProps {
   onBack: () => void;
+  initialView?: string;
   onStartStory?: (storyId: string) => void;
   onStartLesson?: (lessonId: string) => void;
   onStartAssessment?: (assessmentId: string) => void;
@@ -89,6 +90,7 @@ const GLOBAL_STYLES = `
 // ============================================================================
 export default function LibraryRoom({ 
   onBack, 
+  initialView,
   onStartStory, 
   onStartLesson, 
   onStartAssessment 
@@ -125,6 +127,13 @@ export default function LibraryRoom({
   useEffect(() => {
     setTimeout(() => setIsLoaded(true), 100);
   }, []);
+
+  useEffect(() => {
+    const v = (initialView || '').toLowerCase().trim();
+    if (v === 'stories' || v === 'learn' || v === 'discover') {
+      setActiveTab(v as Tab);
+    }
+  }, [initialView]);
 
   // Reset tab-specific state when switching tabs
   useEffect(() => {

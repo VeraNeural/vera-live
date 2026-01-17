@@ -18,6 +18,7 @@ import LettingGoOfTheDay from '../rest/LettingGoOfTheDay';
 // ============================================================================
 interface RestChamberProps {
   onBack: () => void;
+  initialView?: string;
 }
 
 type Category = 'soundscapes' | 'stories' | 'meditations';
@@ -143,7 +144,7 @@ const GLOBAL_STYLES = `
 // ============================================================================
 // COMPONENT
 // ============================================================================
-export default function RestChamber({ onBack }: RestChamberProps) {
+export default function RestChamber({ onBack, initialView }: RestChamberProps) {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedTimer, setSelectedTimer] = useState<TimerOption>('30m');
   const [activeActivity, setActiveActivity] = useState<ActivityId | null>(null);
@@ -152,6 +153,23 @@ export default function RestChamber({ onBack }: RestChamberProps) {
   useEffect(() => {
     setTimeout(() => setIsLoaded(true), 100);
   }, []);
+
+  const normalizeCategoryFromView = (view?: string): Category | null => {
+    const v = (view || '').toLowerCase().trim();
+    if (!v) return null;
+    if (v === 'soundscapes') return 'soundscapes';
+    if (v === 'stories' || v === 'sleep-stories') return 'stories';
+    if (v === 'meditations') return 'meditations';
+    return null;
+  };
+
+  // Jump directly to a category when routed with `?view=`
+  useEffect(() => {
+    const category = normalizeCategoryFromView(initialView);
+    if (!category) return;
+    setActiveActivity(null);
+    setSelectedCategory(category);
+  }, [initialView]);
 
   const handleOpenActivity = (activityId: ActivityId) => {
     setActiveActivity(activityId);

@@ -49,7 +49,7 @@ import { HumAndTone } from '@/lib/studio/experiences/sound/HumAndTone';
 import { SoundBath } from '@/lib/studio/experiences/sound/SoundBath';
 import { PlaylistBuilder } from '@/lib/studio/experiences/sound/PlaylistBuilder';
 
-export default function CreativeStudio({ onBack, onStartActivity }: CreativeStudioProps) {
+export default function CreativeStudio({ onBack, onStartActivity, initialView }: CreativeStudioProps & { initialView?: string }) {
   const { colors, isDark } = useTheme();
   const COLORS = getStudioColors(colors);
   const theme = isDark ? 'dark' : 'light';
@@ -64,6 +64,27 @@ export default function CreativeStudio({ onBack, onStartActivity }: CreativeStud
   useEffect(() => {
     setTimeout(() => setIsLoaded(true), 100);
   }, []);
+
+  useEffect(() => {
+    const raw = (initialView || '').toLowerCase().trim();
+    if (!raw) return;
+
+    const normalized = raw === 'hum-and-tone' ? 'hum-tone' : raw;
+
+    if (normalized === 'projects' || normalized === 'activities') {
+      setActiveTab(normalized as Tab);
+      return;
+    }
+
+    const activity = ACTIVITIES.find((a) => a.id === normalized);
+    if (!activity) return;
+
+    setActiveTab('activities');
+    setSelectedCategory(activity.category);
+    setActiveExperience(activity.id);
+    setComingSoonActivityId(null);
+    setCompletionMessage(null);
+  }, [initialView]);
 
   const handleCategoryClick = (categoryId: string) => {
     setSelectedCategory(categoryId);

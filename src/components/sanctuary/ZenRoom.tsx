@@ -26,6 +26,7 @@ import { CompletionScreen } from '@/lib/zen/components/CompletionScreen';
 interface ZenRoomProps {
   onBack: () => void;
   onComplete?: () => void;
+  initialView?: string;
 }
 
 type ThemeColors = {
@@ -49,7 +50,7 @@ const getZenColors = (theme: ThemeColors) => ({
   accentGlow: theme.glow,
 });
 
-export default function ZenRoom({ onBack, onComplete }: ZenRoomProps) {
+export default function ZenRoom({ onBack, onComplete, initialView }: ZenRoomProps) {
   const { colors } = useTheme();
   const COLORS = getZenColors(colors as ThemeColors);
 
@@ -80,6 +81,24 @@ export default function ZenRoom({ onBack, onComplete }: ZenRoomProps) {
       clearTimer();
     };
   }, []);
+
+  const normalizePracticeFromView = (view?: string): PracticeId | null => {
+    const v = (view || '').toLowerCase().trim();
+    if (!v) return null;
+    if (v === 'breathe') return 'breathe';
+    if (v === 'orient') return 'orient';
+    if (v === 'shake') return 'shake';
+    if (v === 'ground') return 'ground';
+    return null;
+  };
+
+  useEffect(() => {
+    const practice = normalizePracticeFromView(initialView);
+    if (!practice) return;
+    if (mode === 'active') return;
+    setSelectedPractice(practice);
+    setMode('practice-select');
+  }, [initialView, mode]);
 
   const pattern = BREATHING_PATTERNS.find((p) => p.id === selectedPattern) ?? BREATHING_PATTERNS[0];
   const currentPhase = pattern?.phases[currentPhaseIndex];

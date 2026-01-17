@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import TrustTransparencySidebar from '@/components/TrustTransparencySidebar';
+import { useVeraNavigator } from '@/lib/vera/navigator/hooks/useVeraNavigator';
 
 // ============================================================================
 // TYPES
@@ -161,6 +162,7 @@ const TIME_COLORS = {
     accent: '#d4a574',
     text: 'rgba(60, 50, 40, 0.9)',
     textMuted: 'rgba(60, 50, 40, 0.5)',
+    textDim: 'rgba(60, 50, 40, 0.35)',
     cardBg: 'rgba(255, 255, 255, 0.75)',
     cardBorder: 'rgba(0, 0, 0, 0.06)',
     glow: 'rgba(255, 200, 120, 0.2)',
@@ -171,6 +173,7 @@ const TIME_COLORS = {
     accent: '#c49a6c',
     text: 'rgba(55, 45, 35, 0.9)',
     textMuted: 'rgba(55, 45, 35, 0.45)',
+    textDim: 'rgba(55, 45, 35, 0.32)',
     cardBg: 'rgba(255, 255, 255, 0.7)',
     cardBorder: 'rgba(0, 0, 0, 0.05)',
     glow: 'rgba(255, 180, 100, 0.15)',
@@ -181,6 +184,7 @@ const TIME_COLORS = {
     accent: '#c9a87c',
     text: 'rgba(255, 250, 240, 0.9)',
     textMuted: 'rgba(255, 250, 240, 0.45)',
+    textDim: 'rgba(255, 250, 240, 0.32)',
     cardBg: 'rgba(255, 255, 255, 0.06)',
     cardBorder: 'rgba(255, 255, 255, 0.08)',
     glow: 'rgba(255, 180, 100, 0.08)',
@@ -191,6 +195,7 @@ const TIME_COLORS = {
     accent: '#a08060',
     text: 'rgba(255, 250, 245, 0.85)',
     textMuted: 'rgba(255, 250, 245, 0.35)',
+    textDim: 'rgba(255, 250, 245, 0.25)',
     cardBg: 'rgba(255, 255, 255, 0.04)',
     cardBorder: 'rgba(255, 255, 255, 0.06)',
     glow: 'rgba(255, 200, 120, 0.05)',
@@ -227,6 +232,12 @@ const getQuickPrompts = (timeOfDay: TimeOfDay): QuickPrompt[] => {
     { text: "Help me think", category: 'practical' },
   ];
 };
+
+const NAV_HINT_ROTATIONS = [
+  "Try: 'breathe', 'can't sleep', 'brain dump', 'decode this'",
+  "Try: 'can't sleep', 'breathe', 'decode this', 'brain dump'",
+  "Try: 'brain dump', 'decode this', 'breathe', 'can't sleep'",
+];
 
 // ============================================================================
 // GLOBAL STYLES
@@ -400,6 +411,7 @@ const getVeraGreeting = (time: TimeOfDay): string => {
 // ============================================================================
 export default function VeraSanctuary() {
   const router = useRouter();
+  const { executeCommand } = useVeraNavigator();
   const { user, isLoaded: userLoaded } = useUser();
   const [mounted, setMounted] = useState(false);
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('afternoon');
@@ -416,9 +428,28 @@ export default function VeraSanctuary() {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isFirstMessage, setIsFirstMessage] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<number | null>(null);
   
   const chatRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const [navHint, setNavHint] = useState(() => {
+    const idx = Math.floor(Math.random() * NAV_HINT_ROTATIONS.length);
+    return NAV_HINT_ROTATIONS[idx] ?? NAV_HINT_ROTATIONS[0];
+  });
+
+  const showToast = useCallback((message: string) => {
+    setToastMessage(message);
+    if (toastTimeoutRef.current) {
+      window.clearTimeout(toastTimeoutRef.current);
+    }
+    toastTimeoutRef.current = window.setTimeout(() => {
+      setToastMessage(null);
+      toastTimeoutRef.current = null;
+    }, 2200);
+  }, []);
 
   // Check consent status on mount
   useEffect(() => {
@@ -427,6 +458,34 @@ export default function VeraSanctuary() {
     const interval = setInterval(() => setTimeOfDay(getTimeOfDay()), 60000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        window.clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    // Rotate occasionally, but stay stable while the user is typing.
+    if (inputValue.trim()) return;
+
+    const id = window.setInterval(() => {
+      setNavHint((prev) => {
+        if (NAV_HINT_ROTATIONS.length <= 1) return prev;
+        let next = prev;
+        let attempts = 0;
+        while (next === prev && attempts < 6) {
+          next = NAV_HINT_ROTATIONS[Math.floor(Math.random() * NAV_HINT_ROTATIONS.length)] ?? prev;
+          attempts += 1;
+        }
+        return next;
+      });
+    }, 9000);
+
+    return () => window.clearInterval(id);
+  }, [inputValue]);
 
   // Check consent when user is loaded
   useEffect(() => {
@@ -536,99 +595,153 @@ export default function VeraSanctuary() {
   };
 
   const handleSend = async (text?: string) => {
-  const messageText = text || inputValue.trim();
-  if (!messageText) return;
+    const messageText = (text ?? inputValue).trim();
+    if (!messageText) return;
 
-  const userMessage: Message = {
-    id: Date.now().toString(),
-    role: 'user',
-    content: messageText,
-    timestamp: new Date(),
-  };
-
-  setMessages(prev => [...prev, userMessage]);
-  setInputValue('');
-  setIsTyping(true);
-
-  // Check if we need to ask for consent (first message, never asked)
-  const shouldAskConsent = isFirstMessage && consentStatus === 'unknown' && user;
-  setIsFirstMessage(false);
-
-  // Call VERA API - format messages for /api/chat
-  try {
-    const formattedMessages = [
-      ...messages
-        .filter(m => !m.isConsentPrompt && m.role !== 'system')
-        .map(m => ({
-          role: m.role as 'user' | 'assistant',
-          content: m.content,
-        })),
-      { role: 'user' as const, content: messageText }
-    ];
-
-    const response = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: formattedMessages,
-      }),
-    });
-
-    const data = await response.json();
-    
-    const assistantMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      role: 'assistant',
-      content: data.content || "I'm here with you. Take your time.",
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: messageText,
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, assistantMessage]);
+    setMessages((prev) => [...prev, userMessage]);
+    setInputValue('');
 
-    // If consent granted, save messages
-    if (consentStatus === 'granted') {
-      let convId = currentConversationId;
-      
-      // Create conversation if needed
-      if (!convId) {
-        convId = await createConversation(messageText);
-        if (convId) setCurrentConversationId(convId);
-      }
-      
-      // Save both messages
-      if (convId) {
-        await saveMessage(convId, 'user', messageText);
-        await saveMessage(convId, 'assistant', assistantMessage.content);
-      }
-    }
+    // Intercept command-like messages and route via VERA Navigator
+    const navResult = executeCommand(messageText);
+    if (navResult?.navigateTo?.room) {
+      const { room, view } = navResult.navigateTo;
 
-    // Ask for consent after first exchange if never asked
-    if (shouldAskConsent) {
-      setTimeout(() => {
-        const consentPrompt: Message = {
-          id: (Date.now() + 2).toString(),
-          role: 'system',
-          content: 'consent_prompt',
+      const roomLabel = room === 'sanctuary' ? 'Sanctuary' : room === 'back' ? 'Back' : room;
+      showToast(`Taking you to ${roomLabel}...`);
+
+      if (navResult.voiceResponse) {
+        const localAssistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: navResult.voiceResponse,
           timestamp: new Date(),
-          isConsentPrompt: true,
         };
-        setMessages(prev => [...prev, consentPrompt]);
-        setConsentStatus('pending');
-      }, 1000);
+        setMessages((prev) => [...prev, localAssistantMessage]);
+      }
+
+      // Optional: speak via /api/narrate if enabled
+      const enableCommandTts = process.env.NEXT_PUBLIC_ENABLE_COMMAND_TTS === 'true';
+      if (enableCommandTts && navResult.shouldSpeak && navResult.voiceResponse) {
+        void (async () => {
+          try {
+            const resp = await fetch('/api/narrate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text: navResult.voiceResponse }),
+            });
+
+            if (!resp.ok) return;
+            const data = await resp.json();
+            const audioUrl: string | undefined = data?.audioUrl;
+            if (!audioUrl) return;
+
+            const audio = new Audio(audioUrl);
+            await audio.play();
+          } catch {
+            // best-effort only
+          }
+        })();
+      }
+
+      if (room === 'back') {
+        router.back();
+        return;
+      }
+
+      const basePath = room === 'sanctuary' ? '/sanctuary' : `/sanctuary/${room}`;
+      const targetUrl = view ? `${basePath}?view=${encodeURIComponent(view)}` : basePath;
+      router.push(targetUrl);
+      return;
     }
 
-  } catch (error) {
-    const errorMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      role: 'assistant',
-      content: "I'm here with you. Sometimes connections falter, but I'm not going anywhere.",
-      timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, errorMessage]);
-  } finally {
-    setIsTyping(false);
-  }
-};
+    // Normal chat flow
+    setIsTyping(true);
+
+    // Check if we need to ask for consent (first message, never asked)
+    const shouldAskConsent = isFirstMessage && consentStatus === 'unknown' && user;
+    setIsFirstMessage(false);
+
+    // Call VERA API - format messages for /api/chat
+    try {
+      const formattedMessages = [
+        ...messages
+          .filter((m) => !m.isConsentPrompt && m.role !== 'system')
+          .map((m) => ({
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+          })),
+        { role: 'user' as const, content: messageText },
+      ];
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: formattedMessages,
+        }),
+      });
+
+      const data = await response.json();
+
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: data.content || "I'm here with you. Take your time.",
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+
+      // If consent granted, save messages
+      if (consentStatus === 'granted') {
+        let convId = currentConversationId;
+
+        // Create conversation if needed
+        if (!convId) {
+          convId = await createConversation(messageText);
+          if (convId) setCurrentConversationId(convId);
+        }
+
+        // Save both messages
+        if (convId) {
+          await saveMessage(convId, 'user', messageText);
+          await saveMessage(convId, 'assistant', assistantMessage.content);
+        }
+      }
+
+      // Ask for consent after first exchange if never asked
+      if (shouldAskConsent) {
+        setTimeout(() => {
+          const consentPrompt: Message = {
+            id: (Date.now() + 2).toString(),
+            role: 'system',
+            content: 'consent_prompt',
+            timestamp: new Date(),
+            isConsentPrompt: true,
+          };
+          setMessages((prev) => [...prev, consentPrompt]);
+          setConsentStatus('pending');
+        }, 1000);
+      }
+    } catch (error) {
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: "I'm here with you. Sometimes connections falter, but I'm not going anywhere.",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
 
   const handleRoomClick = (roomId: string) => {
     router.push(`/sanctuary/${roomId}`);
@@ -673,6 +786,33 @@ export default function VeraSanctuary() {
         flexDirection: 'column',
         overflow: 'hidden',
       }}>
+        {/* Toast */}
+        {toastMessage && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 'max(10px, env(safe-area-inset-top))',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 200,
+              padding: '10px 14px',
+              borderRadius: 14,
+              background: isDark ? 'rgba(20, 16, 28, 0.85)' : 'rgba(255, 255, 255, 0.85)',
+              border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
+              color: isDark ? 'rgba(255,255,255,0.9)' : 'rgba(40,35,30,0.9)',
+              boxShadow: isDark ? '0 10px 30px rgba(0,0,0,0.4)' : '0 10px 30px rgba(0,0,0,0.15)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              fontSize: 13,
+              fontWeight: 500,
+              maxWidth: 'min(92vw, 520px)',
+              textAlign: 'center',
+            }}
+          >
+            {toastMessage}
+          </div>
+        )}
+
         {/* Ambient Background */}
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
           <div style={{
@@ -1071,54 +1211,65 @@ export default function VeraSanctuary() {
                 <RoomIcon type="mic" color="currentColor" size={22} />
               </button>
 
-              {/* Text Input */}
-              <div style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'flex-end',
-                background: colors.inputBg,
-                border: `1.5px solid ${colors.cardBorder}`,
-                borderRadius: 28,
-                padding: '14px 20px',
-                backdropFilter: 'blur(10px)',
-              }}>
-                <textarea
-                  ref={inputRef}
-                  className="input-field"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Share what's on your mind..."
-                  rows={1}
-                  style={{
-                    flex: 1,
-                    border: 'none',
-                    background: 'transparent',
-                    color: colors.text,
-                    fontSize: 16,
-                    lineHeight: 1.5,
-                    resize: 'none',
-                    maxHeight: 120,
-                  }}
-                />
-                <button
-                  onClick={() => handleSend()}
-                  disabled={!inputValue.trim()}
-                  style={{
-                    marginLeft: 12,
-                    padding: 0,
-                    border: 'none',
-                    background: 'transparent',
-                    cursor: inputValue.trim() ? 'pointer' : 'default',
-                    opacity: inputValue.trim() ? 1 : 0.4,
-                    color: colors.accent,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <RoomIcon type="send" color="currentColor" size={24} />
-                </button>
+              {/* Text Input + Hint */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  background: colors.inputBg,
+                  border: `1.5px solid ${colors.cardBorder}`,
+                  borderRadius: 28,
+                  padding: '14px 20px',
+                  backdropFilter: 'blur(10px)',
+                }}>
+                  <textarea
+                    ref={inputRef}
+                    className="input-field"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Share what's on your mind..."
+                    rows={1}
+                    style={{
+                      flex: 1,
+                      border: 'none',
+                      background: 'transparent',
+                      color: colors.text,
+                      fontSize: 16,
+                      lineHeight: 1.5,
+                      resize: 'none',
+                      maxHeight: 120,
+                    }}
+                  />
+                  <button
+                    onClick={() => handleSend()}
+                    disabled={!inputValue.trim()}
+                    style={{
+                      marginLeft: 12,
+                      padding: 0,
+                      border: 'none',
+                      background: 'transparent',
+                      cursor: inputValue.trim() ? 'pointer' : 'default',
+                      opacity: inputValue.trim() ? 1 : 0.4,
+                      color: colors.accent,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <RoomIcon type="send" color="currentColor" size={24} />
+                  </button>
+                </div>
+
+                <div style={{
+                  color: colors.textDim,
+                  fontSize: 12,
+                  marginTop: 8,
+                  paddingLeft: 20,
+                  paddingRight: 20,
+                }}>
+                  {navHint}
+                </div>
               </div>
             </div>
 

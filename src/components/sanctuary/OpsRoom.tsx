@@ -17,6 +17,7 @@ import { veraWatch } from '@/lib/ops/monitoring/veraWatch';
 
 interface OpsRoomProps {
   onBack: () => void;
+  initialView?: string;
 }
 
 const GLOBAL_STYLES = `
@@ -114,7 +115,7 @@ const AI_PROVIDERS: Record<AIProvider, { name: string; color: string }> = {
   grok: { name: 'Grok', color: '#8B5CF6' },
 };
 
-export default function OpsRoom({ onBack }: OpsRoomProps) {
+export default function OpsRoom({ onBack, initialView }: OpsRoomProps) {
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('afternoon');
   const [manualTheme, setManualTheme] = useState<ThemeMode>('auto');
   const [isLoaded, setIsLoaded] = useState(false);
@@ -143,6 +144,27 @@ export default function OpsRoom({ onBack }: OpsRoomProps) {
     const interval = setInterval(() => setTimeOfDay(getTimeOfDay()), 60000);
     return () => clearInterval(interval);
   }, []);
+
+  const normalizeCategoryFromView = (view?: string): Category | null => {
+    const v = (view || '').toLowerCase().trim();
+    if (!v) return null;
+    // Accept direct category IDs
+    if ((CATEGORIES as any[]).some((c) => c.id === v)) return v as Category;
+    // Map navigator-level views to Ops categories
+    if (v === 'communication') return 'communication';
+    if (v === 'work-career') return 'work';
+    if (v === 'money-finance') return 'money';
+    if (v === 'planning-goals') return 'planning';
+    if (v === 'reflect-connect') return 'relationships';
+    return null;
+  };
+
+  useEffect(() => {
+    const category = normalizeCategoryFromView(initialView);
+    if (!category) return;
+    setActiveCategory(category);
+    setSelectedAction(null);
+  }, [initialView]);
 
   const isDark = manualTheme === 'dark' ? true : manualTheme === 'light' ? false : (timeOfDay === 'evening' || timeOfDay === 'night');
   const colors = isDark ? TIME_COLORS.evening : TIME_COLORS[timeOfDay];

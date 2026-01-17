@@ -22,9 +22,10 @@ import { getMoodDistribution } from '@/lib/journal/analysis/moodTracker';
 
 interface JournalNookProps {
   onBack: () => void;
+  initialView?: string;
 }
 
-export default function JournalNook({ onBack }: JournalNookProps) {
+export default function JournalNook({ onBack, initialView }: JournalNookProps) {
   const { colors, isDark } = useTheme();
   const theme: 'light' | 'dark' = isDark ? 'dark' : 'light';
 
@@ -186,6 +187,14 @@ export default function JournalNook({ onBack }: JournalNookProps) {
   const handleMoodSelect = useCallback((mood: Mood) => {
     setSelectedMood((prev) => (prev === mood ? null : mood));
   }, []);
+
+  useEffect(() => {
+    const v = (initialView || '').toLowerCase().trim();
+    const allowed: Tab[] = ['write', 'entries', 'check-in', 'patterns', 'progress'];
+    if ((allowed as string[]).includes(v)) {
+      setActiveTab(v as Tab);
+    }
+  }, [initialView]);
 
   const handleSaveEntry = useCallback(() => {
     if (!content.trim()) return;
