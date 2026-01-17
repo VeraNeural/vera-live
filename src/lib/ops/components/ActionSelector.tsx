@@ -19,8 +19,8 @@ interface ActionSelectorProps<T extends ActionLike = ActionLike> {
   isDark: boolean;
 }
 
-const getCategoryDescription = (category: Category): string => {
-  const descriptions: Record<Category, string> = {
+const getCategoryDescription = (category: Category | string): string => {
+  const descriptions: Record<string, string> = {
     communication: 'Choose a tool to help you communicate clearly and confidently.',
     work: 'Tools to help you navigate your career with clarity and confidence.',
     life: 'Handle the tasks that drain your energy so you can focus on what matters.',
@@ -33,7 +33,7 @@ const getCategoryDescription = (category: Category): string => {
     creativity: 'Unlock ideas and explore creative possibilities.',
     planning: 'Set meaningful goals and create actionable plans.',
   };
-  return descriptions[category];
+  return descriptions[category] || '';
 };
 
 export const ActionSelector: React.FC<ActionSelectorProps> = ({
