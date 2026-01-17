@@ -36,7 +36,7 @@ function safePathSegment(input: string): string {
 
 async function synthesizeWithHumeTts(input: { text: string }): Promise<{ audio: Buffer; contentType: string }>
 {
-  const { value: apiKey } = getRequiredEnvAny(['HUMEAI_API_KEY', 'HUME_API_KEY', 'HUMEAI_SECRET_KEY']);
+  const { name: apiKeyEnv, value: apiKey } = getRequiredEnvAny(['HUMEAI_API_KEY', 'HUME_API_KEY']);
 
   const resp = await fetch('https://api.hume.ai/v0/tts/stream/file', {
     method: 'POST',
@@ -67,7 +67,7 @@ async function synthesizeWithHumeTts(input: { text: string }): Promise<{ audio: 
     const errText = await resp.text().catch(() => '');
     return Promise.reject(
       new Error(
-        `Hume TTS failed (${resp.status} ${resp.statusText})${errText ? `: ${errText}` : ''}`
+        `Hume TTS failed (${resp.status} ${resp.statusText}) using ${apiKeyEnv}${errText ? `: ${errText}` : ''}`
       )
     );
   }
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
     const { audio, contentType } = await synthesizeWithHumeTts({ text });
 
     // 2) Upload to Supabase Storage
-    const bucket = 'story-audio';
+    const bucket = 'vera-live';
     const path = `stories/${safePathSegment(storyId)}/${safePathSegment(chapterId || 'full')}.wav`;
 
     const uploadResult = await supabaseAdmin.storage.from(bucket).upload(path, audio, {

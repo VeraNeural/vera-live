@@ -1,5 +1,5 @@
 // Local sanity-check helper (not required at runtime).
-// Prints available Supabase Storage buckets and verifies `story-audio` exists.
+// Prints available Supabase Storage buckets and verifies `vera-live` exists.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -69,10 +69,10 @@ try {
   const names = buckets.map((b) => b?.name).filter(Boolean);
 
   console.log('Buckets:', names.join(', ') || '(none)');
-  if (names.includes('story-audio')) {
-    console.log('OK: story-audio bucket exists');
+  if (names.includes('vera-live')) {
+    console.log('OK: vera-live bucket exists');
   } else {
-    console.log('MISSING: story-audio bucket not found');
+    console.log('MISSING: vera-live bucket not found');
     process.exitCode = 2;
   }
 } catch (err) {
