@@ -19,13 +19,24 @@ function getRequiredEnv(name: string): string {
   return value;
 }
 
+function getRequiredEnvAny(names: string[]): { name: string; value: string } {
+  for (const name of names) {
+    const value = process.env[name];
+    if (value) return { name, value };
+  }
+
+  throw new Error(
+    `Missing required environment variable: set one of ${names.join(', ')}`
+  );
+}
+
 function safePathSegment(input: string): string {
   return input.replace(/[^a-zA-Z0-9._-]/g, '_');
 }
 
 async function synthesizeWithHumeTts(input: { text: string }): Promise<{ audio: Buffer; contentType: string }>
 {
-  const apiKey = getRequiredEnv('HUME_API_KEY');
+  const { value: apiKey } = getRequiredEnvAny(['HUMEAI_API_KEY', 'HUME_API_KEY', 'HUMEAI_SECRET_KEY']);
 
   const resp = await fetch('https://api.hume.ai/v0/tts/stream/file', {
     method: 'POST',
