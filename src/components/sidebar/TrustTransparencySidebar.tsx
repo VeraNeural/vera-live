@@ -30,6 +30,7 @@ type TrustTransparencySidebarProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onNewConversation?: () => void;
+  onLoadConversation?: (conversationId: string) => void;
 };
 
 type AccessTier = 'anonymous' | 'free' | 'sanctuary';
@@ -114,6 +115,7 @@ export default function TrustTransparencySidebar({
   open,
   onOpenChange,
   onNewConversation,
+  onLoadConversation,
 }: TrustTransparencySidebarProps) {
   const router = useRouter();
   const [memoryEnabled, setMemoryEnabled] = useState<boolean | null>(null);
@@ -130,6 +132,25 @@ export default function TrustTransparencySidebar({
 
   const { isLoaded, isSignedIn, user } = useUser();
   const clerk = useClerk();
+
+  // Format relative time helper
+  const formatRelativeTime = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
 
   const accessTier: AccessTier = useMemo(() => {
     if (!isLoaded || !isSignedIn) return 'anonymous';
@@ -650,17 +671,7 @@ export default function TrustTransparencySidebar({
             {/* Conversation list */}
             {historyExpanded && (
               <div style={{ marginLeft: '12px', marginTop: '4px' }}>
-                {accessTier !== 'sanctuary' ? (
-                  <div style={{
-                    padding: '12px',
-                    fontSize: '12px',
-                    color: colors.textMuted,
-                    textAlign: 'center',
-                    lineHeight: 1.4,
-                  }}>
-                    Upgrade to Sanctuary to access conversation history
-                  </div>
-                ) : !memoryEnabled ? (
+                {!memoryEnabled ? (
                   <div style={{
                     padding: '12px',
                     fontSize: '12px',
@@ -685,44 +696,61 @@ export default function TrustTransparencySidebar({
                     fontSize: '12px',
                     color: colors.textMuted,
                     textAlign: 'center',
+                    lineHeight: 1.4,
                   }}>
-                    No conversations yet
+                    No conversations yet. Start chatting!
                   </div>
                 ) : (
                   conversations.map((conv) => (
                     <button
                       key={conv.id}
-                      onClick={() => navigate(`/sanctuary?conversation=${conv.id}`)}
+                      onClick={() => {
+                        if (onLoadConversation) {
+                          onLoadConversation(conv.id);
+                          onOpenChange(false);
+                        } else {
+                          navigate(`/sanctuary?conversation=${conv.id}`);
+                        }
+                      }}
                       style={{
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'flex-start',
                         width: '100%',
-                        padding: '8px 12px',
+                        padding: '10px 12px',
                         borderRadius: '8px',
                         border: 'none',
                         backgroundColor: 'transparent',
-                        color: colors.textMuted,
+                        color: colors.text,
                         cursor: 'pointer',
                         transition: 'all 150ms ease',
-                        fontSize: '12px',
                         textAlign: 'left',
                         marginBottom: '2px',
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.backgroundColor = colors.hover;
-                        e.currentTarget.style.color = colors.text;
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = colors.textMuted;
                       }}
                     >
-                      <span style={{ fontWeight: 500, marginBottom: '2px' }}>
-                        {conv.title || 'Untitled'}
+                      <span style={{ 
+                        fontSize: '13px', 
+                        fontWeight: 500, 
+                        marginBottom: '4px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        width: '100%',
+                        color: colors.text,
+                      }}>
+                        {conv.title || 'New conversation'}
                       </span>
-                      <span style={{ fontSize: '10px', opacity: 0.7 }}>
-                        {new Date(conv.updated_at).toLocaleDateString()}
+                      <span style={{ 
+                        fontSize: '11px', 
+                        color: colors.textMuted,
+                      }}>
+                        {formatRelativeTime(conv.updated_at)}
                       </span>
                     </button>
                   ))

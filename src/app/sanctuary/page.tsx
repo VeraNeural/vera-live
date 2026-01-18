@@ -475,6 +475,31 @@ export default function VeraSanctuary() {
     }
   };
 
+  // Handle loading a conversation from history
+  const handleLoadConversation = async (conversationId: string) => {
+    try {
+      const response = await fetch(`/api/sanctuary/conversations?action=get&id=${conversationId}`);
+      if (!response.ok) throw new Error('Failed to load conversation');
+      
+      const data = await response.json();
+      if (data.messages && Array.isArray(data.messages)) {
+        setMessages(data.messages);
+        setCurrentConversationId(conversationId);
+        setIsFirstMessage(false);
+        
+        // Scroll to bottom after loading
+        setTimeout(() => {
+          if (chatRef.current) {
+            chatRef.current.scrollTop = chatRef.current.scrollHeight;
+          }
+        }, 100);
+      }
+    } catch (error) {
+      console.error('Error loading conversation:', error);
+      showToast('Failed to load conversation');
+    }
+  };
+
   // Auto-resize textarea
   useEffect(() => {
     const textarea = inputRef.current;
@@ -1911,6 +1936,7 @@ export default function VeraSanctuary() {
           open={sidebarOpen}
           onOpenChange={setSidebarOpen}
           onNewConversation={handleNewConversation}
+          onLoadConversation={handleLoadConversation}
         />
       </div>
     </>
