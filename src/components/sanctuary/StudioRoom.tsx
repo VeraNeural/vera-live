@@ -49,7 +49,7 @@ import { HumAndTone } from '@/lib/studio/experiences/sound/HumAndTone';
 import { SoundBath } from '@/lib/studio/experiences/sound/SoundBath';
 import { PlaylistBuilder } from '@/lib/studio/experiences/sound/PlaylistBuilder';
 
-export default function CreativeStudio({ onBack, onStartActivity, initialView }: CreativeStudioProps & { initialView?: string }) {
+export default function CreativeStudio({ onBack, onStartActivity, initialView, initialCategory }: CreativeStudioProps & { initialView?: string; initialCategory?: string }) {
   const { colors, isDark } = useTheme();
   const COLORS = getStudioColors(colors);
   const theme = isDark ? 'dark' : 'light';
@@ -85,6 +85,32 @@ export default function CreativeStudio({ onBack, onStartActivity, initialView }:
     setComingSoonActivityId(null);
     setCompletionMessage(null);
   }, [initialView]);
+
+  // Handle initialCategory prop (from dynamic route)
+  useEffect(() => {
+    if (!initialCategory) return;
+    
+    // Map URL slug to category ID
+    const categoryMap: Record<string, string> = {
+      'art-and-drawing': 'art',
+      'mindful-crafts': 'craft',
+      'build-and-create': 'build',
+      'free-expression': 'express',
+      'sound-and-vibe': 'sound',
+      'written-release': 'written',
+      'body-expression': 'body',
+    };
+    
+    const categoryId = categoryMap[initialCategory];
+    
+    if (categoryId) {
+      setActiveTab('activities');
+      setSelectedCategory(categoryId);
+      setActiveExperience(null);
+      setComingSoonActivityId(null);
+      setCompletionMessage(null);
+    }
+  }, [initialCategory]);
 
   const handleCategoryClick = (categoryId: string) => {
     setSelectedCategory(categoryId);
