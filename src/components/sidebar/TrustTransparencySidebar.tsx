@@ -82,13 +82,13 @@ const SPACES = [
     icon: Palette, 
     path: '/sanctuary/studio',
     activities: [
-      { id: 'art-and-drawing', name: 'Art & Drawing', path: '/sanctuary/studio?category=art-and-drawing' },
-      { id: 'mindful-crafts', name: 'Mindful Crafts', path: '/sanctuary/studio?category=mindful-crafts' },
-      { id: 'build-and-create', name: 'Build & Create', path: '/sanctuary/studio?category=build-and-create' },
-      { id: 'free-expression', name: 'Free Expression', path: '/sanctuary/studio?category=free-expression' },
-      { id: 'sound-and-vibe', name: 'Sound & Vibe', path: '/sanctuary/studio?category=sound-and-vibe' },
-      { id: 'written-release', name: 'Written Release', path: '/sanctuary/studio?category=written-release' },
-      { id: 'body-expression', name: 'Body Expression', path: '/sanctuary/studio?category=body-expression' },
+      { id: 'art-and-drawing', name: 'Art & Drawing', path: '/sanctuary/studio/art-and-drawing' },
+      { id: 'mindful-crafts', name: 'Mindful Crafts', path: '/sanctuary/studio/mindful-crafts' },
+      { id: 'build-and-create', name: 'Build & Create', path: '/sanctuary/studio/build-and-create' },
+      { id: 'free-expression', name: 'Free Expression', path: '/sanctuary/studio/free-expression' },
+      { id: 'sound-and-vibe', name: 'Sound & Vibe', path: '/sanctuary/studio/sound-and-vibe' },
+      { id: 'written-release', name: 'Written Release', path: '/sanctuary/studio/written-release' },
+      { id: 'body-expression', name: 'Body Expression', path: '/sanctuary/studio/body-expression' },
     ]
   },
   { 
