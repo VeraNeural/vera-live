@@ -173,7 +173,7 @@ export const FormattedOutput: React.FC<FormattedOutputProps> = ({
               {section.content.map((item, i) => (
                 <li key={i} style={{ 
                   fontSize: 15, 
-                  lineHeight: 1.6, 
+                  lineHeight: 1.7, 
                   color: colors.text,
                   display: 'flex',
                   alignItems: 'flex-start',
@@ -185,8 +185,8 @@ export const FormattedOutput: React.FC<FormattedOutputProps> = ({
                     borderRadius: '50%',
                     background: colors.accent,
                     flexShrink: 0,
-                    marginTop: 8,
-                    opacity: 0.6,
+                    marginTop: 9,
+                    opacity: 0.7,
                   }} />
                   <span>{item}</span>
                 </li>
@@ -194,19 +194,19 @@ export const FormattedOutput: React.FC<FormattedOutputProps> = ({
             </ul>
           ) : section.type === 'quote' ? (
             <div style={{
-              padding: '14px 18px',
-              background: isDark ? 'rgba(255, 180, 100, 0.06)' : 'rgba(200, 160, 100, 0.08)',
-              borderRadius: 10, 
+              padding: '16px 20px',
+              background: isDark ? 'rgba(255, 180, 100, 0.06)' : 'rgba(200, 160, 100, 0.1)',
+              borderRadius: 12, 
               fontStyle: 'italic', 
               fontSize: 15, 
-              lineHeight: 1.7, 
+              lineHeight: 1.8, 
               color: colors.text,
-              borderLeft: `2px solid ${colors.accent}`,
+              borderLeft: `3px solid ${colors.accent}`,
             }}>{section.content.join(' ')}</div>
           ) : (
-            <div style={{ fontSize: 15, lineHeight: 1.75, color: colors.text }}>
+            <div style={{ fontSize: 15, lineHeight: 1.8, color: colors.text }}>
               {section.content.map((text, i) => (
-                <p key={i} style={{ margin: i > 0 ? '12px 0 0 0' : 0 }}>{text}</p>
+                <p key={i} style={{ margin: i > 0 ? '16px 0 0 0' : 0 }}>{text}</p>
               ))}
             </div>
           )}

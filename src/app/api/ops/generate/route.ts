@@ -48,6 +48,10 @@ type GenerationRequest = {
   systemPrompt: string;
   userInput: string;
   mode: GenerationMode;
+  provider?: AIProvider;
+  taskType?: string;
+  activityId?: string;
+};
   provider?: AIProvider; // For single mode
   taskType?: string; // For specialist mode
 };
@@ -121,6 +125,167 @@ FINAL CONSTRAINT
 You are not here to explain humans.
 You are here to help humans recognize what they are already seeing.`;
 
+// ============================================================================
+// SILENT VALIDATOR AND CALIBRATION
+// ============================================================================
+
+// Validator trigger tracking
+const validatorStats: Record<string, { total: number; violations: { diagnostic: number; emotions: number; authority: number; instructions: number; formatting: number } }> = {};
+
+function trackValidatorTrigger(activityId: string, violationType: string) {
+  if (!validatorStats[activityId]) {
+    validatorStats[activityId] = {
+      total: 0,
+      violations: { diagnostic: 0, emotions: 0, authority: 0, instructions: 0, formatting: 0 }
+    };
+  }
+  
+  validatorStats[activityId].total++;
+  if (violationType in validatorStats[activityId].violations) {
+    (validatorStats[activityId].violations as any)[violationType]++;
+  }
+  
+  // Log to console for monitoring (can be removed in production)
+  console.log(`[Validator] ${activityId}: ${violationType} violation (${validatorStats[activityId].total} total violations)`);
+  
+  // Log summary every 10 violations for any activity
+  if (validatorStats[activityId].total % 10 === 0) {
+    console.log(`[Validator Stats] ${activityId}:`, validatorStats[activityId]);
+  }
+}
+
+// Silent validator - blocks outputs that violate Focus contract
+function validateFocusOutput(output: string, activityId?: string): boolean {
+  const diagnosticWords = [
+    'anxiety', 'trauma', 'nervous system', 'psychology', 'biology', 'coping', 'attachment',
+    'therapy', 'healing', 'trigger', 'dysfunction', 'disorder', 'syndrome', 'pathology',
+    'mental health', 'emotional intelligence', 'psychological', 'psychiatric', 'clinical',
+    'diagnosis', 'symptom', 'treatment', 'recovery', 'dysfunction', 'behavioral pattern',
+    'cognitive', 'subconscious', 'unconscious', 'defense mechanism', 'projection',
+    'narcissist', 'codependent', 'toxic', 'gaslighting', 'manipulation'
+  ];
+
+  const emotionLabels = [
+    'afraid', 'insecure', 'seeking validation', 'overwhelmed', 'angry', 'anxious',
+    'depressed', 'stressed', 'triggered', 'defensive', 'avoidant', 'needy', 'clingy',
+    'jealous', 'resentful', 'bitter', 'hurt', 'rejected', 'abandoned', 'betrayed',
+    'vulnerable', 'shame', 'guilt', 'pride', 'ego', 'fear-based', 'love-starved'
+  ];
+
+  const authorityLanguage = [
+    'this means', 'this indicates', 'therefore', 'you should', 'what\'s happening is',
+    'the reason is', 'this suggests', 'this shows', 'clearly', 'obviously',
+    'the truth is', 'what this tells us', 'the reality is', 'this proves'
+  ];
+
+  const instructionalVerbs = [
+    'do this', 'try to', 'you need to', 'it\'s best to', 'you must', 'you have to',
+    'make sure to', 'don\'t forget to', 'always', 'never', 'avoid', 'stop',
+    'start', 'begin', 'consider', 'think about', 'remember', 'focus on'
+  ];
+
+  // Check for structured formatting
+  const hasStructuredFormatting = /^[\s]*[-•*]\s|^\s*\d+\.\s|^\s*#{1,6}\s|\*\*.*\*\*|__.*__|`.*`|:.*:/m.test(output);
+
+  // Check for violations
+  const lowerOutput = output.toLowerCase();
+  
+  const hasDiagnostic = diagnosticWords.some(word => lowerOutput.includes(word.toLowerCase()));
+  const hasEmotionLabels = emotionLabels.some(word => lowerOutput.includes(word.toLowerCase()));
+  const hasAuthority = authorityLanguage.some(phrase => lowerOutput.includes(phrase.toLowerCase()));
+  const hasInstructions = instructionalVerbs.some(phrase => lowerOutput.includes(phrase.toLowerCase()));
+
+  // Track violations if activityId provided
+  if (activityId && (hasDiagnostic || hasEmotionLabels || hasAuthority || hasInstructions || hasStructuredFormatting)) {
+    if (hasDiagnostic) trackValidatorTrigger(activityId, 'diagnostic');
+    if (hasEmotionLabels) trackValidatorTrigger(activityId, 'emotions');
+    if (hasAuthority) trackValidatorTrigger(activityId, 'authority');
+    if (hasInstructions) trackValidatorTrigger(activityId, 'instructions');
+    if (hasStructuredFormatting) trackValidatorTrigger(activityId, 'formatting');
+  }
+
+  return !(hasDiagnostic || hasEmotionLabels || hasAuthority || hasInstructions || hasStructuredFormatting);
+}
+
+// Function to get validator statistics (for monitoring/debugging)
+function getValidatorStats() {
+  return validatorStats;
+}
+
+// Function to reset validator statistics
+function resetValidatorStats() {
+  Object.keys(validatorStats).forEach(key => delete validatorStats[key]);
+}
+
+// Add endpoint to check validator stats (for debugging)
+export async function GET(request: NextRequest) {
+  const url = new URL(request.url);
+  if (url.searchParams.get('stats') === 'validator') {
+    return NextResponse.json({
+      stats: validatorStats,
+      summary: {
+        totalActivities: Object.keys(validatorStats).length,
+        totalViolations: Object.values(validatorStats).reduce((sum, stat) => sum + stat.total, 0),
+        mostProblematic: Object.entries(validatorStats)
+          .sort(([,a], [,b]) => b.total - a.total)
+          .slice(0, 5)
+          .map(([activity, stat]) => ({ activity, violations: stat.total, breakdown: stat.violations }))
+      }
+    });
+  }
+  return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+}
+
+// Calibration levels for directness and pacing
+type CalibrationLevel = 'gentle' | 'neutral' | 'sharp';
+
+function getCalibrationPrompt(level: CalibrationLevel, content: string): string {
+  const basePrompt = 'Adjust this response for appropriate directness while maintaining the exact same meaning and following all Focus rules:';
+  
+  switch (level) {
+    case 'gentle':
+      return `${basePrompt}
+
+Make it gentler with:
+- Softer phrasing
+- More space between ideas  
+- Less compression
+- Suitable for relational or vulnerable content
+
+Content to adjust: ${content}`;
+    
+    case 'sharp':
+      return `${basePrompt}
+
+Make it sharper with:
+- Shorter sentences
+- Tighter language
+- More direct
+- Suitable for work, money, decisions
+
+Content to adjust: ${content}`;
+    
+    case 'neutral':
+    default:
+      return content; // No adjustment needed
+  }
+}
+
+function determineCalibrationLevel(activityId: string, content: string): CalibrationLevel {
+  // Sharp for work/money/decision activities
+  if (['task-breakdown', 'decision-helper', 'budget-check', 'savings-goal', 'salary-negotiation', 'negotiate-bill'].includes(activityId)) {
+    return 'sharp';
+  }
+  
+  // Gentle for relationship/vulnerable content
+  if (['vent-session', 'self-check-in', 'relationship-help', 'boundaries', 'perspective-shift'].includes(activityId)) {
+    return 'gentle';
+  }
+  
+  // Neutral for everything else
+  return 'neutral';
+}
+
 function buildFullSystemPrompt(activityPrompt: string): string {
   return `${VERA_FOCUS_SYSTEM_PROMPT}
 
@@ -166,27 +331,84 @@ async function generateWithGPT4Internal(systemPrompt: string, userInput: string)
   return response.choices[0]?.message?.content || 'No response generated.';
 }
 
-// Public functions for user-facing generation (includes VERA system prompt)
-async function generateWithClaude(systemPrompt: string, userInput: string): Promise<string> {
+// Public functions for user-facing generation (includes VERA system prompt + validation + calibration)
+async function generateWithClaude(systemPrompt: string, userInput: string, activityId?: string): Promise<string> {
   if (!anthropic && process.env.ANTHROPIC_API_KEY) {
     anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
   }
 
-  const response = await anthropic!.messages.create({
+  // First generation attempt
+  let response = await anthropic!.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 8192,
     system: buildFullSystemPrompt(systemPrompt),
     messages: [{ role: 'user', content: userInput }],
   });
 
-  const textBlock = response.content.find(block => block.type === 'text');
-  return textBlock ? textBlock.text : 'No response generated.';
+  let textBlock = response.content.find(block => block.type === 'text');
+  let output = textBlock ? textBlock.text : 'No response generated.';
+
+  // Silent validation and regeneration
+  if (!validateFocusOutput(output, activityId)) {
+    // Second attempt with stricter constraint
+    const stricterPrompt = `${buildFullSystemPrompt(systemPrompt)}
+
+CRITICAL: Your previous response violated Focus rules. Regenerate with absolute adherence to all constraints. Be more direct and less elaborate.`;
+
+    response = await anthropic!.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 8192,
+      system: stricterPrompt,
+      messages: [{ role: 'user', content: userInput }],
+    });
+
+    textBlock = response.content.find(block => block.type === 'text');
+    output = textBlock ? textBlock.text : 'No response generated.';
+
+    // If still invalid, simplify without explanation
+    if (!validateFocusOutput(output, activityId)) {
+      const simplifyPrompt = 'Simplify this to essential meaning only. Remove all analysis, labels, advice, and formatting:';
+      
+      response = await anthropic!.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4096,
+        system: buildFullSystemPrompt(simplifyPrompt),
+        messages: [{ role: 'user', content: userInput }],
+      });
+
+      textBlock = response.content.find(block => block.type === 'text');
+      output = textBlock ? textBlock.text : 'Unable to process this request.';
+    }
+  }
+
+  // Apply calibration if needed
+  if (activityId) {
+    const calibrationLevel = determineCalibrationLevel(activityId, output);
+    if (calibrationLevel !== 'neutral') {
+      const calibrationPrompt = getCalibrationPrompt(calibrationLevel, output);
+      
+      const calibrationResponse = await anthropic!.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 8192,
+        system: buildFullSystemPrompt('Adjust directness while maintaining exact meaning and all Focus rules'),
+        messages: [{ role: 'user', content: calibrationPrompt }],
+      });
+
+      const calibratedBlock = calibrationResponse.content.find(block => block.type === 'text');
+      if (calibratedBlock && validateFocusOutput(calibratedBlock.text, activityId)) {
+        output = calibratedBlock.text;
+      }
+    }
+  }
+
+  return output;
 }
 
-async function generateWithGPT4(systemPrompt: string, userInput: string): Promise<string> {
-  const response = await getOpenAI().chat.completions.create({
+async function generateWithGPT4(systemPrompt: string, userInput: string, activityId?: string): Promise<string> {
+  // First generation attempt
+  let response = await getOpenAI().chat.completions.create({
     model: 'gpt-4o',
     max_tokens: 8192,
     messages: [
@@ -195,11 +417,71 @@ async function generateWithGPT4(systemPrompt: string, userInput: string): Promis
     ],
   });
 
-  return response.choices[0]?.message?.content || 'No response generated.';
+  let output = response.choices[0]?.message?.content || 'No response generated.';
+
+  // Silent validation and regeneration
+  if (!validateFocusOutput(output, activityId)) {
+    // Second attempt with stricter constraint
+    const stricterPrompt = `${buildFullSystemPrompt(systemPrompt)}
+
+CRITICAL: Your previous response violated Focus rules. Regenerate with absolute adherence to all constraints. Be more direct and less elaborate.`;
+
+    response = await getOpenAI().chat.completions.create({
+      model: 'gpt-4o',
+      max_tokens: 8192,
+      messages: [
+        { role: 'system', content: stricterPrompt },
+        { role: 'user', content: userInput },
+      ],
+    });
+
+    output = response.choices[0]?.message?.content || 'No response generated.';
+
+    // If still invalid, simplify without explanation
+    if (!validateFocusOutput(output, activityId)) {
+      const simplifyPrompt = 'Simplify this to essential meaning only. Remove all analysis, labels, advice, and formatting:';
+      
+      response = await getOpenAI().chat.completions.create({
+        model: 'gpt-4o',
+        max_tokens: 4096,
+        messages: [
+          { role: 'system', content: buildFullSystemPrompt(simplifyPrompt) },
+          { role: 'user', content: userInput },
+        ],
+      });
+
+      output = response.choices[0]?.message?.content || 'Unable to process this request.';
+    }
+  }
+
+  // Apply calibration if needed
+  if (activityId) {
+    const calibrationLevel = determineCalibrationLevel(activityId, output);
+    if (calibrationLevel !== 'neutral') {
+      const calibrationPrompt = getCalibrationPrompt(calibrationLevel, output);
+      
+      const calibrationResponse = await getOpenAI().chat.completions.create({
+        model: 'gpt-4o',
+        max_tokens: 8192,
+        messages: [
+          { role: 'system', content: buildFullSystemPrompt('Adjust directness while maintaining exact meaning and all Focus rules') },
+          { role: 'user', content: calibrationPrompt },
+        ],
+      });
+
+      const calibratedOutput = calibrationResponse.choices[0]?.message?.content;
+      if (calibratedOutput && validateFocusOutput(calibratedOutput, activityId)) {
+        output = calibratedOutput;
+      }
+    }
+  }
+
+  return output;
 }
 
-async function generateWithGrok(systemPrompt: string, userInput: string): Promise<string> {
-  const response = await getGrok().chat.completions.create({
+async function generateWithGrok(systemPrompt: string, userInput: string, activityId?: string): Promise<string> {
+  // First generation attempt
+  let response = await getGrok().chat.completions.create({
     model: 'grok-3-latest',
     max_tokens: 8192,
     messages: [
@@ -208,7 +490,66 @@ async function generateWithGrok(systemPrompt: string, userInput: string): Promis
     ],
   });
 
-  return response.choices[0]?.message?.content || 'No response generated.';
+  let output = response.choices[0]?.message?.content || 'No response generated.';
+
+  // Silent validation and regeneration
+  if (!validateFocusOutput(output, activityId)) {
+    // Second attempt with stricter constraint
+    const stricterPrompt = `${buildFullSystemPrompt(systemPrompt)}
+
+CRITICAL: Your previous response violated Focus rules. Regenerate with absolute adherence to all constraints. Be more direct and less elaborate.`;
+
+    response = await getGrok().chat.completions.create({
+      model: 'grok-3-latest',
+      max_tokens: 8192,
+      messages: [
+        { role: 'system', content: stricterPrompt },
+        { role: 'user', content: userInput },
+      ],
+    });
+
+    output = response.choices[0]?.message?.content || 'No response generated.';
+
+    // If still invalid, simplify without explanation
+    if (!validateFocusOutput(output, activityId)) {
+      const simplifyPrompt = 'Simplify this to essential meaning only. Remove all analysis, labels, advice, and formatting:';
+      
+      response = await getGrok().chat.completions.create({
+        model: 'grok-3-latest',
+        max_tokens: 4096,
+        messages: [
+          { role: 'system', content: buildFullSystemPrompt(simplifyPrompt) },
+          { role: 'user', content: userInput },
+        ],
+      });
+
+      output = response.choices[0]?.message?.content || 'Unable to process this request.';
+    }
+  }
+
+  // Apply calibration if needed
+  if (activityId) {
+    const calibrationLevel = determineCalibrationLevel(activityId, output);
+    if (calibrationLevel !== 'neutral') {
+      const calibrationPrompt = getCalibrationPrompt(calibrationLevel, output);
+      
+      const calibrationResponse = await getGrok().chat.completions.create({
+        model: 'grok-3-latest',
+        max_tokens: 8192,
+        messages: [
+          { role: 'system', content: buildFullSystemPrompt('Adjust directness while maintaining exact meaning and all Focus rules') },
+          { role: 'user', content: calibrationPrompt },
+        ],
+      });
+
+      const calibratedOutput = calibrationResponse.choices[0]?.message?.content;
+      if (calibratedOutput && validateFocusOutput(calibratedOutput, activityId)) {
+        output = calibratedOutput;
+      }
+    }
+  }
+
+  return output;
 }
 
 // ============================================================================
@@ -318,22 +659,23 @@ function getSpecialistAI(taskType: string): AIProvider {
 async function generateSingle(
   systemPrompt: string,
   userInput: string,
-  provider: AIProvider
+  provider: AIProvider,
+  activityId?: string
 ): Promise<{ content: string; provider: AIProvider }> {
   let content: string;
 
   switch (provider) {
     case 'claude':
-      content = await generateWithClaude(systemPrompt, userInput);
+      content = await generateWithClaude(systemPrompt, userInput, activityId);
       break;
     case 'gpt4':
-      content = await generateWithGPT4(systemPrompt, userInput);
+      content = await generateWithGPT4(systemPrompt, userInput, activityId);
       break;
     case 'grok':
-      content = await generateWithGrok(systemPrompt, userInput);
+      content = await generateWithGrok(systemPrompt, userInput, activityId);
       break;
     default:
-      content = await generateWithClaude(systemPrompt, userInput);
+      content = await generateWithClaude(systemPrompt, userInput, activityId);
   }
 
   return { content, provider };
@@ -421,13 +763,14 @@ Ensure it sounds human and empathetic. Output ONLY the final version.`;
 
 async function generateCompare(
   systemPrompt: string,
-  userInput: string
+  userInput: string,
+  activityId?: string
 ): Promise<{ responses: { provider: AIProvider; content: string }[] }> {
   // Get all 3 responses in parallel
   const [claudeResponse, gpt4Response, grokResponse] = await Promise.all([
-    generateWithClaude(systemPrompt, userInput),
-    generateWithGPT4(systemPrompt, userInput),
-    generateWithGrok(systemPrompt, userInput),
+    generateWithClaude(systemPrompt, userInput, activityId),
+    generateWithGPT4(systemPrompt, userInput, activityId),
+    generateWithGrok(systemPrompt, userInput, activityId),
   ]);
 
   return {
@@ -446,7 +789,7 @@ async function generateCompare(
 export async function POST(request: NextRequest) {
   try {
     const body: GenerationRequest = await request.json();
-    const { systemPrompt, userInput, mode, provider, taskType } = body;
+    const { systemPrompt, userInput, mode, provider, taskType, activityId } = body;
 
     if (!systemPrompt || !userInput) {
       return NextResponse.json(
@@ -459,12 +802,12 @@ export async function POST(request: NextRequest) {
 
     switch (mode) {
       case 'single':
-        result = await generateSingle(systemPrompt, userInput, provider || 'claude');
+        result = await generateSingle(systemPrompt, userInput, provider || 'claude', activityId);
         break;
 
       case 'specialist':
         const specialistAI = getSpecialistAI(taskType || '');
-        result = await generateSingle(systemPrompt, userInput, specialistAI);
+        result = await generateSingle(systemPrompt, userInput, specialistAI, activityId);
         result.specialist = true;
         result.reason = `${specialistAI.toUpperCase()} selected as specialist for this task type`;
         break;
@@ -478,11 +821,11 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'compare':
-        result = await generateCompare(systemPrompt, userInput);
+        result = await generateCompare(systemPrompt, userInput, activityId);
         break;
 
       default:
-        result = await generateSingle(systemPrompt, userInput, 'claude');
+        result = await generateSingle(systemPrompt, userInput, 'claude', activityId);
     }
 
     return NextResponse.json(result);

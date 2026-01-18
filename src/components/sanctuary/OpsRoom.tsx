@@ -243,6 +243,7 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
           mode: generationMode,
           provider: selectedProvider,
           taskType: selectedDropdownOption?.id || selectedAction.id,
+          activityId: selectedDropdownOption?.id || selectedAction.id,
         }),
       });
 
@@ -520,7 +521,15 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
                   {copied ? 'Copied!' : 'Copy'}
                 </button>
               </div>
-              <div className="output-area" style={{ padding: '24px', background: colors.cardBg, border: `1px solid ${colors.cardBorder}`, borderRadius: 16, maxHeight: '60vh', overflowY: 'auto' }}>
+              <div className="output-area" style={{ 
+                padding: '28px', 
+                background: colors.cardBg, 
+                border: `1px solid ${colors.cardBorder}`, 
+                borderRadius: 16, 
+                maxHeight: '60vh', 
+                overflowY: 'auto',
+                boxShadow: isDark ? 'none' : '0 2px 12px rgba(0, 0, 0, 0.08)' 
+              }}>
                 <FormattedOutput content={output} colors={colors} isDark={isDark} />
               </div>
               <button onClick={handleReset} style={{ marginTop: 20, padding: '14px', borderRadius: 50, border: 'none', background: colors.accent, color: 'white', fontSize: 15, fontWeight: 600, cursor: 'pointer', width: '100%' }}>
@@ -543,7 +552,16 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
                         <OpsIcon type="copy" color={colors.accent} />
                       </button>
                     </div>
-                    <div className="output-area" style={{ padding: '20px', background: colors.cardBg, border: `1px solid ${colors.cardBorder}`, borderRadius: 14, maxHeight: '50vh', overflowY: 'auto', flex: 1 }}>
+                    <div className="output-area" style={{ 
+                      padding: '24px', 
+                      background: colors.cardBg, 
+                      border: `1px solid ${colors.cardBorder}`, 
+                      borderRadius: 14, 
+                      maxHeight: '50vh', 
+                      overflowY: 'auto', 
+                      flex: 1,
+                      boxShadow: isDark ? 'none' : '0 2px 8px rgba(0, 0, 0, 0.06)' 
+                    }}>
                       <FormattedOutput content={content} colors={colors} isDark={isDark} />
                     </div>
                   </div>
