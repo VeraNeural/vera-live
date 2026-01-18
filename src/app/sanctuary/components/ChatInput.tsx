@@ -8,8 +8,8 @@ interface ChatInputProps {
   onSend: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
   onVoiceClick: () => void;
-  inputRef: React.RefObject<HTMLTextAreaElement>;
-  fileInputRef: React.RefObject<HTMLInputElement>;
+  inputRef: React.RefObject<HTMLTextAreaElement | null>;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
   colors: {
     inputBg: string;
     cardBorder: string;
