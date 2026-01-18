@@ -1214,7 +1214,15 @@ export default function VeraSanctuary() {
                       minHeight: 52,
                     }}>
                       {/* Plus Button with Hover Menu */}
-                      <div style={{ position: 'relative', flexShrink: 0 }}>
+                      <div style={{ 
+                        position: 'relative', 
+                        flexShrink: 0,
+                        width: 38,
+                        height: 38,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
                         <button
                           type="button"
                           onMouseEnter={(e) => {
@@ -1779,7 +1787,15 @@ export default function VeraSanctuary() {
                 minHeight: 52,
               }}>
                 {/* Plus Button with Hover Menu */}
-                <div style={{ position: 'relative', flexShrink: 0 }}>
+                <div style={{ 
+                  position: 'relative', 
+                  flexShrink: 0,
+                  width: 38,
+                  height: 38,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
                   <button
                     type="button"
                     onMouseEnter={(e) => {
