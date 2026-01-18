@@ -1216,11 +1216,18 @@ export default function VeraSanctuary() {
                       {/* Plus Button with Hover Menu */}
                       <div style={{ position: 'relative', flexShrink: 0 }}>
                         <button
-                          onMouseEnter={() => setShowAttachMenu(true)}
-                          onMouseLeave={() => setShowAttachMenu(false)}
+                          type="button"
+                          onMouseEnter={(e) => {
+                            setShowAttachMenu(true);
+                            e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+                          }}
+                          onMouseLeave={(e) => {
+                            setShowAttachMenu(false);
+                            e.currentTarget.style.background = 'transparent';
+                          }}
                           style={{
-                            width: 36,
-                            height: 36,
+                            width: 38,
+                            height: 38,
                             borderRadius: '50%',
                             border: 'none',
                             background: 'transparent',
@@ -1232,7 +1239,7 @@ export default function VeraSanctuary() {
                             transition: 'all 200ms ease',
                           }}
                         >
-                          <RoomIcon type="plus" color="currentColor" size={20} />
+                          <RoomIcon type="plus" color="currentColor" size={22} />
                         </button>
 
                         {/* Hover Menu */}
@@ -1248,74 +1255,76 @@ export default function VeraSanctuary() {
                               marginBottom: 12,
                               display: 'flex',
                               flexDirection: 'column',
-                              gap: 8,
-                              padding: 8,
                               background: isDark 
-                                ? 'rgba(30, 30, 35, 0.95)' 
-                                : 'rgba(255, 255, 255, 0.95)',
+                                ? 'rgba(30, 30, 35, 0.98)' 
+                                : 'rgba(255, 255, 255, 0.98)',
                               border: `1px solid ${colors.cardBorder}`,
                               borderRadius: 12,
                               backdropFilter: 'blur(10px)',
                               boxShadow: isDark
                                 ? '0 8px 24px rgba(0, 0, 0, 0.4)'
                                 : '0 8px 24px rgba(0, 0, 0, 0.1)',
-                              zIndex: 100,
+                              zIndex: 150,
+                              overflow: 'hidden',
+                              pointerEvents: 'auto',
                             }}
                           >
                             {/* Microphone Option */}
                             <button
+                              type="button"
                               onClick={() => {
+                                console.log('Voice clicked');
                                 setShowAttachMenu(false);
                                 router.push('/voice');
                               }}
                               style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: 10,
-                                padding: '10px 16px',
-                                borderRadius: 8,
+                                justifyContent: 'center',
+                                padding: '14px',
                                 border: 'none',
                                 background: 'transparent',
                                 color: colors.text,
-                                fontSize: 13,
-                                fontWeight: 500,
                                 cursor: 'pointer',
                                 transition: 'background 150ms ease',
-                                whiteSpace: 'nowrap',
+                                width: '100%',
                               }}
                               onMouseEnter={(e) => e.currentTarget.style.background = colors.hover}
                               onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                             >
-                              <RoomIcon type="mic" color="currentColor" size={18} />
-                              <span>Voice</span>
+                              <RoomIcon type="mic" color="currentColor" size={20} />
                             </button>
+
+                            {/* Divider */}
+                            <div style={{
+                              height: 1,
+                              background: colors.cardBorder,
+                            }} />
 
                             {/* Attachment Option */}
                             <button
+                              type="button"
                               onClick={() => {
+                                console.log('Attach clicked');
                                 setShowAttachMenu(false);
                                 fileInputRef.current?.click();
                               }}
                               style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: 10,
-                                padding: '10px 16px',
-                                borderRadius: 8,
+                                justifyContent: 'center',
+                                padding: '14px',
                                 border: 'none',
                                 background: 'transparent',
                                 color: colors.text,
-                                fontSize: 13,
-                                fontWeight: 500,
                                 cursor: 'pointer',
                                 transition: 'background 150ms ease',
-                                whiteSpace: 'nowrap',
+                                width: '100%',
                               }}
                               onMouseEnter={(e) => e.currentTarget.style.background = colors.hover}
                               onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                             >
-                              <RoomIcon type="paperclip" color="currentColor" size={18} />
-                              <span>Attach</span>
+                              <RoomIcon type="paperclip" color="currentColor" size={20} />
                             </button>
                           </div>
                         )}
@@ -1772,11 +1781,18 @@ export default function VeraSanctuary() {
                 {/* Plus Button with Hover Menu */}
                 <div style={{ position: 'relative', flexShrink: 0 }}>
                   <button
-                    onMouseEnter={() => setShowAttachMenu(true)}
-                    onMouseLeave={() => setShowAttachMenu(false)}
+                    type="button"
+                    onMouseEnter={(e) => {
+                      setShowAttachMenu(true);
+                      e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+                    }}
+                    onMouseLeave={(e) => {
+                      setShowAttachMenu(false);
+                      e.currentTarget.style.background = 'transparent';
+                    }}
                     style={{
-                      width: 36,
-                      height: 36,
+                      width: 38,
+                      height: 38,
                       borderRadius: '50%',
                       border: 'none',
                       background: 'transparent',
@@ -1788,7 +1804,7 @@ export default function VeraSanctuary() {
                       transition: 'all 200ms ease',
                     }}
                   >
-                    <RoomIcon type="plus" color="currentColor" size={20} />
+                    <RoomIcon type="plus" color="currentColor" size={22} />
                   </button>
 
                   {/* Hover Menu */}
@@ -1804,74 +1820,76 @@ export default function VeraSanctuary() {
                         marginBottom: 12,
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: 8,
-                        padding: 8,
                         background: isDark 
-                          ? 'rgba(30, 30, 35, 0.95)' 
-                          : 'rgba(255, 255, 255, 0.95)',
+                          ? 'rgba(30, 30, 35, 0.98)' 
+                          : 'rgba(255, 255, 255, 0.98)',
                         border: `1px solid ${colors.cardBorder}`,
                         borderRadius: 12,
                         backdropFilter: 'blur(10px)',
                         boxShadow: isDark
                           ? '0 8px 24px rgba(0, 0, 0, 0.4)'
                           : '0 8px 24px rgba(0, 0, 0, 0.1)',
-                        zIndex: 100,
+                        zIndex: 150,
+                        overflow: 'hidden',
+                        pointerEvents: 'auto',
                       }}
                     >
                       {/* Microphone Option */}
                       <button
+                        type="button"
                         onClick={() => {
+                          console.log('Voice clicked');
                           setShowAttachMenu(false);
                           router.push('/voice');
                         }}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 10,
-                          padding: '10px 16px',
-                          borderRadius: 8,
+                          justifyContent: 'center',
+                          padding: '14px',
                           border: 'none',
                           background: 'transparent',
                           color: colors.text,
-                          fontSize: 13,
-                          fontWeight: 500,
                           cursor: 'pointer',
                           transition: 'background 150ms ease',
-                          whiteSpace: 'nowrap',
+                          width: '100%',
                         }}
                         onMouseEnter={(e) => e.currentTarget.style.background = colors.hover}
                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                       >
-                        <RoomIcon type="mic" color="currentColor" size={18} />
-                        <span>Voice</span>
+                        <RoomIcon type="mic" color="currentColor" size={20} />
                       </button>
+
+                      {/* Divider */}
+                      <div style={{
+                        height: 1,
+                        background: colors.cardBorder,
+                      }} />
 
                       {/* Attachment Option */}
                       <button
+                        type="button"
                         onClick={() => {
+                          console.log('Attach clicked');
                           setShowAttachMenu(false);
                           fileInputRef.current?.click();
                         }}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 10,
-                          padding: '10px 16px',
-                          borderRadius: 8,
+                          justifyContent: 'center',
+                          padding: '14px',
                           border: 'none',
                           background: 'transparent',
                           color: colors.text,
-                          fontSize: 13,
-                          fontWeight: 500,
                           cursor: 'pointer',
                           transition: 'background 150ms ease',
-                          whiteSpace: 'nowrap',
+                          width: '100%',
                         }}
                         onMouseEnter={(e) => e.currentTarget.style.background = colors.hover}
                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                       >
-                        <RoomIcon type="paperclip" color="currentColor" size={18} />
-                        <span>Attach</span>
+                        <RoomIcon type="paperclip" color="currentColor" size={20} />
                       </button>
                     </div>
                   )}
