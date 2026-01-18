@@ -575,6 +575,26 @@ export default function VeraSanctuary() {
     }, 2200);
   }, []);
 
+  // Click-outside handler for attachment menu
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (showAttachMenu) {
+        setShowAttachMenu(false);
+      }
+    };
+    
+    if (showAttachMenu) {
+      // Small delay to prevent immediate close
+      setTimeout(() => {
+        document.addEventListener('click', handleClickOutside);
+      }, 0);
+    }
+    
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [showAttachMenu]);
+
   // Check consent status on mount
   useEffect(() => {
     setMounted(true);
@@ -1225,12 +1245,14 @@ export default function VeraSanctuary() {
                       }}>
                         <button
                           type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowAttachMenu(!showAttachMenu);
+                          }}
                           onMouseEnter={(e) => {
-                            setShowAttachMenu(true);
                             e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
                           }}
                           onMouseLeave={(e) => {
-                            setShowAttachMenu(false);
                             e.currentTarget.style.background = 'transparent';
                           }}
                           style={{
@@ -1250,17 +1272,16 @@ export default function VeraSanctuary() {
                           <RoomIcon type="plus" color="currentColor" size={22} />
                         </button>
 
-                        {/* Hover Menu */}
+                        {/* Click Menu */}
                         {showAttachMenu && (
                           <div
-                            onMouseEnter={() => setShowAttachMenu(true)}
-                            onMouseLeave={() => setShowAttachMenu(false)}
+                            onClick={(e) => e.stopPropagation()}
                             style={{
                               position: 'absolute',
                               bottom: '100%',
                               left: '50%',
                               transform: 'translateX(-50%)',
-                              marginBottom: 12,
+                              marginBottom: 8,
                               display: 'flex',
                               flexDirection: 'column',
                               background: isDark 
@@ -1280,7 +1301,8 @@ export default function VeraSanctuary() {
                             {/* Microphone Option */}
                             <button
                               type="button"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 console.log('Voice clicked');
                                 setShowAttachMenu(false);
                                 router.push('/voice');
@@ -1312,7 +1334,8 @@ export default function VeraSanctuary() {
                             {/* Attachment Option */}
                             <button
                               type="button"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 console.log('Attach clicked');
                                 setShowAttachMenu(false);
                                 fileInputRef.current?.click();
@@ -1798,12 +1821,14 @@ export default function VeraSanctuary() {
                 }}>
                   <button
                     type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowAttachMenu(!showAttachMenu);
+                    }}
                     onMouseEnter={(e) => {
-                      setShowAttachMenu(true);
                       e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
                     }}
                     onMouseLeave={(e) => {
-                      setShowAttachMenu(false);
                       e.currentTarget.style.background = 'transparent';
                     }}
                     style={{
@@ -1823,17 +1848,16 @@ export default function VeraSanctuary() {
                     <RoomIcon type="plus" color="currentColor" size={22} />
                   </button>
 
-                  {/* Hover Menu */}
+                  {/* Click Menu */}
                   {showAttachMenu && (
                     <div
-                      onMouseEnter={() => setShowAttachMenu(true)}
-                      onMouseLeave={() => setShowAttachMenu(false)}
+                      onClick={(e) => e.stopPropagation()}
                       style={{
                         position: 'absolute',
                         bottom: '100%',
                         left: '50%',
                         transform: 'translateX(-50%)',
-                        marginBottom: 12,
+                        marginBottom: 8,
                         display: 'flex',
                         flexDirection: 'column',
                         background: isDark 
@@ -1853,7 +1877,8 @@ export default function VeraSanctuary() {
                       {/* Microphone Option */}
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           console.log('Voice clicked');
                           setShowAttachMenu(false);
                           router.push('/voice');
@@ -1885,7 +1910,8 @@ export default function VeraSanctuary() {
                       {/* Attachment Option */}
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           console.log('Attach clicked');
                           setShowAttachMenu(false);
                           fileInputRef.current?.click();
