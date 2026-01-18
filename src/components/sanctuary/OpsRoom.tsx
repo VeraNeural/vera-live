@@ -514,12 +514,7 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
           {output && !compareOutputs && (
             <div ref={outputRef} style={{ width: '100%', maxWidth: 700, animation: 'fadeIn 0.4s ease-out' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                {usedProvider && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: AI_PROVIDERS[usedProvider].color + '20', border: `1px solid ${AI_PROVIDERS[usedProvider].color}40`, borderRadius: 50, fontSize: 13, fontWeight: 500, color: AI_PROVIDERS[usedProvider].color }}>
-                    <OpsIcon type={`ai-${usedProvider}`} color={AI_PROVIDERS[usedProvider].color} />
-                    {AI_PROVIDERS[usedProvider].name}
-                  </div>
-                )}
+                {/* Provider identity removed - VERA only voice */}
                 <button onClick={() => handleCopy()} style={{ padding: '10px 16px', borderRadius: 50, border: `1px solid ${colors.cardBorder}`, background: colors.cardBg, cursor: 'pointer', fontSize: 13, fontWeight: 500, color: colors.text, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <OpsIcon type={copied ? 'check' : 'copy'} color={colors.accent} />
                   {copied ? 'Copied!' : 'Copy'}
@@ -538,12 +533,11 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
             <div style={{ width: '100%', maxWidth: 900, animation: 'fadeIn 0.4s ease-out' }}>
               <h3 style={{ fontSize: 18, fontWeight: 600, color: colors.text, marginBottom: 20, textAlign: 'center' }}>Compare Results</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
-                {compareOutputs.map(({ provider, content }) => (
+                {compareOutputs.map(({ provider, content }, index) => (
                   <div key={provider} style={{ display: 'flex', flexDirection: 'column' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: AI_PROVIDERS[provider].color + '20', border: `1px solid ${AI_PROVIDERS[provider].color}40`, borderRadius: 50, fontSize: 13, fontWeight: 500, color: AI_PROVIDERS[provider].color }}>
-                        <OpsIcon type={`ai-${provider}`} color={AI_PROVIDERS[provider].color} />
-                        {AI_PROVIDERS[provider].name}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: colors.cardBg, border: `1px solid ${colors.cardBorder}`, borderRadius: 50, fontSize: 13, fontWeight: 500, color: colors.text }}>
+                        Version {index + 1}
                       </div>
                       <button onClick={() => handleCopy(content)} style={{ padding: '8px 12px', borderRadius: 50, border: `1px solid ${colors.cardBorder}`, background: colors.cardBg, cursor: 'pointer', fontSize: 12, fontWeight: 500, color: colors.text }}>
                         <OpsIcon type="copy" color={colors.accent} />
