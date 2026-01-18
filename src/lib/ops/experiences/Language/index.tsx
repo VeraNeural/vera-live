@@ -185,7 +185,7 @@ export default function LanguageExperience({ colors, isDark, onExit }: Props) {
             fontWeight: 700,
           }}
         >
-          Back to Ops
+          Back to Focus
         </button>
       </div>
 

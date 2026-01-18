@@ -127,8 +127,8 @@ const RoomIcon = ({ type, color, size = 18 }: { type: string; color: string; siz
 const ROOMS: Room[] = [
   { 
     id: 'ops', 
-    name: 'Ops', 
-    shortName: 'Ops',
+    name: 'Focus', 
+    shortName: 'Focus',
     essence: 'Get things moving', 
     icon: <RoomIcon type="ops" color="currentColor" />,
   },

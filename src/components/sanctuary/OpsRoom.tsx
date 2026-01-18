@@ -388,7 +388,7 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
           {!activeCategory && !selectedAction && !output && !compareOutputs && (
             <>
               <div style={{ textAlign: 'center', marginBottom: 28 }}>
-                <h1 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 40, fontWeight: 300, color: colors.text, marginBottom: 8 }}>Ops</h1>
+                <h1 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 40, fontWeight: 300, color: colors.text, marginBottom: 8 }}>Focus</h1>
                 <p style={{ fontSize: 15, color: colors.textMuted }}>Select a category from the sidebar to get started</p>
               </div>
 

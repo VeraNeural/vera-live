@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import {
   X,
   Plus,
-  Settings,
+  Target,
   Sparkles,
   Moon,
   BookOpen,
@@ -334,7 +334,7 @@ export default function TrustTransparencySidebar({
         }}>
           
           {/* ============================================================ */}
-          {/* OPS SECTION - WITH NESTED CATEGORIES AND ACTIVITIES */}
+          {/* FOCUS SECTION - WITH NESTED CATEGORIES AND ACTIVITIES */}
           {/* ============================================================ */}
           <div style={{ marginBottom: '8px' }}>
             <button
@@ -356,8 +356,8 @@ export default function TrustTransparencySidebar({
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Settings size={18} style={{ color: colors.textMuted }} />
-                <span style={{ fontSize: '14px', fontWeight: 500 }}>Ops</span>
+                <Target size={18} style={{ color: colors.textMuted }} />
+                <span style={{ fontSize: '14px', fontWeight: 500 }}>Focus</span>
               </div>
               {opsExpanded ? <ChevronDown size={16} style={{ color: colors.textMuted }} /> : <ChevronRight size={16} style={{ color: colors.textMuted }} />}
             </button>

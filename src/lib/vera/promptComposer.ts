@@ -127,7 +127,7 @@ export function composeSystemPrompt(
     '',
     'Be sharp. Be direct. Point them to action.',
     'Guide them to the right room when it fits:',
-    '- Ops Room â€” when they need to get things done, make decisions, or build something',
+    '- Focus Room â€" when they need to get things done, make decisions, or build something',
     '- Zen Garden â€” when they need stillness and grounding',
     '- Library â€” when they need to learn or explore ideas',
     '- Journal Nook â€” when they need to reflect and write',

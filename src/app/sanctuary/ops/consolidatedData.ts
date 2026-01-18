@@ -52,7 +52,7 @@ export interface Category {
 
 export interface OpsRoomData {
   id: 'ops';
-  name: 'Ops';
+  name: 'Focus';
   tagline: 'Get things moving';
   description: 'AI-powered tools to help you communicate, work, manage money, think, grow, and create.';
   categories: Category[];
@@ -63,7 +63,7 @@ export interface OpsRoomData {
 
 export const opsRoom: OpsRoomData = {
   id: 'ops',
-  name: 'Ops',
+  name: 'Focus',
   tagline: 'Get things moving',
   description: 'AI-powered tools to help you communicate, work, manage money, think, grow, and create.',
   categories: [
