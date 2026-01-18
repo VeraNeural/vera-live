@@ -29,6 +29,7 @@ type TrustTransparencySidebarProps = {
   isDark: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onNewConversation?: () => void;
 };
 
 type AccessTier = 'anonymous' | 'free' | 'sanctuary';
@@ -112,6 +113,7 @@ export default function TrustTransparencySidebar({
   isDark,
   open,
   onOpenChange,
+  onNewConversation,
 }: TrustTransparencySidebarProps) {
   const router = useRouter();
   const [memoryEnabled, setMemoryEnabled] = useState<boolean | null>(null);
@@ -327,7 +329,12 @@ export default function TrustTransparencySidebar({
 
           {/* New Chat Button */}
           <button
-            onClick={() => navigate('/sanctuary')}
+            onClick={() => {
+              if (onNewConversation) {
+                onNewConversation();
+              }
+              navigate('/sanctuary');
+            }}
             style={{
               display: 'flex',
               alignItems: 'center',

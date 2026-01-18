@@ -459,6 +459,22 @@ export default function VeraSanctuary() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Handle new conversation - reset all state
+  const handleNewConversation = () => {
+    setMessages([]);
+    setInputValue('');
+    setIsTyping(false);
+    setCurrentConversationId(null);
+    setIsFirstMessage(true);
+    setShowAttachMenu(false);
+    setSidebarOpen(false); // Close sidebar on mobile
+    
+    // Reset textarea height
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+    }
+  };
+
   // Auto-resize textarea
   useEffect(() => {
     const textarea = inputRef.current;
@@ -1894,6 +1910,7 @@ export default function VeraSanctuary() {
           isDark={isDark}
           open={sidebarOpen}
           onOpenChange={setSidebarOpen}
+          onNewConversation={handleNewConversation}
         />
       </div>
     </>
