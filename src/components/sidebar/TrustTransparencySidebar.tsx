@@ -205,16 +205,19 @@ export default function TrustTransparencySidebar({
   // Theme colors
   const colors = {
     bg: isDark 
-      ? 'linear-gradient(180deg, rgba(18, 16, 24, 0.98) 0%, rgba(12, 10, 18, 0.99) 100%)'
-      : 'linear-gradient(180deg, rgba(252, 250, 247, 0.98) 0%, rgba(245, 240, 232, 0.99) 100%)',
-    border: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
-    text: isDark ? 'rgba(255, 250, 245, 0.9)' : 'rgba(45, 40, 35, 0.9)',
-    textMuted: isDark ? 'rgba(255, 250, 245, 0.5)' : 'rgba(45, 40, 35, 0.5)',
-    textDim: isDark ? 'rgba(255, 250, 245, 0.3)' : 'rgba(45, 40, 35, 0.3)',
-    accent: isDark ? 'rgba(200, 170, 120, 0.9)' : 'rgba(180, 140, 90, 0.9)',
-    accentBg: isDark ? 'rgba(200, 170, 120, 0.12)' : 'rgba(180, 140, 90, 0.1)',
-    hover: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
-    card: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+      ? 'linear-gradient(180deg, rgba(18, 16, 24, 0.99) 0%, rgba(12, 10, 18, 0.99) 100%)'
+      : 'linear-gradient(180deg, #ffffff 0%, #faf9f7 100%)', // Clean white, not beige
+    border: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
+    text: isDark ? 'rgba(255, 255, 255, 0.95)' : 'rgba(20, 20, 20, 0.9)', // Strong contrast
+    textMuted: isDark ? 'rgba(255, 255, 255, 0.8)' : 'rgba(30, 30, 30, 0.85)', // Clearly readable
+    textSecondary: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(30, 30, 30, 0.5)', // Secondary text
+    textDim: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(30, 30, 30, 0.3)',
+    textHover: isDark ? '#ffffff' : '#000000', // Full contrast on hover
+    accent: isDark ? '#e8d5b5' : '#8b6914', // Golden accent, readable
+    accentBg: isDark ? 'rgba(200, 160, 100, 0.15)' : 'rgba(180, 140, 90, 0.12)',
+    accentBorder: isDark ? 'rgba(200, 160, 100, 0.4)' : 'rgba(180, 140, 90, 0.35)',
+    hover: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+    card: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
   };
 
   return (
@@ -248,8 +251,8 @@ export default function TrustTransparencySidebar({
           background: colors.bg,
           borderRight: `1px solid ${colors.border}`,
           boxShadow: isDark
-            ? '8px 0 40px rgba(0, 0, 0, 0.5)'
-            : '8px 0 40px rgba(0, 0, 0, 0.1)',
+            ? '4px 0 24px rgba(0, 0, 0, 0.3)'
+            : '4px 0 24px rgba(0, 0, 0, 0.08)',
           transform: open ? 'translateX(0)' : 'translateX(-100%)',
           transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
           display: 'flex',
@@ -269,10 +272,10 @@ export default function TrustTransparencySidebar({
           }}>
             <div style={{
               fontFamily: "'Cormorant Garamond', Georgia, serif",
-              fontSize: '24px',
-              fontWeight: 400,
-              letterSpacing: '-0.02em',
-              color: colors.text,
+              fontSize: 24,
+              fontWeight: 700,
+              color: isDark ? '#ffffff' : '#1a1a1a', // Full contrast
+              letterSpacing: '0.02em',
             }}>
               VERA
             </div>
@@ -284,13 +287,15 @@ export default function TrustTransparencySidebar({
                 borderRadius: '50%',
                 border: `1px solid ${colors.border}`,
                 backgroundColor: 'transparent',
-                color: colors.textMuted,
+                color: colors.textSecondary,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 transition: 'all 200ms ease',
               }}
+              onMouseEnter={(e) => e.currentTarget.style.color = colors.textHover}
+              onMouseLeave={(e) => e.currentTarget.style.color = colors.textSecondary}
             >
               <X size={18} />
             </button>
@@ -310,13 +315,13 @@ export default function TrustTransparencySidebar({
               justifyContent: 'center',
               gap: '8px',
               width: '100%',
-              padding: '12px 16px',
-              borderRadius: '12px',
-              border: `1px solid ${colors.accent}`,
-              backgroundColor: colors.accentBg,
+              background: colors.accentBg,
+              border: `1.5px solid ${colors.accentBorder}`,
               color: colors.accent,
-              fontSize: '14px',
-              fontWeight: 500,
+              fontWeight: 600,
+              fontSize: 14,
+              padding: '12px 16px',
+              borderRadius: 12,
               cursor: 'pointer',
               transition: 'all 200ms ease',
             }}
@@ -344,11 +349,15 @@ export default function TrustTransparencySidebar({
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 width: '100%',
-                padding: '10px 12px',
+                fontSize: 14,
+                fontWeight: 700,
+                color: colors.text,
+                textTransform: 'none',
+                letterSpacing: '0.01em',
+                padding: '12px 16px',
                 borderRadius: '10px',
                 border: 'none',
                 backgroundColor: 'transparent',
-                color: colors.text,
                 cursor: 'pointer',
                 transition: 'background-color 150ms ease',
               }}
@@ -356,10 +365,10 @@ export default function TrustTransparencySidebar({
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Target size={18} style={{ color: colors.textMuted }} />
-                <span style={{ fontSize: '14px', fontWeight: 500 }}>Focus</span>
+                <Target size={18} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor', width: 18, height: 18 }} />
+                <span>Focus</span>
               </div>
-              {opsExpanded ? <ChevronDown size={16} style={{ color: colors.textMuted }} /> : <ChevronRight size={16} style={{ color: colors.textMuted }} />}
+              {opsExpanded ? <ChevronDown size={16} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor' }} /> : <ChevronRight size={16} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor' }} />}
             </button>
 
             {/* Categories from consolidatedData.ts */}
@@ -379,18 +388,19 @@ export default function TrustTransparencySidebar({
                           alignItems: 'center',
                           justifyContent: 'space-between',
                           width: '100%',
-                          padding: '8px 12px',
-                          borderRadius: '8px',
+                          fontSize: 14,
+                          fontWeight: 500,
+                          color: colors.textMuted,
+                          padding: '10px 16px 10px 40px', // Indented under parent
+                          borderRadius: 8,
                           border: 'none',
                           backgroundColor: 'transparent',
-                          color: colors.textMuted,
                           cursor: 'pointer',
-                          transition: 'all 150ms ease',
-                          fontSize: '13px',
+                          transition: 'all 0.15s ease',
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.backgroundColor = colors.hover;
-                          e.currentTarget.style.color = colors.text;
+                          e.currentTarget.style.color = colors.textHover;
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.backgroundColor = 'transparent';
@@ -398,13 +408,13 @@ export default function TrustTransparencySidebar({
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <CategoryIcon size={14} />
+                          <CategoryIcon size={18} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor', width: 18, height: 18 }} />
                           <span>{category.name}</span>
                         </div>
                         {isCategoryExpanded ? (
-                          <ChevronDown size={14} style={{ color: colors.textMuted }} />
+                          <ChevronDown size={14} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor' }} />
                         ) : (
-                          <ChevronRight size={14} style={{ color: colors.textMuted }} />
+                          <ChevronRight size={14} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor' }} />
                         )}
                       </button>
 
@@ -420,19 +430,20 @@ export default function TrustTransparencySidebar({
                                   alignItems: 'center',
                                   justifyContent: 'space-between',
                                   width: '100%',
-                                  padding: '6px 10px',
-                                  borderRadius: '6px',
+                                  fontSize: 14,
+                                  fontWeight: 500,
+                                  color: colors.textMuted,
+                                  padding: '10px 16px 10px 56px', // More indented under category
+                                  borderRadius: 8,
                                   border: 'none',
                                   backgroundColor: 'transparent',
-                                  color: colors.textMuted,
                                   cursor: 'pointer',
-                                  transition: 'all 150ms ease',
-                                  fontSize: '12px',
+                                  transition: 'all 0.15s ease',
                                   textAlign: 'left',
                                 }}
                                 onMouseEnter={(e) => {
                                   e.currentTarget.style.backgroundColor = colors.hover;
-                                  e.currentTarget.style.color = colors.text;
+                                  e.currentTarget.style.color = colors.textHover;
                                 }}
                                 onMouseLeave={(e) => {
                                   e.currentTarget.style.backgroundColor = 'transparent';
@@ -482,10 +493,10 @@ export default function TrustTransparencySidebar({
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Sparkles size={18} style={{ color: colors.textMuted }} />
-                <span style={{ fontSize: '14px', fontWeight: 500 }}>Spaces</span>
+                <Sparkles size={18} style={{ color: colors.textSecondary }} />
+                <span style={{ fontSize: '14px', fontWeight: 600 }}>Spaces</span>
               </div>
-              {spacesExpanded ? <ChevronDown size={16} style={{ color: colors.textMuted }} /> : <ChevronRight size={16} style={{ color: colors.textMuted }} />}
+              {spacesExpanded ? <ChevronDown size={16} style={{ color: colors.textSecondary }} /> : <ChevronRight size={16} style={{ color: colors.textSecondary }} />}
             </button>
 
             {/* Spaces with activities */}
@@ -506,18 +517,19 @@ export default function TrustTransparencySidebar({
                           alignItems: 'center',
                           justifyContent: 'space-between',
                           width: '100%',
-                          padding: '8px 12px',
-                          borderRadius: '8px',
+                          fontSize: 14,
+                          fontWeight: 500,
+                          color: colors.textMuted,
+                          padding: '10px 16px 10px 40px', // Indented under parent
+                          borderRadius: 8,
                           border: 'none',
                           backgroundColor: 'transparent',
-                          color: colors.textMuted,
                           cursor: 'pointer',
-                          transition: 'all 150ms ease',
-                          fontSize: '13px',
+                          transition: 'all 0.15s ease',
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.backgroundColor = colors.hover;
-                          e.currentTarget.style.color = colors.text;
+                          e.currentTarget.style.color = colors.textHover;
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.backgroundColor = 'transparent';
@@ -525,14 +537,14 @@ export default function TrustTransparencySidebar({
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <SpaceIcon size={14} />
+                          <SpaceIcon size={18} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor', width: 18, height: 18 }} />
                           <span>{space.name}</span>
                         </div>
                         {hasActivities && (
                           isSpaceExpanded ? (
-                            <ChevronDown size={14} style={{ color: colors.textMuted }} />
+                            <ChevronDown size={14} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor' }} />
                           ) : (
-                            <ChevronRight size={14} style={{ color: colors.textMuted }} />
+                            <ChevronRight size={14} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor' }} />
                           )
                         )}
                       </button>
@@ -548,19 +560,20 @@ export default function TrustTransparencySidebar({
                                   display: 'flex',
                                   alignItems: 'center',
                                   width: '100%',
-                                  padding: '6px 10px',
-                                  borderRadius: '6px',
+                                  fontSize: 14,
+                                  fontWeight: 500,
+                                  color: colors.textMuted,
+                                  padding: '10px 16px 10px 56px', // More indented under space
+                                  borderRadius: 8,
                                   border: 'none',
                                   backgroundColor: 'transparent',
-                                  color: colors.textMuted,
                                   cursor: 'pointer',
-                                  transition: 'all 150ms ease',
-                                  fontSize: '12px',
+                                  transition: 'all 0.15s ease',
                                   textAlign: 'left',
                                 }}
                                 onMouseEnter={(e) => {
                                   e.currentTarget.style.backgroundColor = colors.hover;
-                                  e.currentTarget.style.color = colors.text;
+                                  e.currentTarget.style.color = colors.textHover;
                                 }}
                                 onMouseLeave={(e) => {
                                   e.currentTarget.style.backgroundColor = 'transparent';
@@ -582,9 +595,9 @@ export default function TrustTransparencySidebar({
 
           {/* Divider */}
           <div style={{
-            height: '1px',
-            backgroundColor: colors.border,
-            margin: '12px 12px',
+            height: 1,
+            background: colors.border,
+            margin: '8px 16px',
           }} />
 
           {/* ============================================================ */}
@@ -598,11 +611,15 @@ export default function TrustTransparencySidebar({
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 width: '100%',
-                padding: '10px 12px',
+                fontSize: 14,
+                fontWeight: 700,
+                color: colors.text,
+                textTransform: 'none',
+                letterSpacing: '0.01em',
+                padding: '12px 16px',
                 borderRadius: '10px',
                 border: 'none',
                 backgroundColor: 'transparent',
-                color: colors.text,
                 cursor: 'pointer',
                 transition: 'background-color 150ms ease',
               }}
@@ -610,10 +627,10 @@ export default function TrustTransparencySidebar({
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <MessageCircle size={18} style={{ color: colors.textMuted }} />
-                <span style={{ fontSize: '14px', fontWeight: 500 }}>Chats</span>
+                <MessageCircle size={18} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor', width: 18, height: 18 }} />
+                <span>Chats</span>
               </div>
-              {historyExpanded ? <ChevronDown size={16} style={{ color: colors.textMuted }} /> : <ChevronRight size={16} style={{ color: colors.textMuted }} />}
+              {historyExpanded ? <ChevronDown size={16} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor' }} /> : <ChevronRight size={16} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor' }} />}
             </button>
 
             {/* Conversation list */}
@@ -706,11 +723,15 @@ export default function TrustTransparencySidebar({
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 width: '100%',
-                padding: '10px 12px',
+                fontSize: 14,
+                fontWeight: 700,
+                color: colors.text,
+                textTransform: 'none',
+                letterSpacing: '0.01em',
+                padding: '12px 16px',
                 borderRadius: '10px',
                 border: 'none',
                 backgroundColor: 'transparent',
-                color: colors.text,
                 cursor: 'pointer',
                 transition: 'background-color 150ms ease',
               }}
@@ -718,10 +739,10 @@ export default function TrustTransparencySidebar({
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Shield size={18} style={{ color: colors.textMuted }} />
-                <span style={{ fontSize: '14px', fontWeight: 500 }}>Trust & Transparency</span>
+                <Shield size={18} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor', width: 18, height: 18 }} />
+                <span>Trust & Transparency</span>
               </div>
-              {trustExpanded ? <ChevronDown size={16} style={{ color: colors.textMuted }} /> : <ChevronRight size={16} style={{ color: colors.textMuted }} />}
+              {trustExpanded ? <ChevronDown size={16} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor' }} /> : <ChevronRight size={16} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor' }} />}
             </button>
 
             {trustExpanded && (
@@ -769,14 +790,14 @@ export default function TrustTransparencySidebar({
               onClick={() => clerk.openUserProfile()}
               style={{
                 width: '100%',
+                background: colors.card,
+                border: `1px solid ${colors.border}`,
+                color: colors.textMuted,
+                fontWeight: 500,
+                fontSize: 14,
                 padding: '10px 16px',
                 marginBottom: '12px',
-                borderRadius: '10px',
-                border: `1px solid ${colors.border}`,
-                backgroundColor: 'transparent',
-                color: colors.text,
-                fontSize: '13px',
-                fontWeight: 500,
+                borderRadius: 10,
                 cursor: 'pointer',
                 transition: 'all 150ms ease',
               }}
@@ -795,21 +816,23 @@ export default function TrustTransparencySidebar({
               style={{
                 border: 'none',
                 background: 'none',
-                color: colors.textDim,
-                fontSize: '11px',
+                fontSize: 12,
+                color: colors.textSecondary,
+                fontWeight: 400,
                 cursor: 'pointer',
                 padding: '4px',
               }}
             >
               Privacy
             </button>
-            <span style={{ color: colors.textDim, fontSize: '11px' }}>·</span>
+            <span style={{ color: colors.textSecondary, fontSize: 12 }}>·</span>
             <button
               style={{
                 border: 'none',
                 background: 'none',
-                color: colors.textDim,
-                fontSize: '11px',
+                fontSize: 12,
+                color: colors.textSecondary,
+                fontWeight: 400,
                 cursor: 'pointer',
                 padding: '4px',
               }}

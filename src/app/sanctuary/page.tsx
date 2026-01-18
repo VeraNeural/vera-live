@@ -5,427 +5,17 @@ import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { TrustTransparencySidebar } from '@/components/sidebar';
 import { useVeraNavigator } from '@/lib/vera/navigator/hooks/useVeraNavigator';
-
-// ============================================================================
-// TYPES
-// ============================================================================
-type TimeOfDay = 'morning' | 'afternoon' | 'evening' | 'night';
-type ThemeMode = 'light' | 'dark' | 'auto';
-type ConsentStatus = 'unknown' | 'pending' | 'granted' | 'denied';
-
-type Room = {
-  id: string;
-  name: string;
-  shortName: string;
-  essence: string;
-  icon: React.ReactNode;
-};
-
-type Message = {
-  id: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  timestamp: Date;
-  isConsentPrompt?: boolean;
-  isSignupPrompt?: boolean;
-  isUpgradePrompt?: boolean;
-};
-
-type QuickPrompt = {
-  text: string;
-  category: 'emotional' | 'practical' | 'explore';
-};
-
-// ============================================================================
-// SVG ICONS
-// ============================================================================
-const RoomIcon = ({ type, color, size = 18 }: { type: string; color: string; size?: number }) => {
-  const icons: Record<string, React.ReactNode> = {
-    'zen': (
-      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
-        <circle cx="12" cy="12" r="3" />
-        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-      </svg>
-    ),
-    'library': (
-      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
-        <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
-        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
-        <line x1="8" y1="6" x2="16" y2="6" />
-        <line x1="8" y1="10" x2="14" y2="10" />
-      </svg>
-    ),
-    'rest': (
-      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
-        <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
-      </svg>
-    ),
-    'studio': (
-      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
-        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-      </svg>
-    ),
-    'journal': (
-      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
-        <rect x="3" y="3" width="18" height="18" rx="2" />
-        <line x1="8" y1="8" x2="16" y2="8" />
-        <line x1="8" y1="12" x2="16" y2="12" />
-        <line x1="8" y1="16" x2="12" y2="16" />
-      </svg>
-    ),
-    'ops': (
-      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 8v4l2 2" />
-      </svg>
-    ),
-    'headphones': (
-      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
-        <path d="M3 18v-6a9 9 0 0118 0v6" />
-        <path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3v5zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3v5z" />
-      </svg>
-    ),
-    'mic': (
-      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
-        <path d="M12 1a4 4 0 00-4 4v7a4 4 0 008 0V5a4 4 0 00-4-4z" />
-        <path d="M19 10v2a7 7 0 01-14 0v-2" />
-        <line x1="12" y1="19" x2="12" y2="23" />
-        <line x1="8" y1="23" x2="16" y2="23" />
-      </svg>
-    ),
-    'paperclip': (
-      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
-      </svg>
-    ),
-    'plus': (
-      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
-        <line x1="12" y1="5" x2="12" y2="19" />
-        <line x1="5" y1="12" x2="19" y2="12" />
-      </svg>
-    ),
-    'send': (
-      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
-        <line x1="22" y1="2" x2="11" y2="13" />
-        <polygon points="22 2 15 22 11 13 2 9 22 2" />
-      </svg>
-    ),
-    'more': (
-      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
-        <circle cx="12" cy="12" r="1" fill={color} />
-        <circle cx="19" cy="12" r="1" fill={color} />
-        <circle cx="5" cy="12" r="1" fill={color} />
-      </svg>
-    ),
-  };
-  return icons[type] || null;
-};
-
-// ============================================================================
-// CONSTANTS
-// ============================================================================
-const ROOMS: Room[] = [
-  { 
-    id: 'ops', 
-    name: 'Focus', 
-    shortName: 'Focus',
-    essence: 'Get things moving', 
-    icon: <RoomIcon type="ops" color="currentColor" />,
-  },
-  { 
-    id: 'library', 
-    name: 'Library', 
-    shortName: 'Library',
-    essence: 'Discover wisdom', 
-    icon: <RoomIcon type="library" color="currentColor" />,
-  },
-  { 
-    id: 'studio', 
-    name: 'Design Studio', 
-    shortName: 'Studio',
-    essence: 'Create beauty', 
-    icon: <RoomIcon type="studio" color="currentColor" />,
-  },
-  { 
-    id: 'zen', 
-    name: 'Zen Garden', 
-    shortName: 'Zen',
-    essence: 'Embrace stillness', 
-    icon: <RoomIcon type="zen" color="currentColor" />,
-  },
-  { 
-    id: 'journal', 
-    name: 'Journal Nook', 
-    shortName: 'Journal',
-    essence: 'Reflect deeply', 
-    icon: <RoomIcon type="journal" color="currentColor" />,
-  },
-  { 
-    id: 'rest', 
-    name: 'Rest Chamber', 
-    shortName: 'Rest',
-    essence: 'Surrender to sleep', 
-    icon: <RoomIcon type="rest" color="currentColor" />,
-  },
-];
-
-const TIME_COLORS = {
-  morning: {
-    bg: 'linear-gradient(180deg, #f8f5f0 0%, #f0e8dc 30%, #e8dcc8 100%)',
-    accent: '#d4a574',
-    text: 'rgba(60, 50, 40, 0.9)',
-    textMuted: 'rgba(60, 50, 40, 0.5)',
-    textDim: 'rgba(60, 50, 40, 0.35)',
-    cardBg: 'rgba(255, 255, 255, 0.75)',
-    cardBorder: 'rgba(0, 0, 0, 0.06)',
-    glow: 'rgba(255, 200, 120, 0.2)',
-    inputBg: 'rgba(255, 255, 255, 0.8)',
-    hover: 'rgba(0, 0, 0, 0.04)',
-    border: 'rgba(0, 0, 0, 0.06)',
-  },
-  afternoon: {
-    bg: 'linear-gradient(180deg, #f5f2ed 0%, #ebe3d5 30%, #dfd5c2 100%)',
-    accent: '#c49a6c',
-    text: 'rgba(55, 45, 35, 0.9)',
-    textMuted: 'rgba(55, 45, 35, 0.45)',
-    textDim: 'rgba(55, 45, 35, 0.32)',
-    cardBg: 'rgba(255, 255, 255, 0.7)',
-    cardBorder: 'rgba(0, 0, 0, 0.05)',
-    glow: 'rgba(255, 180, 100, 0.15)',
-    inputBg: 'rgba(255, 255, 255, 0.75)',
-    hover: 'rgba(0, 0, 0, 0.04)',
-    border: 'rgba(0, 0, 0, 0.05)',
-  },
-  evening: {
-    bg: 'linear-gradient(180deg, #1e1a28 0%, #15121c 50%, #0e0b14 100%)',
-    accent: '#c9a87c',
-    text: 'rgba(255, 250, 240, 0.9)',
-    textMuted: 'rgba(255, 250, 240, 0.45)',
-    textDim: 'rgba(255, 250, 240, 0.32)',
-    cardBg: 'rgba(255, 255, 255, 0.06)',
-    cardBorder: 'rgba(255, 255, 255, 0.08)',
-    glow: 'rgba(255, 180, 100, 0.08)',
-    inputBg: 'rgba(255, 255, 255, 0.08)',
-    hover: 'rgba(255, 255, 255, 0.08)',
-    border: 'rgba(255, 255, 255, 0.08)',
-  },
-  night: {
-    bg: 'linear-gradient(180deg, #0a0810 0%, #06050a 50%, #030305 100%)',
-    accent: '#a08060',
-    text: 'rgba(255, 250, 245, 0.85)',
-    textMuted: 'rgba(255, 250, 245, 0.35)',
-    textDim: 'rgba(255, 250, 245, 0.25)',
-    cardBg: 'rgba(255, 255, 255, 0.04)',
-    cardBorder: 'rgba(255, 255, 255, 0.06)',
-    glow: 'rgba(255, 200, 120, 0.05)',
-    inputBg: 'rgba(255, 255, 255, 0.06)',
-    hover: 'rgba(255, 255, 255, 0.06)',
-    border: 'rgba(255, 255, 255, 0.06)',
-  },
-};
-
-const getQuickPrompts = (timeOfDay: TimeOfDay): QuickPrompt[] => {
-  // Time-specific prompts - only 3, kept short
-  if (timeOfDay === 'morning') {
-    return [
-      { text: "Set my intentions", category: 'practical' },
-      { text: "Feeling anxious", category: 'emotional' },
-      { text: "Motivate me", category: 'emotional' },
-    ];
-  }
-  if (timeOfDay === 'afternoon') {
-    return [
-      { text: "I'm overwhelmed", category: 'emotional' },
-      { text: "Need to focus", category: 'practical' },
-      { text: "Talk through something", category: 'emotional' },
-    ];
-  }
-  if (timeOfDay === 'evening' || timeOfDay === 'night') {
-    return [
-      { text: "Help me wind down", category: 'emotional' },
-      { text: "Can't stop thinking", category: 'emotional' },
-      { text: "Reflect on my day", category: 'practical' },
-    ];
-  }
-  return [
-    { text: "I need support", category: 'emotional' },
-    { text: "Talk to me", category: 'emotional' },
-    { text: "Help me think", category: 'practical' },
-  ];
-};
-
-const NAV_HINT_ROTATIONS = [
-  "Try: 'breathe', 'can't sleep', 'brain dump', 'decode this'",
-  "Try: 'can't sleep', 'breathe', 'decode this', 'brain dump'",
-  "Try: 'brain dump', 'decode this', 'breathe', 'can't sleep'",
-];
+import { TimeOfDay, ThemeMode, ConsentStatus, Room, Message, QuickPrompt } from './types';
+import { TIME_COLORS, getQuickPrompts, NAV_HINT_ROTATIONS, RoomIcon, ROOMS } from './constants';
+import { getTimeOfDay, getGreeting, getVeraGreeting } from './utils';
+import { GLOBAL_STYLES } from './styles';
+import { ChatInput, QuickPrompts } from './components';
 
 // ============================================================================
 // GLOBAL STYLES
 // ============================================================================
-const GLOBAL_STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=DM+Sans:wght@400;500;600&display=swap');
-  
-  *, *::before, *::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    -webkit-tap-highlight-color: transparent;
-  }
-  
-  html, body {
-    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    overflow: hidden;
-    position: fixed;
-    inset: 0;
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  @keyframes gentlePulse {
-    0%, 100% { opacity: 0.6; transform: scale(1); }
-    50% { opacity: 0.9; transform: scale(1.02); }
-  }
-
-  @keyframes typing {
-    0%, 60%, 100% { opacity: 0.3; }
-    30% { opacity: 1; }
-  }
-
-  .message-appear {
-    animation: fadeIn 0.3s ease-out;
-  }
-
-  .prompt-btn {
-    transition: all 0.2s ease;
-  }
-  .prompt-btn:hover {
-    transform: translateY(-2px);
-  }
-  .prompt-btn:active {
-    transform: scale(0.98);
-  }
-
-  .prompt-scroll {
-    scrollbar-width: none !important;
-    -ms-overflow-style: none !important;
-  }
-  .prompt-scroll::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-    background: transparent !important;
-  }
-
-  .hide-scrollbar {
-    -ms-overflow-style: none !important;
-    scrollbar-width: none !important;
-    overflow: -moz-scrollbars-none;
-  }
-  .hide-scrollbar::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-    background: transparent !important;
-    -webkit-appearance: none !important;
-  }
-  .hide-scrollbar::-webkit-scrollbar-track {
-    background: transparent !important;
-  }
-  .hide-scrollbar::-webkit-scrollbar-thumb {
-    background: transparent !important;
-  }
-
-  .room-pill {
-    transition: all 0.2s ease;
-  }
-  .room-pill:hover {
-    transform: translateY(-2px);
-  }
-  .room-pill:active {
-    transform: scale(0.96);
-  }
-
-  .chat-scroll::-webkit-scrollbar {
-    width: 4px;
-  }
-  .chat-scroll::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .chat-scroll::-webkit-scrollbar-thumb {
-    background: rgba(150, 140, 130, 0.3);
-    border-radius: 4px;
-  }
-
-  .input-field:focus {
-    outline: none;
-  }
-`;
-
-// ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
-const getTimeOfDay = (): TimeOfDay => {
-  const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) return 'morning';
-  if (hour >= 12 && hour < 17) return 'afternoon';
-  if (hour >= 17 && hour < 21) return 'evening';
-  return 'night';
-};
-
-const getGreeting = (time: TimeOfDay): string => {
-  switch (time) {
-    case 'morning': return 'Good morning';
-    case 'afternoon': return 'Good afternoon';
-    case 'evening': return 'Good evening';
-    case 'night': return 'Welcome back';
-  }
-};
-
-const getVeraGreeting = (time: TimeOfDay): string => {
-  const greetings = {
-    morning: [
-      "Ready to start fresh?",
-      "What's on your mind today?",
-      "Let's make today count.",
-      "How can I help you this morning?",
-      "A new day awaits.",
-    ],
-    afternoon: [
-      "How's your day unfolding?",
-      "Taking a moment for yourself?",
-      "What's on your mind?",
-      "Need a thought partner?",
-      "I'm here when you need me.",
-    ],
-    evening: [
-      "How was your day?",
-      "Time to decompress?",
-      "What's lingering on your mind?",
-      "Ready to wind down?",
-      "Let's reflect together.",
-    ],
-    night: [
-      "Can't sleep?",
-      "I'm here with you.",
-      "What's keeping you up?",
-      "Need some quiet company?",
-      "Let's talk it through.",
-    ],
-  };
-  
-  const options = greetings[time];
-  return options[Math.floor(Math.random() * options.length)];
-};
 
 // ============================================================================
 // COMPONENT
@@ -450,7 +40,6 @@ export default function VeraSanctuary() {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isFirstMessage, setIsFirstMessage] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [showAttachMenu, setShowAttachMenu] = useState(false);
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimeoutRef = useRef<number | null>(null);
@@ -466,7 +55,6 @@ export default function VeraSanctuary() {
     setIsTyping(false);
     setCurrentConversationId(null);
     setIsFirstMessage(true);
-    setShowAttachMenu(false);
     setSidebarOpen(false); // Close sidebar on mobile
     
     // Reset textarea height
@@ -574,26 +162,6 @@ export default function VeraSanctuary() {
       toastTimeoutRef.current = null;
     }, 2200);
   }, []);
-
-  // Click-outside handler for attachment menu
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (showAttachMenu) {
-        setShowAttachMenu(false);
-      }
-    };
-    
-    if (showAttachMenu) {
-      // Small delay to prevent immediate close
-      setTimeout(() => {
-        document.addEventListener('click', handleClickOutside);
-      }, 0);
-    }
-    
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, [showAttachMenu]);
 
   // Check consent status on mount
   useEffect(() => {
@@ -1066,41 +634,44 @@ export default function VeraSanctuary() {
               height: 44,
               borderRadius: '50%',
               border: 'none',
-              background: isDark
-                ? 'linear-gradient(145deg, rgba(140, 120, 200, 0.5) 0%, rgba(100, 80, 160, 0.4) 100%)'
-                : 'linear-gradient(145deg, rgba(140, 120, 200, 0.6) 0%, rgba(120, 100, 180, 0.5) 100%)',
-              boxShadow: isDark
-                ? '0 4px 20px rgba(140, 120, 200, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.2)'
-                : '0 4px 20px rgba(140, 120, 200, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.4)',
+              background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 50%, #5b21b6 100%)', // Purple gradient like main page
+              boxShadow: '0 2px 8px rgba(139, 92, 246, 0.15), 0 1px 2px rgba(0, 0, 0, 0.1)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+              position: 'relative',
+              overflow: 'hidden',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.05)';
+              e.currentTarget.style.transform = 'scale(1.02)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.2), 0 2px 4px rgba(0, 0, 0, 0.15)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(139, 92, 246, 0.15), 0 1px 2px rgba(0, 0, 0, 0.1)';
             }}
-            aria-label="Open Trust & Transparency"
+            aria-label="Open menu"
           >
-            {/* Inner glow */}
+            {/* Inner highlight/shine */}
             <div style={{
-              width: 20,
-              height: 20,
+              position: 'absolute',
+              top: '15%',
+              left: '20%',
+              width: '35%',
+              height: '35%',
               borderRadius: '50%',
-              background: 'radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.4) 0%, transparent 60%)',
+              background: 'radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.5) 0%, transparent 70%)',
             }} />
           </button>
           
           <span style={{
             fontSize: 11,
             fontWeight: 600,
-            letterSpacing: '0.12em',
+            letterSpacing: '0.15em',
             textTransform: 'uppercase',
-            color: colors.textMuted,
+            color: isDark ? 'rgba(255, 255, 255, 0.5)' : colors.textMuted,
           }}>
             Sanctuary
           </span>
@@ -1189,20 +760,22 @@ export default function VeraSanctuary() {
                   }}>
                     <h1 style={{
                       fontFamily: "'Cormorant Garamond', Georgia, serif",
-                      fontSize: 'clamp(2.8rem, 12vw, 4rem)',
-                      fontWeight: 300,
-                      color: colors.text,
+                      fontSize: 'clamp(2.5rem, 8vw, 4rem)',
+                      fontWeight: 400, // Lighter weight like main page
+                      color: isDark ? 'rgba(255, 255, 255, 0.95)' : colors.text,
                       margin: 0,
-                      letterSpacing: '-0.02em',
+                      letterSpacing: '-0.01em',
+                      lineHeight: 1.1,
                     }}>
                       {getGreeting(timeOfDay)}
                     </h1>
                     
                     <p style={{
-                      fontSize: 'clamp(16px, 4vw, 20px)',
-                      color: colors.textMuted,
+                      fontSize: 'clamp(16px, 3vw, 20px)',
+                      color: isDark ? 'rgba(255, 255, 255, 0.6)' : colors.textMuted,
                       margin: 0,
-                      lineHeight: 1.6,
+                      lineHeight: 1.5,
+                      fontWeight: 400,
                     }}>
                       {getVeraGreeting(timeOfDay)}
                     </p>
@@ -1218,230 +791,29 @@ export default function VeraSanctuary() {
                     marginBottom: 12,
                   }}>
                     {/* Input Container */}
-                    <div style={{
-                      position: 'relative',
-                      display: 'flex',
-                      alignItems: 'flex-end',
-                      background: colors.inputBg,
-                      border: `1.5px solid ${colors.cardBorder}`,
-                      borderRadius: 24,
-                      padding: '12px 20px',
-                      backdropFilter: 'blur(10px)',
-                      boxShadow: isDark 
-                        ? '0 4px 16px rgba(0, 0, 0, 0.3)'
-                        : '0 4px 16px rgba(0, 0, 0, 0.08)',
-                      gap: 12,
-                      minHeight: 52,
-                    }}>
-                      {/* Plus Button with Hover Menu */}
-                      <div style={{ 
-                        position: 'relative', 
-                        flexShrink: 0,
-                        width: 38,
-                        height: 38,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowAttachMenu(!showAttachMenu);
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'transparent';
-                          }}
-                          style={{
-                            width: 38,
-                            height: 38,
-                            borderRadius: '50%',
-                            border: 'none',
-                            background: 'transparent',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            color: colors.textMuted,
-                            transition: 'all 200ms ease',
-                          }}
-                        >
-                          <RoomIcon type="plus" color="currentColor" size={22} />
-                        </button>
-
-                        {/* Click Menu */}
-                        {showAttachMenu && (
-                          <div
-                            onClick={(e) => e.stopPropagation()}
-                            style={{
-                              position: 'absolute',
-                              bottom: '100%',
-                              left: '50%',
-                              transform: 'translateX(-50%)',
-                              marginBottom: 8,
-                              display: 'flex',
-                              flexDirection: 'column',
-                              background: isDark 
-                                ? 'rgba(30, 30, 35, 0.98)' 
-                                : 'rgba(255, 255, 255, 0.98)',
-                              border: `1px solid ${colors.cardBorder}`,
-                              borderRadius: 12,
-                              backdropFilter: 'blur(10px)',
-                              boxShadow: isDark
-                                ? '0 8px 24px rgba(0, 0, 0, 0.4)'
-                                : '0 8px 24px rgba(0, 0, 0, 0.1)',
-                              zIndex: 150,
-                              overflow: 'hidden',
-                              pointerEvents: 'auto',
-                            }}
-                          >
-                            {/* Microphone Option */}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                console.log('Voice clicked');
-                                setShowAttachMenu(false);
-                                router.push('/voice');
-                              }}
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                padding: '14px',
-                                border: 'none',
-                                background: 'transparent',
-                                color: colors.text,
-                                cursor: 'pointer',
-                                transition: 'background 150ms ease',
-                                width: '100%',
-                              }}
-                              onMouseEnter={(e) => e.currentTarget.style.background = colors.hover}
-                              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                            >
-                              <RoomIcon type="mic" color="currentColor" size={20} />
-                            </button>
-
-                            {/* Divider */}
-                            <div style={{
-                              height: 1,
-                              background: colors.cardBorder,
-                            }} />
-
-                            {/* Attachment Option */}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                console.log('Attach clicked');
-                                setShowAttachMenu(false);
-                                fileInputRef.current?.click();
-                              }}
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                padding: '14px',
-                                border: 'none',
-                                background: 'transparent',
-                                color: colors.text,
-                                cursor: 'pointer',
-                                transition: 'background 150ms ease',
-                                width: '100%',
-                              }}
-                              onMouseEnter={(e) => e.currentTarget.style.background = colors.hover}
-                              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                            >
-                              <RoomIcon type="paperclip" color="currentColor" size={20} />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Text Input */}
-                      <textarea
-                        ref={inputRef}
-                        className="input-field"
-                        value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Share what's on your mind..."
-                        disabled={isGated}
-                        rows={1}
-                        style={{
-                          flex: 1,
-                          border: 'none',
-                          background: 'transparent',
-                          color: colors.text,
-                          fontSize: 16,
-                          lineHeight: 1.5,
-                          resize: 'none',
-                          maxHeight: 200,
-                          minHeight: 24,
-                          overflow: 'hidden',
-                          opacity: isGated ? 0.6 : 1,
-                        }}
-                      />
-
-                      {/* Send Button */}
-                      <button
-                        onClick={() => handleSend()}
-                        disabled={isGated || !inputValue.trim()}
-                        style={{
-                          flexShrink: 0,
-                          padding: 0,
-                          width: 36,
-                          height: 36,
-                          border: 'none',
-                          background: 'transparent',
-                          cursor: !isGated && inputValue.trim() ? 'pointer' : 'default',
-                          opacity: !isGated && inputValue.trim() ? 1 : 0.4,
-                          color: colors.accent,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <RoomIcon type="send" color="currentColor" size={24} />
-                      </button>
-                    </div>
+                    <ChatInput
+                      inputValue={inputValue}
+                      setInputValue={setInputValue}
+                      onSend={() => handleSend()}
+                      onKeyDown={handleKeyDown}
+                      onVoiceClick={() => router.push('/voice')}
+                      inputRef={inputRef}
+                      fileInputRef={fileInputRef}
+                      colors={colors}
+                      isDark={isDark}
+                      placeholder="Share what's on your mind..."
+                    />
 
                     {/* AI Disclaimer - Removed from here */}
                   </div>
 
                   {/* Quick Prompts - Below Input */}
-                  <div style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    justifyContent: 'center',
-                    gap: 12,
-                    maxWidth: '100%',
-                  }}>
-                      {quickPrompts.map((prompt, index) => (
-                        <button
-                          key={index}
-                          className="prompt-btn"
-                          onClick={() => handleSend(prompt.text)}
-                          style={{
-                            padding: '14px 22px',
-                            background: colors.cardBg,
-                            border: `1px solid ${colors.cardBorder}`,
-                            borderRadius: 50,
-                            color: colors.text,
-                            fontSize: 15,
-                            fontWeight: 500,
-                            cursor: 'pointer',
-                            backdropFilter: 'blur(10px)',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {prompt.text}
-                        </button>
-                      ))}
-                  </div>
+                  <QuickPrompts
+                    prompts={quickPrompts}
+                    onSelect={(text) => handleSend(text)}
+                    colors={colors}
+                    isDark={isDark}
+                  />
                 </div>
               )}
 
@@ -1719,14 +1091,25 @@ export default function VeraSanctuary() {
                           padding: '14px 18px',
                           borderRadius: message.role === 'user' ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
                           background: message.role === 'user'
-                            ? (isDark ? 'rgba(200, 170, 120, 0.25)' : 'rgba(200, 170, 120, 0.2)')
-                            : colors.cardBg,
-                          border: `1px solid ${message.role === 'user'
-                            ? (isDark ? 'rgba(200, 170, 120, 0.3)' : 'rgba(200, 170, 120, 0.25)')
-                            : colors.cardBorder}`,
-                          color: colors.text,
+                            ? (isDark 
+                                ? 'rgba(200, 170, 120, 0.3)' 
+                                : 'rgba(160, 130, 90, 0.2)') // More visible
+                            : (isDark 
+                                ? 'rgba(255, 255, 255, 0.1)' 
+                                : 'rgba(255, 255, 255, 0.95)'), // More solid white
+                          border: message.role === 'user'
+                            ? (isDark 
+                                ? '1px solid rgba(200, 170, 120, 0.4)' 
+                                : '1px solid rgba(160, 130, 90, 0.3)') // Stronger border
+                            : (isDark 
+                                ? '1px solid rgba(255, 255, 255, 0.15)' 
+                                : '1px solid rgba(0, 0, 0, 0.1)'), // Visible border
+                          color: isDark ? 'rgba(255, 250, 240, 0.95)' : 'rgba(35, 30, 25, 0.95)', // Much darker text
                           fontSize: 15,
                           lineHeight: 1.6,
+                          boxShadow: isDark 
+                            ? '0 2px 8px rgba(0, 0, 0, 0.2)' 
+                            : '0 2px 8px rgba(0, 0, 0, 0.08)', // Subtle shadow
                         }}>
                           {message.content}
                         </div>
@@ -1794,202 +1177,24 @@ export default function VeraSanctuary() {
               gap: 12,
             }}>
               {/* Input Container */}
-              <div style={{
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'flex-end',
-                background: colors.inputBg,
-                border: `1.5px solid ${colors.cardBorder}`,
-                borderRadius: 24,
-                padding: '12px 20px',
-                backdropFilter: 'blur(10px)',
-                boxShadow: isDark 
-                  ? '0 4px 16px rgba(0, 0, 0, 0.3)'
-                  : '0 4px 16px rgba(0, 0, 0, 0.08)',
-                gap: 12,
-                minHeight: 52,
-              }}>
-                {/* Plus Button with Hover Menu */}
-                <div style={{ 
-                  position: 'relative', 
-                  flexShrink: 0,
-                  width: 38,
-                  height: 38,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowAttachMenu(!showAttachMenu);
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent';
-                    }}
-                    style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: '50%',
-                      border: 'none',
-                      background: 'transparent',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      color: colors.textMuted,
-                      transition: 'all 200ms ease',
-                    }}
-                  >
-                    <RoomIcon type="plus" color="currentColor" size={22} />
-                  </button>
-
-                  {/* Click Menu */}
-                  {showAttachMenu && (
-                    <div
-                      onClick={(e) => e.stopPropagation()}
-                      style={{
-                        position: 'absolute',
-                        bottom: '100%',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        marginBottom: 8,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        background: isDark 
-                          ? 'rgba(30, 30, 35, 0.98)' 
-                          : 'rgba(255, 255, 255, 0.98)',
-                        border: `1px solid ${colors.cardBorder}`,
-                        borderRadius: 12,
-                        backdropFilter: 'blur(10px)',
-                        boxShadow: isDark
-                          ? '0 8px 24px rgba(0, 0, 0, 0.4)'
-                          : '0 8px 24px rgba(0, 0, 0, 0.1)',
-                        zIndex: 150,
-                        overflow: 'hidden',
-                        pointerEvents: 'auto',
-                      }}
-                    >
-                      {/* Microphone Option */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          console.log('Voice clicked');
-                          setShowAttachMenu(false);
-                          router.push('/voice');
-                        }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          padding: '14px',
-                          border: 'none',
-                          background: 'transparent',
-                          color: colors.text,
-                          cursor: 'pointer',
-                          transition: 'background 150ms ease',
-                          width: '100%',
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = colors.hover}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <RoomIcon type="mic" color="currentColor" size={20} />
-                      </button>
-
-                      {/* Divider */}
-                      <div style={{
-                        height: 1,
-                        background: colors.cardBorder,
-                      }} />
-
-                      {/* Attachment Option */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          console.log('Attach clicked');
-                          setShowAttachMenu(false);
-                          fileInputRef.current?.click();
-                        }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          padding: '14px',
-                          border: 'none',
-                          background: 'transparent',
-                          color: colors.text,
-                          cursor: 'pointer',
-                          transition: 'background 150ms ease',
-                          width: '100%',
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = colors.hover}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <RoomIcon type="paperclip" color="currentColor" size={20} />
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Text Input */}
-                <textarea
-                  ref={inputRef}
-                  className="input-field"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder={
-                    isGated
-                      ? chatGate === 'upgrade_required'
-                        ? 'Daily limit reached — upgrade to keep chatting…'
-                        : 'Create a free account to keep chatting…'
-                      : "Share what's on your mind..."
-                  }
-                  disabled={isGated}
-                  rows={1}
-                  style={{
-                    flex: 1,
-                    border: 'none',
-                    background: 'transparent',
-                    color: colors.text,
-                    fontSize: 16,
-                    lineHeight: 1.5,
-                    resize: 'none',
-                    maxHeight: 200,
-                    minHeight: 24,
-                    overflow: 'hidden',
-                    opacity: isGated ? 0.6 : 1,
-                  }}
-                />
-
-                {/* Send Button */}
-                <button
-                  onClick={() => handleSend()}
-                  disabled={isGated || !inputValue.trim()}
-                  style={{
-                    flexShrink: 0,
-                    padding: 0,
-                    width: 36,
-                    height: 36,
-                    border: 'none',
-                    background: 'transparent',
-                    cursor: !isGated && inputValue.trim() ? 'pointer' : 'default',
-                    opacity: !isGated && inputValue.trim() ? 1 : 0.4,
-                    color: colors.accent,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <RoomIcon type="send" color="currentColor" size={24} />
-                </button>
-              </div>
+              <ChatInput
+                inputValue={inputValue}
+                setInputValue={setInputValue}
+                onSend={() => handleSend()}
+                onKeyDown={handleKeyDown}
+                onVoiceClick={() => router.push('/voice')}
+                inputRef={inputRef}
+                fileInputRef={fileInputRef}
+                colors={colors}
+                isDark={isDark}
+                isGated={isGated}
+                placeholder={isGated 
+                  ? (chatGate === 'upgrade_required' 
+                    ? 'Daily limit reached — upgrade to keep chatting…' 
+                    : 'Create a free account to keep chatting…')
+                  : "Share what's on your mind..."
+                }
+              />
 
               {/* AI Disclaimer */}
               <div style={{
@@ -2000,11 +1205,12 @@ export default function VeraSanctuary() {
                 textAlign: 'center',
               }}>
                 <p style={{
-                  color: colors.textDim,
+                  color: isDark ? 'rgba(255, 250, 240, 0.6)' : 'rgba(35, 30, 25, 0.6)', // More visible
                   fontSize: 11,
                   lineHeight: 1.5,
                   margin: 0,
                   fontStyle: 'italic',
+                  fontWeight: 500, // Slightly bolder
                 }}>
                   VERA is an AI assistant. While she strives for accuracy, please verify important information independently.
                 </p>
@@ -2018,7 +1224,7 @@ export default function VeraSanctuary() {
         {!hasMessages && (
           <div style={{
             position: 'fixed',
-            bottom: 16,
+            bottom: 20,
             left: 0,
             right: 0,
             textAlign: 'center',
@@ -2026,12 +1232,12 @@ export default function VeraSanctuary() {
             zIndex: 50,
           }}>
             <p style={{
-              color: colors.textDim,
-              fontSize: 11,
+              color: isDark ? 'rgba(255, 250, 240, 0.6)' : 'rgba(35, 30, 25, 0.6)', // More visible
+              fontSize: 12,
               lineHeight: 1.5,
               margin: 0,
-              fontStyle: 'italic',
-              opacity: 0.5,
+              fontWeight: 500, // Slightly bolder
+              letterSpacing: '0.01em',
             }}>
               VERA is an AI assistant. While she strives for accuracy, please verify important information independently.
             </p>

@@ -1,0 +1,1 @@
+export { GLOBAL_STYLES } from './global';
