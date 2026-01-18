@@ -10,7 +10,7 @@ function StudioCategoryPageInner() {
   const category = params.category as string;
 
   const onBack = useCallback(() => {
-    router.push('/sanctuary/studio');
+    router.push('/sanctuary');
   }, [router]);
 
   return <StudioRoom onBack={onBack} initialCategory={category} />;

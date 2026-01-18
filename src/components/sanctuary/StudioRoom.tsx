@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTheme, ThemeToggle } from '@/contexts/ThemeContext';
 
 // Import types
@@ -50,6 +51,7 @@ import { SoundBath } from '@/lib/studio/experiences/sound/SoundBath';
 import { PlaylistBuilder } from '@/lib/studio/experiences/sound/PlaylistBuilder';
 
 export default function CreativeStudio({ onBack, onStartActivity, initialView, initialCategory }: CreativeStudioProps & { initialView?: string; initialCategory?: string }) {
+  const router = useRouter();
   const { colors, isDark } = useTheme();
   const COLORS = getStudioColors(colors);
   const theme = isDark ? 'dark' : 'light';
@@ -116,8 +118,8 @@ export default function CreativeStudio({ onBack, onStartActivity, initialView, i
     setSelectedCategory(categoryId);
   };
 
-  const handleBackToCategories = () => {
-    setSelectedCategory(null);
+  const handleBackToStudio = () => {
+    router.push('/sanctuary/studio');
   };
 
   const handleActivityClick = (activityId: string) => {
@@ -386,11 +388,11 @@ export default function CreativeStudio({ onBack, onStartActivity, initialView, i
             {/* Activities Tab - Activity List */}
             {activeTab === 'activities' && selectedCategory && (
               <div style={{ width: '100%', maxWidth: 400, animation: 'fadeIn 0.4s ease-out' }}>
-                <button onClick={handleBackToCategories} style={{
+                <button onClick={handleBackToStudio} style={{
                   background: 'none', border: 'none', color: COLORS.accentDim,
                   fontSize: 13, cursor: 'pointer', marginBottom: 16,
                 }}>
-                  ← Back to categories
+                  ← Back to Studio
                 </button>
 
                 <h2 style={{
