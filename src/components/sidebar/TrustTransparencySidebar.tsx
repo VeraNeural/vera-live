@@ -100,7 +100,6 @@ const SPACES = [
       { id: 'discover', name: 'Discover', path: '/sanctuary/library?view=discover' },
       { id: 'learn', name: 'Learn', path: '/sanctuary/library?view=learn' },
       { id: 'stories', name: 'Stories', path: '/sanctuary/library?view=stories' },
-      { id: 'assessments', name: 'Assessments', path: '/sanctuary/library?view=assessments' },
     ]
   },
 ];
