@@ -478,12 +478,12 @@ export default function VeraSanctuary() {
   // Handle loading a conversation from history
   const handleLoadConversation = async (conversationId: string) => {
     try {
-      const response = await fetch(`/api/sanctuary/conversations?action=get&id=${conversationId}`);
-      if (!response.ok) throw new Error('Failed to load conversation');
+      const stored = localStorage.getItem('vera-conversations');
+      const conversations = stored ? JSON.parse(stored) : [];
+      const conversation = conversations.find((c: any) => c.id === conversationId);
       
-      const data = await response.json();
-      if (data.messages && Array.isArray(data.messages)) {
-        setMessages(data.messages);
+      if (conversation && conversation.messages) {
+        setMessages(conversation.messages);
         setCurrentConversationId(conversationId);
         setIsFirstMessage(false);
         
@@ -500,6 +500,38 @@ export default function VeraSanctuary() {
     }
   };
 
+  // Save conversation to localStorage
+  const saveConversationToStorage = (conversationId: string, messages: Message[]) => {
+    try {
+      const stored = localStorage.getItem('vera-conversations');
+      const conversations = stored ? JSON.parse(stored) : [];
+      
+      const title = messages.find(m => m.role === 'user')?.content.slice(0, 50) || 'New conversation';
+      const now = new Date().toISOString();
+      
+      const conversation = {
+        id: conversationId,
+        title,
+        messages,
+        updated_at: now,
+        created_at: conversations.find((c: any) => c.id === conversationId)?.created_at || now,
+      };
+      
+      const existingIndex = conversations.findIndex((c: any) => c.id === conversationId);
+      if (existingIndex >= 0) {
+        conversations[existingIndex] = conversation;
+      } else {
+        conversations.unshift(conversation);
+      }
+      
+      // Keep only the 50 most recent conversations
+      const trimmed = conversations.slice(0, 50);
+      localStorage.setItem('vera-conversations', JSON.stringify(trimmed));
+    } catch (error) {
+      console.error('Error saving conversation:', error);
+    }
+  };
+
   // Auto-resize textarea
   useEffect(() => {
     const textarea = inputRef.current;
@@ -511,6 +543,21 @@ export default function VeraSanctuary() {
     const newHeight = Math.min(textarea.scrollHeight, 200);
     textarea.style.height = `${newHeight}px`;
   }, [inputValue]);
+
+  // Auto-save conversation to localStorage
+  useEffect(() => {
+    if (messages.length === 0) return;
+    
+    // Create conversation ID if this is the first message
+    if (!currentConversationId) {
+      const newId = crypto.randomUUID ? crypto.randomUUID() : `conv-${Date.now()}`;
+      setCurrentConversationId(newId);
+      saveConversationToStorage(newId, messages);
+    } else {
+      // Update existing conversation
+      saveConversationToStorage(currentConversationId, messages);
+    }
+  }, [messages, currentConversationId]);
 
   const [navHint, setNavHint] = useState(() => {
     const idx = Math.floor(Math.random() * NAV_HINT_ROTATIONS.length);

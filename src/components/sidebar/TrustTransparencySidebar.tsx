@@ -118,8 +118,6 @@ export default function TrustTransparencySidebar({
   onLoadConversation,
 }: TrustTransparencySidebarProps) {
   const router = useRouter();
-  const [memoryEnabled, setMemoryEnabled] = useState<boolean | null>(null);
-  const [isLoadingMemory, setIsLoadingMemory] = useState(false);
   const [opsExpanded, setOpsExpanded] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [spacesExpanded, setSpacesExpanded] = useState(false);
@@ -128,7 +126,6 @@ export default function TrustTransparencySidebar({
   const [conversations, setConversations] = useState<any[]>([]);
   const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const [trustExpanded, setTrustExpanded] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { isLoaded, isSignedIn, user } = useUser();
   const clerk = useClerk();
@@ -164,36 +161,21 @@ export default function TrustTransparencySidebar({
     return 'free';
   }, [isLoaded, isSignedIn, user?.publicMetadata]);
 
+  // Load conversations from localStorage
   useEffect(() => {
-    if (!open || accessTier !== 'sanctuary') return;
-    const fetchMemoryStatus = async () => {
+    if (!open) return;
+    const loadConversations = () => {
       try {
-        const response = await fetch('/api/sanctuary/conversations?action=consent');
-        const data = await response.json();
-        setMemoryEnabled(data.hasConsented ?? null);
+        const stored = localStorage.getItem('vera-conversations');
+        const conversations = stored ? JSON.parse(stored) : [];
+        setConversations(conversations.slice(0, 10)); // Show only 10 most recent
       } catch (error) {
-        console.error('Failed to fetch memory status:', error);
+        console.error('Failed to load conversations:', error);
+        setConversations([]);
       }
     };
-    fetchMemoryStatus();
-  }, [open, accessTier]);
-
-  useEffect(() => {
-    if (!open || accessTier !== 'sanctuary') return;
-    const fetchConversations = async () => {
-      setIsLoadingConversations(true);
-      try {
-        const response = await fetch('/api/sanctuary/conversations?action=recent&limit=10');
-        const data = await response.json();
-        setConversations(data.conversations || []);
-      } catch (error) {
-        console.error('Failed to fetch conversations:', error);
-      } finally {
-        setIsLoadingConversations(false);
-      }
-    };
-    fetchConversations();
-  }, [open, accessTier]);
+    loadConversations();
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -204,40 +186,12 @@ export default function TrustTransparencySidebar({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [open, onOpenChange]);
 
-  useEffect(() => {
-    if (!open) {
-      setShowDeleteConfirm(false);
-    }
-  }, [open]);
-
-  const handleToggleMemory = async () => {
-    if (isLoadingMemory) return;
-    setIsLoadingMemory(true);
+  const handleDeleteAll = () => {
     try {
-      const newValue = !memoryEnabled;
-      await fetch('/api/sanctuary/conversations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'consent', consent: newValue }),
-      });
-      setMemoryEnabled(newValue);
-    } catch (error) {
-      console.error('Failed to toggle memory:', error);
-    } finally {
-      setIsLoadingMemory(false);
-    }
-  };
-
-  const handleDeleteAll = async () => {
-    setIsLoadingMemory(true);
-    try {
-      await fetch('/api/sanctuary/conversations?action=all', { method: 'DELETE' });
-      setMemoryEnabled(false);
-      setShowDeleteConfirm(false);
+      localStorage.removeItem('vera-conversations');
+      setConversations([]);
     } catch (error) {
       console.error('Failed to delete conversations:', error);
-    } finally {
-      setIsLoadingMemory(false);
     }
   };
 
@@ -671,7 +625,7 @@ export default function TrustTransparencySidebar({
             {/* Conversation list */}
             {historyExpanded && (
               <div style={{ marginLeft: '12px', marginTop: '4px' }}>
-                {!memoryEnabled ? (
+                {conversations.length === 0 ? (
                   <div style={{
                     padding: '12px',
                     fontSize: '12px',
@@ -679,26 +633,7 @@ export default function TrustTransparencySidebar({
                     textAlign: 'center',
                     lineHeight: 1.4,
                   }}>
-                    Enable Memory to save conversation history
-                  </div>
-                ) : isLoadingConversations ? (
-                  <div style={{
-                    padding: '12px',
-                    fontSize: '12px',
-                    color: colors.textMuted,
-                    textAlign: 'center',
-                  }}>
-                    Loading...
-                  </div>
-                ) : conversations.length === 0 ? (
-                  <div style={{
-                    padding: '12px',
-                    fontSize: '12px',
-                    color: colors.textMuted,
-                    textAlign: 'center',
-                    lineHeight: 1.4,
-                  }}>
-                    No conversations yet. Start chatting!
+                    No conversations yet
                   </div>
                 ) : (
                   conversations.map((conv) => (
@@ -828,158 +763,6 @@ export default function TrustTransparencySidebar({
             )}
           </div>
 
-          {/* ============================================================ */}
-          {/* MEMORY SECTION (Sanctuary only) */}
-          {/* ============================================================ */}
-          {accessTier === 'sanctuary' && (
-            <>
-              <div style={{
-                height: '1px',
-                backgroundColor: colors.border,
-                margin: '12px 12px',
-              }} />
-              
-              <div style={{
-                margin: '0 4px 16px',
-                padding: '16px',
-                borderRadius: '12px',
-                backgroundColor: colors.card,
-                border: `1px solid ${colors.border}`,
-              }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: '12px',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Brain size={18} style={{ color: colors.accent }} />
-                    <span style={{ fontSize: '14px', fontWeight: 500, color: colors.text }}>
-                      Memory
-                    </span>
-                  </div>
-                  <button
-                    onClick={handleToggleMemory}
-                    disabled={isLoadingMemory}
-                    style={{
-                      width: '44px',
-                      height: '24px',
-                      borderRadius: '12px',
-                      border: 'none',
-                      backgroundColor: memoryEnabled ? colors.accent : (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)'),
-                      cursor: isLoadingMemory ? 'wait' : 'pointer',
-                      position: 'relative',
-                      transition: 'background-color 200ms ease',
-                    }}
-                  >
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: '3px',
-                        left: memoryEnabled ? '23px' : '3px',
-                        width: '18px',
-                        height: '18px',
-                        borderRadius: '50%',
-                        backgroundColor: 'white',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                        transition: 'left 200ms ease',
-                      }}
-                    />
-                  </button>
-                </div>
-
-                <p style={{
-                  fontSize: '12px',
-                  lineHeight: 1.5,
-                  color: colors.textMuted,
-                  margin: 0,
-                }}>
-                  {memoryEnabled
-                    ? 'VERA remembers your conversations for continuity.'
-                    : 'Conversations are private and not saved.'}
-                </p>
-
-                {memoryEnabled && !showDeleteConfirm && (
-                  <button
-                    onClick={() => setShowDeleteConfirm(true)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      width: '100%',
-                      marginTop: '12px',
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      border: `1px solid ${isDark ? 'rgba(220, 100, 100, 0.3)' : 'rgba(200, 80, 80, 0.3)'}`,
-                      backgroundColor: 'transparent',
-                      color: isDark ? 'rgba(220, 140, 140, 1)' : 'rgba(180, 80, 80, 1)',
-                      fontSize: '12px',
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                      transition: 'all 150ms ease',
-                    }}
-                  >
-                    <Trash2 size={14} />
-                    Clear all conversations
-                  </button>
-                )}
-
-                {showDeleteConfirm && (
-                  <div style={{
-                    marginTop: '12px',
-                    padding: '12px',
-                    borderRadius: '8px',
-                    backgroundColor: isDark ? 'rgba(220, 100, 100, 0.1)' : 'rgba(200, 80, 80, 0.08)',
-                    border: `1px solid ${isDark ? 'rgba(220, 100, 100, 0.2)' : 'rgba(200, 80, 80, 0.2)'}`,
-                  }}>
-                    <p style={{
-                      fontSize: '12px',
-                      color: colors.text,
-                      margin: '0 0 10px 0',
-                    }}>
-                      This cannot be undone.
-                    </p>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button
-                        onClick={handleDeleteAll}
-                        disabled={isLoadingMemory}
-                        style={{
-                          flex: 1,
-                          padding: '8px 12px',
-                          borderRadius: '6px',
-                          border: 'none',
-                          backgroundColor: isDark ? 'rgba(220, 100, 100, 0.3)' : 'rgba(200, 80, 80, 0.2)',
-                          color: isDark ? 'rgba(255, 200, 200, 1)' : 'rgba(150, 50, 50, 1)',
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          cursor: isLoadingMemory ? 'wait' : 'pointer',
-                        }}
-                      >
-                        {isLoadingMemory ? 'Deleting...' : 'Delete'}
-                      </button>
-                      <button
-                        onClick={() => setShowDeleteConfirm(false)}
-                        style={{
-                          flex: 1,
-                          padding: '8px 12px',
-                          borderRadius: '6px',
-                          border: `1px solid ${colors.border}`,
-                          backgroundColor: 'transparent',
-                          color: colors.textMuted,
-                          fontSize: '12px',
-                          fontWeight: 500,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
         </div>
 
         {/* Footer */}
