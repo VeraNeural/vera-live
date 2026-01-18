@@ -53,10 +53,65 @@ type GenerationRequest = {
 };
 
 // ============================================================================
+// VERA FOCUS SYSTEM PROMPT
+// ============================================================================
+
+const VERA_FOCUS_SYSTEM_PROMPT = `SYSTEM ROLE: VERA (Focus Mode)
+
+You are VERA — a human-centered reasoning companion.
+You never identify as an AI, model, provider, or tool.
+You never reference internal systems, collaborators, or sources.
+You speak only as VERA.
+
+PURPOSE
+Your role is to help the user think clearly, safely, and intentionally.
+You do not decide for the user.
+You do not tell the user what to do.
+You expand understanding so the user can choose for themselves.
+
+GOVERNING LENS (APPLIES TO ALL FOCUS ACTIVITIES)
+All responses must be reasoned through an integrated, human framework:
+• Nervous system regulation and neurobiology
+• Neuroscience, psychology, psychiatry, and psychoanalysis
+• Emotional patterns and attachment logic
+• Timeline and age-based imprinting when relevant
+• Body and organ-level signaling when relevant
+• Time of day and circadian context when relevant
+• Astrology only as symbolic or meaning-making context, never fate or determinism
+
+RESPONSE REQUIREMENTS
+• Explain why something makes sense, not just what to say or do
+• Ground insights in emotional and biological logic
+• Use calm, clear, human language
+• Avoid authority, prediction, coercion, or certainty framing
+• Never replace the user's judgment
+• Never imply there is one "correct" answer
+
+SAFETY & AGENCY
+Your goal is increased felt safety, clarity, and self-trust.
+You reduce confusion, not create dependence.
+You offer perspective, options, and reasoning — not directives.
+
+VOICE
+Grounded. Warm. Intelligent. Non-performative.
+Human-first. Body-aware. Respectful.
+VERA is the only voice. Always.`;
+
+function buildFullSystemPrompt(activityPrompt: string): string {
+  return `${VERA_FOCUS_SYSTEM_PROMPT}
+
+---
+
+ACTIVITY INSTRUCTIONS:
+${activityPrompt}`;
+}
+
+// ============================================================================
 // AI GENERATION FUNCTIONS
 // ============================================================================
 
-async function generateWithClaude(systemPrompt: string, userInput: string): Promise<string> {
+// Internal functions for processing (bypass VERA system prompt)
+async function generateWithClaudeInternal(systemPrompt: string, userInput: string): Promise<string> {
   if (!anthropic && process.env.ANTHROPIC_API_KEY) {
     anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
@@ -74,7 +129,7 @@ async function generateWithClaude(systemPrompt: string, userInput: string): Prom
   return textBlock ? textBlock.text : 'No response generated.';
 }
 
-async function generateWithGPT4(systemPrompt: string, userInput: string): Promise<string> {
+async function generateWithGPT4Internal(systemPrompt: string, userInput: string): Promise<string> {
   const response = await getOpenAI().chat.completions.create({
     model: 'gpt-4o',
     max_tokens: 8192,
@@ -87,12 +142,44 @@ async function generateWithGPT4(systemPrompt: string, userInput: string): Promis
   return response.choices[0]?.message?.content || 'No response generated.';
 }
 
+// Public functions for user-facing generation (includes VERA system prompt)
+async function generateWithClaude(systemPrompt: string, userInput: string): Promise<string> {
+  if (!anthropic && process.env.ANTHROPIC_API_KEY) {
+    anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    });
+  }
+
+  const response = await anthropic!.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 8192,
+    system: buildFullSystemPrompt(systemPrompt),
+    messages: [{ role: 'user', content: userInput }],
+  });
+
+  const textBlock = response.content.find(block => block.type === 'text');
+  return textBlock ? textBlock.text : 'No response generated.';
+}
+
+async function generateWithGPT4(systemPrompt: string, userInput: string): Promise<string> {
+  const response = await getOpenAI().chat.completions.create({
+    model: 'gpt-4o',
+    max_tokens: 8192,
+    messages: [
+      { role: 'system', content: buildFullSystemPrompt(systemPrompt) },
+      { role: 'user', content: userInput },
+    ],
+  });
+
+  return response.choices[0]?.message?.content || 'No response generated.';
+}
+
 async function generateWithGrok(systemPrompt: string, userInput: string): Promise<string> {
   const response = await getGrok().chat.completions.create({
     model: 'grok-3-latest',
     max_tokens: 8192,
     messages: [
-      { role: 'system', content: systemPrompt },
+      { role: 'system', content: buildFullSystemPrompt(systemPrompt) },
       { role: 'user', content: userInput },
     ],
   });
@@ -269,7 +356,7 @@ ${grokResponse}
 
 Please synthesize the best possible response:`;
 
-  const synthesized = await generateWithClaude(synthesisPrompt, synthesisInput);
+  const synthesized = await generateWithClaudeInternal(synthesisPrompt, synthesisInput);
 
   return {
     content: synthesized,
@@ -292,14 +379,14 @@ async function generateReviewChain(
   const reviewPrompt = `You are an editor. Review and improve this draft. 
 Fix any issues with structure, clarity, or accuracy. Keep the good parts. 
 Output ONLY the improved version, no commentary.`;
-  const reviewed = await generateWithGPT4(reviewPrompt, `Original request: ${userInput}\n\nDraft to improve:\n${draft}`);
+  const reviewed = await generateWithGPT4Internal(reviewPrompt, `Original request: ${userInput}\n\nDraft to improve:\n${draft}`);
   chain.push({ step: 'Reviewed & Improved', provider: 'gpt4', content: reviewed });
 
   // Step 3: Claude polishes for tone and emotional intelligence
   const polishPrompt = `You are a final editor specializing in tone and emotional intelligence.
 Polish this text for the perfect tone - not too formal, not too casual. 
 Ensure it sounds human and empathetic. Output ONLY the final version.`;
-  const polished = await generateWithClaude(polishPrompt, `Original request: ${userInput}\n\nText to polish:\n${reviewed}`);
+  const polished = await generateWithClaudeInternal(polishPrompt, `Original request: ${userInput}\n\nText to polish:\n${reviewed}`);
   chain.push({ step: 'Final Polish', provider: 'claude', content: polished });
 
   return {

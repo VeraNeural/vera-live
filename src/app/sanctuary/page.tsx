@@ -635,35 +635,23 @@ export default function VeraSanctuary() {
               borderRadius: '50%',
               border: 'none',
               background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 50%, #5b21b6 100%)', // Purple gradient like main page
-              boxShadow: '0 2px 8px rgba(139, 92, 246, 0.15), 0 1px 2px rgba(0, 0, 0, 0.1)',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+              transition: 'transform 0.2s ease',
               position: 'relative',
               overflow: 'hidden',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.02)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.2), 0 2px 4px rgba(0, 0, 0, 0.15)';
+              e.currentTarget.style.transform = 'scale(1.01)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.boxShadow = '0 2px 8px rgba(139, 92, 246, 0.15), 0 1px 2px rgba(0, 0, 0, 0.1)';
             }}
             aria-label="Open menu"
           >
-            {/* Inner highlight/shine */}
-            <div style={{
-              position: 'absolute',
-              top: '15%',
-              left: '20%',
-              width: '35%',
-              height: '35%',
-              borderRadius: '50%',
-              background: 'radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.5) 0%, transparent 70%)',
-            }} />
           </button>
           
           <span style={{
