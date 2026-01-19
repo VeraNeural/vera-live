@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useClerk, useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import {
-  X,
   Plus,
   Target,
   Sparkles,
@@ -13,6 +12,7 @@ import {
   Palette,
   Library,
   ChevronRight,
+  ChevronLeft,
   ChevronDown,
   Shield,
   Brain,
@@ -219,142 +219,141 @@ export default function TrustTransparencySidebar({
     hover: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
     card: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
   };
+  const separatorColor = isDark ? 'rgba(235, 210, 180, 0.12)' : 'rgba(140, 110, 80, 0.12)';
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        onClick={() => onOpenChange(false)}
-        style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 998,
-          backgroundColor: isDark ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.3)',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-          opacity: open ? 1 : 0,
-          pointerEvents: open ? 'auto' : 'none',
-          transition: 'opacity 250ms ease',
-        }}
-      />
-
-      {/* Sidebar Panel */}
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          bottom: 0,
-          zIndex: 999,
-          width: '340px',
-          maxWidth: '88vw',
-          background: colors.bg,
-          borderRight: `1px solid ${colors.border}`,
-          boxShadow: isDark
-            ? '4px 0 24px rgba(0, 0, 0, 0.3)'
-            : '4px 0 24px rgba(0, 0, 0, 0.08)',
-          transform: open ? 'translateX(0)' : 'translateX(-100%)',
-          transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        bottom: 0,
+        zIndex: 100,
+        width: open ? '340px' : '60px',
+        maxWidth: open ? '340px' : '60px',
+        background: colors.bg,
+        borderRight: `1px solid ${colors.border}`,
+        boxShadow: isDark
+          ? '2px 0 12px rgba(0, 0, 0, 0.15)'
+          : '2px 0 12px rgba(0, 0, 0, 0.05)',
+        transition: 'width 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}
+    >
         {/* Header */}
         <div style={{
-          padding: '20px 20px 16px',
+          padding: open ? '20px 20px 16px' : '16px 12px',
           borderBottom: `1px solid ${colors.border}`,
+          minHeight: '76px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: open ? 'flex-start' : 'center',
         }}>
           <div style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginBottom: '16px',
+            width: '100%',
+            marginBottom: open ? '16px' : '0',
+            gap: '8px',
           }}>
-            <div style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
-              fontSize: 24,
-              fontWeight: 700,
-              color: isDark ? '#ffffff' : '#1a1a1a', // Full contrast
-              letterSpacing: '0.02em',
-            }}>
-              VERA
+            <div 
+              style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: open ? 24 : 18,
+                fontWeight: 700,
+                color: isDark ? '#ffffff' : '#1a1a1a',
+                letterSpacing: '0.02em',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+              }}>
+              {open ? 'VERA' : 'V'}
             </div>
             <button
-              onClick={() => onOpenChange(false)}
+              onClick={() => onOpenChange(!open)}
               style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '50%',
+                width: 28,
+                height: 28,
+                borderRadius: 8,
                 border: `1px solid ${colors.border}`,
-                backgroundColor: 'transparent',
+                background: 'transparent',
                 color: colors.textSecondary,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                transition: 'all 200ms ease',
+                transition: 'all 150ms ease',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.color = colors.textHover}
-              onMouseLeave={(e) => e.currentTarget.style.color = colors.textSecondary}
+              title={open ? 'Collapse sidebar' : 'Expand sidebar'}
             >
-              <X size={18} />
+              {open ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
             </button>
           </div>
-
-          {/* New Chat Button */}
-          <button
-            onClick={() => {
-              if (onNewConversation) {
-                onNewConversation();
-              }
-              navigate('/sanctuary');
-            }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              width: '100%',
-              background: colors.accentBg,
-              border: `1.5px solid ${colors.accentBorder}`,
-              color: colors.accent,
-              fontWeight: 600,
-              fontSize: 14,
-              padding: '12px 16px',
-              borderRadius: 12,
-              cursor: 'pointer',
-              transition: 'all 200ms ease',
-            }}
-          >
-            <Plus size={18} />
-            New conversation
-          </button>
         </div>
 
         {/* Scrollable Content */}
         <div style={{
           flex: 1,
           overflowY: 'auto',
-          padding: '16px 12px',
+          padding: open ? '16px 12px' : '16px 8px',
         }}>
+          {/* New Conversation */}
+          {open && (
+            <button
+              onClick={() => {
+                if (onNewConversation) {
+                  onNewConversation();
+                }
+                navigate('/sanctuary');
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                width: '100%',
+                background: colors.accentBg,
+                border: `1.5px solid ${colors.accentBorder}`,
+                color: colors.accent,
+                fontWeight: 600,
+                fontSize: 14,
+                padding: '12px 16px',
+                borderRadius: 12,
+                cursor: 'pointer',
+                transition: 'all 200ms ease',
+                marginBottom: '12px',
+              }}
+            >
+              <Plus size={18} />
+              New conversation
+            </button>
+          )}
           
           {/* ============================================================ */}
           {/* FOCUS SECTION - WITH NESTED CATEGORIES AND ACTIVITIES */}
           {/* ============================================================ */}
           <div style={{ marginBottom: '8px' }}>
             <button
-              onClick={() => setOpsExpanded(!opsExpanded)}
+              onClick={() => {
+                if (!open) {
+                  onOpenChange(true);
+                  return;
+                }
+                setOpsExpanded(!opsExpanded);
+              }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
+                justifyContent: open ? 'space-between' : 'center',
                 width: '100%',
                 fontSize: 14,
                 fontWeight: 700,
                 color: colors.text,
                 textTransform: 'none',
                 letterSpacing: '0.01em',
-                padding: '12px 16px',
+                padding: open ? '12px 16px' : '12px 8px',
                 borderRadius: '10px',
                 border: 'none',
                 backgroundColor: 'transparent',
@@ -363,16 +362,17 @@ export default function TrustTransparencySidebar({
               }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              title={!open ? 'Focus' : undefined}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: open ? '10px' : '0' }}>
                 <Target size={18} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor', width: 18, height: 18 }} />
-                <span>Focus</span>
+                {open && <span>Focus</span>}
               </div>
-              {opsExpanded ? <ChevronDown size={16} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor' }} /> : <ChevronRight size={16} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor' }} />}
+              {open && (opsExpanded ? <ChevronDown size={16} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor' }} /> : <ChevronRight size={16} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor' }} />)}
             </button>
 
             {/* Categories from consolidatedData.ts */}
-            {opsExpanded && (
+            {open && opsExpanded && (
               <div style={{ marginLeft: '12px', marginTop: '4px' }}>
                 {opsRoom.categories.map((category) => {
                   const CategoryIcon = categoryIcons[category.icon] || MessageCircle;
@@ -391,7 +391,7 @@ export default function TrustTransparencySidebar({
                           fontSize: 14,
                           fontWeight: 500,
                           color: colors.textMuted,
-                          padding: '10px 16px 10px 40px', // Indented under parent
+                          padding: '10px 16px 10px 40px',
                           borderRadius: 8,
                           border: 'none',
                           backgroundColor: 'transparent',
@@ -466,7 +466,7 @@ export default function TrustTransparencySidebar({
           {/* Divider */}
           <div style={{
             height: '1px',
-            backgroundColor: colors.border,
+            backgroundColor: separatorColor,
             margin: '12px 12px',
           }} />
 
@@ -475,13 +475,19 @@ export default function TrustTransparencySidebar({
           {/* ============================================================ */}
           <div style={{ marginBottom: '8px' }}>
             <button
-              onClick={() => setSpacesExpanded(!spacesExpanded)}
+              onClick={() => {
+                if (!open) {
+                  onOpenChange(true);
+                  return;
+                }
+                setSpacesExpanded(!spacesExpanded);
+              }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
+                justifyContent: open ? 'space-between' : 'center',
                 width: '100%',
-                padding: '10px 12px',
+                padding: open ? '10px 12px' : '10px 8px',
                 borderRadius: '10px',
                 border: 'none',
                 backgroundColor: 'transparent',
@@ -491,16 +497,17 @@ export default function TrustTransparencySidebar({
               }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              title={!open ? 'Spaces' : undefined}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: open ? '10px' : '0' }}>
                 <Sparkles size={18} style={{ color: colors.textSecondary }} />
-                <span style={{ fontSize: '14px', fontWeight: 600 }}>Spaces</span>
+                {open && <span style={{ fontSize: '14px', fontWeight: 600 }}>Spaces</span>}
               </div>
-              {spacesExpanded ? <ChevronDown size={16} style={{ color: colors.textSecondary }} /> : <ChevronRight size={16} style={{ color: colors.textSecondary }} />}
+              {open && (spacesExpanded ? <ChevronDown size={16} style={{ color: colors.textSecondary }} /> : <ChevronRight size={16} style={{ color: colors.textSecondary }} />)}
             </button>
 
             {/* Spaces with activities */}
-            {spacesExpanded && (
+            {open && spacesExpanded && (
               <div style={{ marginLeft: '12px', marginTop: '4px' }}>
                 {SPACES.map((space) => {
                   const SpaceIcon = space.icon;
@@ -520,7 +527,7 @@ export default function TrustTransparencySidebar({
                           fontSize: 14,
                           fontWeight: 500,
                           color: colors.textMuted,
-                          padding: '10px 16px 10px 40px', // Indented under parent
+                          padding: '10px 16px 10px 40px',
                           borderRadius: 8,
                           border: 'none',
                           backgroundColor: 'transparent',
@@ -596,7 +603,7 @@ export default function TrustTransparencySidebar({
           {/* Divider */}
           <div style={{
             height: 1,
-            background: colors.border,
+            background: separatorColor,
             margin: '8px 16px',
           }} />
 
@@ -605,18 +612,24 @@ export default function TrustTransparencySidebar({
           {/* ============================================================ */}
           <div style={{ marginBottom: '8px' }}>
             <button
-              onClick={() => setHistoryExpanded(!historyExpanded)}
+              onClick={() => {
+                if (!open) {
+                  onOpenChange(true);
+                  return;
+                }
+                setHistoryExpanded(!historyExpanded);
+              }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
+                justifyContent: open ? 'space-between' : 'center',
                 width: '100%',
                 fontSize: 14,
                 fontWeight: 700,
                 color: colors.text,
                 textTransform: 'none',
                 letterSpacing: '0.01em',
-                padding: '12px 16px',
+                padding: open ? '12px 16px' : '12px 8px',
                 borderRadius: '10px',
                 border: 'none',
                 backgroundColor: 'transparent',
@@ -625,16 +638,17 @@ export default function TrustTransparencySidebar({
               }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              title={!open ? 'Chats' : undefined}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: open ? '10px' : '0' }}>
                 <MessageCircle size={18} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor', width: 18, height: 18 }} />
-                <span>Chats</span>
+                {open && <span>Chats</span>}
               </div>
-              {historyExpanded ? <ChevronDown size={16} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor' }} /> : <ChevronRight size={16} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor' }} />}
+              {open && (historyExpanded ? <ChevronDown size={16} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor' }} /> : <ChevronRight size={16} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor' }} />)}
             </button>
 
             {/* Conversation list */}
-            {historyExpanded && (
+            {open && historyExpanded && (
               <div style={{ marginLeft: '12px', marginTop: '4px' }}>
                 {conversations.length === 0 ? (
                   <div style={{
@@ -653,7 +667,6 @@ export default function TrustTransparencySidebar({
                       onClick={() => {
                         if (onLoadConversation) {
                           onLoadConversation(conv.id);
-                          onOpenChange(false);
                         } else {
                           navigate(`/sanctuary?conversation=${conv.id}`);
                         }
@@ -708,7 +721,7 @@ export default function TrustTransparencySidebar({
           {/* Divider */}
           <div style={{
             height: '1px',
-            backgroundColor: colors.border,
+            backgroundColor: separatorColor,
             margin: '12px 12px',
           }} />
 
@@ -717,18 +730,24 @@ export default function TrustTransparencySidebar({
           {/* ============================================================ */}
           <div style={{ margin: '0 4px' }}>
             <button
-              onClick={() => setTrustExpanded(!trustExpanded)}
+              onClick={() => {
+                if (!open) {
+                  onOpenChange(true);
+                  return;
+                }
+                setTrustExpanded(!trustExpanded);
+              }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
+                justifyContent: open ? 'space-between' : 'center',
                 width: '100%',
                 fontSize: 14,
                 fontWeight: 700,
                 color: colors.text,
                 textTransform: 'none',
                 letterSpacing: '0.01em',
-                padding: '12px 16px',
+                padding: open ? '12px 16px' : '12px 8px',
                 borderRadius: '10px',
                 border: 'none',
                 backgroundColor: 'transparent',
@@ -737,15 +756,16 @@ export default function TrustTransparencySidebar({
               }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.hover}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              title={!open ? 'Trust & Transparency' : undefined}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: open ? '10px' : '0' }}>
                 <Shield size={18} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor', width: 18, height: 18 }} />
-                <span>Trust & Transparency</span>
+                {open && <span>Trust & Transparency</span>}
               </div>
-              {trustExpanded ? <ChevronDown size={16} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor' }} /> : <ChevronRight size={16} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor' }} />}
+              {open && (trustExpanded ? <ChevronDown size={16} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor' }} /> : <ChevronRight size={16} style={{ opacity: isDark ? 0.8 : 0.7, color: 'currentColor' }} />)}
             </button>
 
-            {trustExpanded && (
+            {open && trustExpanded && (
               <div style={{
                 marginTop: '8px',
                 marginLeft: '8px',
@@ -758,9 +778,41 @@ export default function TrustTransparencySidebar({
                   fontSize: '12px',
                   lineHeight: 1.6,
                   color: colors.textMuted,
-                  margin: '0 0 12px 0',
+                  margin: '0 0 10px 0',
                 }}>
-                  VERA works through conversation. She listens for what is actually needed, then helps you move one step at a time.
+                  VERA is a conversational interface designed to help you work through thoughts, choices, and tasks with clarity.
+                </p>
+                <p style={{
+                  fontSize: '12px',
+                  lineHeight: 1.6,
+                  color: colors.textMuted,
+                  margin: '0 0 10px 0',
+                }}>
+                  Focus is a structured mode inside VERA that guides a single objective at a time so the conversation stays narrow and usable.
+                </p>
+                <p style={{
+                  fontSize: '12px',
+                  lineHeight: 1.6,
+                  color: colors.textMuted,
+                  margin: '0 0 10px 0',
+                }}>
+                  VERA is built from a set of conversational policies and routing logic that determine how prompts are interpreted and how responses are generated.
+                </p>
+                <p style={{
+                  fontSize: '12px',
+                  lineHeight: 1.6,
+                  color: colors.textMuted,
+                  margin: '0 0 10px 0',
+                }}>
+                  VERA does not diagnose, provide medical or legal advice, or make decisions on your behalf.
+                </p>
+                <p style={{
+                  fontSize: '12px',
+                  lineHeight: 1.6,
+                  color: colors.textMuted,
+                  margin: '0 0 10px 0',
+                }}>
+                  Conversation data is handled based on your access level and consent choices. Anonymous sessions are not linked to an account. Free accounts store limited history. Sanctuary enables longer-term memory when you allow it.
                 </p>
                 <p style={{
                   fontSize: '12px',
@@ -768,11 +820,7 @@ export default function TrustTransparencySidebar({
                   color: colors.textMuted,
                   margin: 0,
                 }}>
-                  {accessTier === 'sanctuary'
-                    ? 'You are in Sanctuary. Memory is available with consent, and usage limits are lifted.'
-                    : accessTier === 'free'
-                    ? 'Free account. Conversations are not saved as long-term history.'
-                    : 'Anonymous conversations are temporary and not tied to you.'}
+                  You can review and adjust these settings at any time in your account area.
                 </p>
               </div>
             )}
@@ -782,10 +830,10 @@ export default function TrustTransparencySidebar({
 
         {/* Footer */}
         <div style={{
-          padding: '16px 20px',
+          padding: open ? '16px 20px' : '12px 8px',
           borderTop: `1px solid ${colors.border}`,
         }}>
-          {accessTier !== 'anonymous' && (
+          {open && accessTier !== 'anonymous' && (
             <button
               onClick={() => clerk.openUserProfile()}
               style={{
@@ -806,42 +854,43 @@ export default function TrustTransparencySidebar({
             </button>
           )}
 
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '16px',
-          }}>
-            <button
-              style={{
-                border: 'none',
-                background: 'none',
-                fontSize: 12,
-                color: colors.textSecondary,
-                fontWeight: 400,
-                cursor: 'pointer',
-                padding: '4px',
-              }}
-            >
-              Privacy
-            </button>
-            <span style={{ color: colors.textSecondary, fontSize: 12 }}>·</span>
-            <button
-              style={{
-                border: 'none',
-                background: 'none',
-                fontSize: 12,
-                color: colors.textSecondary,
-                fontWeight: 400,
-                cursor: 'pointer',
-                padding: '4px',
-              }}
-            >
-              Terms
-            </button>
-          </div>
+          {open && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '16px',
+            }}>
+              <button
+                style={{
+                  border: 'none',
+                  background: 'none',
+                  fontSize: 12,
+                  color: colors.textSecondary,
+                  fontWeight: 400,
+                  cursor: 'pointer',
+                  padding: '4px',
+                }}
+              >
+                Privacy
+              </button>
+              <span style={{ color: colors.textSecondary, fontSize: 12 }}>·</span>
+              <button
+                style={{
+                  border: 'none',
+                  background: 'none',
+                  fontSize: 12,
+                  color: colors.textSecondary,
+                  fontWeight: 400,
+                  cursor: 'pointer',
+                  padding: '4px',
+                }}
+              >
+                Terms
+              </button>
+            </div>
+          )}
         </div>
       </div>
-    </>
   );
 }

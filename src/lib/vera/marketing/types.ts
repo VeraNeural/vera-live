@@ -1,4 +1,4 @@
-export type Platform = 'instagram' | 'twitter' | 'tiktok' | 'linkedin';
+export type Platform = 'instagram' | 'twitter' | 'tiktok' | 'linkedin' | 'youtube' | 'facebook';
 
 // Expanded themes per requirements (superset of the original list)
 export type ContentTheme =
@@ -28,6 +28,9 @@ export type Post = {
   id: string;
   platform: Platform;
   theme: ContentTheme;
+
+  campaignId?: string;
+  planId?: string;
 
   // Short punchy opener used in previews; not always shown verbatim on each platform.
   hook: string;

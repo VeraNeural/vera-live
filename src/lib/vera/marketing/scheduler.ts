@@ -7,6 +7,8 @@ const POSTING_TIMES: Record<Platform, string[]> = {
   twitter: ['08:00', '12:00', '17:00'],
   tiktok: ['19:00', '21:00'],
   linkedin: ['09:00'],
+  youtube: ['11:00'],
+  facebook: ['10:00'],
 };
 
 const THEMES_WEEK: ContentTheme[] = [
@@ -86,7 +88,7 @@ export function generateWeeklyCalendar(start?: Date): DailyPlan[] {
     const theme = pickTheme(i);
 
     const posts: Post[] = [];
-    const platforms: Platform[] = ['instagram', 'twitter', 'tiktok', 'linkedin'];
+    const platforms: Platform[] = ['instagram', 'twitter', 'tiktok', 'linkedin', 'youtube', 'facebook'];
 
     for (const platform of platforms) {
       const times = POSTING_TIMES[platform] ?? ['09:00'];

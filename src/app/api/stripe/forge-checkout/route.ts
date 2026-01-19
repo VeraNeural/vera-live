@@ -31,15 +31,13 @@ export async function POST(request: NextRequest) {
     }
 
     const stripe = getStripe();
-
-    const priceId = getRequiredEnv("STRIPE_SANCTUARY_PRICE_ID");
+    const priceId = getRequiredEnv("STRIPE_FORGE_PRICE_ID");
 
     const origin =
       process.env.NEXT_PUBLIC_APP_URL ||
       request.headers.get("origin") ||
       request.nextUrl.origin;
 
-    // Create checkout session
     const session = await stripe.checkout.sessions.create({
       client_reference_id: userId,
       mode: "subscription",
@@ -50,23 +48,23 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${origin}/?upgraded=true`,
-      cancel_url: `${origin}/sanctuary/upgrade?canceled=true`,
+      success_url: `${origin}/forge/room?upgraded=true`,
+      cancel_url: `${origin}/forge?canceled=true`,
       metadata: {
         clerk_user_id: userId,
-        entitlement: "sanctuary",
+        entitlement: "forge",
       },
       subscription_data: {
         metadata: {
           clerk_user_id: userId,
-          entitlement: "sanctuary",
+          entitlement: "forge",
         },
       },
     });
 
     return NextResponse.json({ url: session.url });
   } catch (error) {
-    console.error("Checkout error:", error);
+    console.error("Forge checkout error:", error);
     return NextResponse.json(
       { error: "Failed to create checkout session" },
       { status: 500 }

@@ -20,10 +20,11 @@ function getStripe(): Stripe {
   });
 }
 
-async function upsertSanctuaryEntitlement(
+async function upsertEntitlement(
   supabase: ReturnType<typeof getSupabaseAdmin>,
   input: {
     clerkUserId: string;
+    entitlement: 'sanctuary' | 'forge';
     status: string;
     currentPeriodStart?: string | null;
     currentPeriodEnd?: string | null;
@@ -36,7 +37,7 @@ async function upsertSanctuaryEntitlement(
     .upsert(
       {
         clerk_user_id: input.clerkUserId,
-        entitlement: 'sanctuary',
+        entitlement: input.entitlement,
         status: input.status,
         current_period_start: input.currentPeriodStart ?? null,
         current_period_end: input.currentPeriodEnd ?? null,
@@ -69,6 +70,22 @@ function getBillingPeriodFromSubscription(subscription: Stripe.Subscription): {
     currentPeriodStart: new Date(maxStart * 1000).toISOString(),
     currentPeriodEnd: new Date(maxEnd * 1000).toISOString(),
   };
+}
+
+function resolveEntitlementFromSubscription(subscription: Stripe.Subscription): 'sanctuary' | 'forge' | null {
+  const metadataEntitlement = subscription.metadata?.entitlement?.toLowerCase();
+  if (metadataEntitlement === 'forge') return 'forge';
+  if (metadataEntitlement === 'sanctuary') return 'sanctuary';
+
+  const sanctuaryPriceId = process.env.STRIPE_SANCTUARY_PRICE_ID;
+  const forgePriceId = process.env.STRIPE_FORGE_PRICE_ID;
+  const itemPriceIds = (subscription.items?.data ?? [])
+    .map((item) => item.price?.id)
+    .filter((id): id is string => Boolean(id));
+
+  if (forgePriceId && itemPriceIds.includes(forgePriceId)) return 'forge';
+  if (sanctuaryPriceId && itemPriceIds.includes(sanctuaryPriceId)) return 'sanctuary';
+  return null;
 }
 
 export async function POST(request: NextRequest) {
@@ -105,6 +122,7 @@ export async function POST(request: NextRequest) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
         const clerkUserId = session.metadata?.clerk_user_id || session.client_reference_id || null;
+        const entitlement = session.metadata?.entitlement === 'forge' ? 'forge' : 'sanctuary';
         const subscriptionId =
           typeof session.subscription === 'string'
             ? session.subscription
@@ -115,14 +133,15 @@ export async function POST(request: NextRequest) {
           const { currentPeriodStart, currentPeriodEnd } = getBillingPeriodFromSubscription(subscription);
 
           // ✅ AUTHORITATIVE ENTITLEMENT WRITE (Clerk-only identity)
-          await upsertSanctuaryEntitlement(supabase, {
+          await upsertEntitlement(supabase, {
             clerkUserId,
+            entitlement,
             status: subscription.status,
             currentPeriodStart,
             currentPeriodEnd,
           });
 
-          console.log(`Entitlement updated: sanctuary active for ${clerkUserId}`);
+          console.log(`Entitlement updated: ${entitlement} active for ${clerkUserId}`);
         }
         break;
       }
@@ -130,18 +149,20 @@ export async function POST(request: NextRequest) {
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
         const clerkUserId = subscription.metadata?.clerk_user_id;
+        const entitlement = resolveEntitlementFromSubscription(subscription) ?? 'sanctuary';
 
         if (clerkUserId) {
           const { currentPeriodStart, currentPeriodEnd } = getBillingPeriodFromSubscription(subscription);
 
-          await upsertSanctuaryEntitlement(supabase, {
+          await upsertEntitlement(supabase, {
             clerkUserId,
+            entitlement,
             status: subscription.status,
             currentPeriodStart,
             currentPeriodEnd,
           });
 
-          console.log(`Entitlement updated: sanctuary status=${subscription.status} for ${clerkUserId}`);
+          console.log(`Entitlement updated: ${entitlement} status=${subscription.status} for ${clerkUserId}`);
         }
         break;
       }
@@ -151,13 +172,15 @@ export async function POST(request: NextRequest) {
 
         const clerkUserId = subscription.metadata?.clerk_user_id;
         if (clerkUserId) {
-          await upsertSanctuaryEntitlement(supabase, {
+          const entitlement = resolveEntitlementFromSubscription(subscription) ?? 'sanctuary';
+          await upsertEntitlement(supabase, {
             clerkUserId,
+            entitlement,
             status: 'canceled',
             currentPeriodStart: null,
             currentPeriodEnd: null,
           });
-          console.log(`Entitlement updated: sanctuary canceled for ${clerkUserId}`);
+          console.log(`Entitlement updated: ${entitlement} canceled for ${clerkUserId}`);
         } else {
           console.log(`Subscription deleted: ${subscription.id} (no clerk_user_id in metadata)`);
         }
@@ -177,8 +200,10 @@ export async function POST(request: NextRequest) {
           const clerkUserId = subscription.metadata?.clerk_user_id;
           if (clerkUserId) {
             const { currentPeriodStart, currentPeriodEnd } = getBillingPeriodFromSubscription(subscription);
-            await upsertSanctuaryEntitlement(supabase, {
+            const entitlement = resolveEntitlementFromSubscription(subscription) ?? 'sanctuary';
+            await upsertEntitlement(supabase, {
               clerkUserId,
+              entitlement,
               status: subscription.status,
               currentPeriodStart,
               currentPeriodEnd,
@@ -202,8 +227,10 @@ export async function POST(request: NextRequest) {
           const clerkUserId = subscription.metadata?.clerk_user_id;
           if (clerkUserId) {
             const { currentPeriodStart, currentPeriodEnd } = getBillingPeriodFromSubscription(subscription);
-            await upsertSanctuaryEntitlement(supabase, {
+            const entitlement = resolveEntitlementFromSubscription(subscription) ?? 'sanctuary';
+            await upsertEntitlement(supabase, {
               clerkUserId,
+              entitlement,
               status: subscription.status,
               currentPeriodStart,
               currentPeriodEnd,

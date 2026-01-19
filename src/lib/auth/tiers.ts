@@ -1,11 +1,11 @@
 // Tier definitions - server is source of truth
 
-export type Tier = "anonymous" | "free" | "sanctuary";
+export type Tier = "anonymous" | "free" | "sanctuary" | "forge";
 
 export function normalizeTier(raw: unknown): Tier | null {
   if (typeof raw !== "string") return null;
   const value = raw.trim().toLowerCase();
-  if (value === "anonymous" || value === "free" || value === "sanctuary") {
+  if (value === "anonymous" || value === "free" || value === "sanctuary" || value === "forge") {
     return value as Tier;
   }
   return null;
@@ -33,6 +33,13 @@ export const TIER_LIMITS = {
     files: true,
     rooms: true,
   },
+  forge: {
+    messages_per_day: Infinity,
+    memory: true, // Persistent memory
+    voice: true,
+    files: true,
+    rooms: true,
+  },
 } as const;
 
 export const TIER_FEATURES = {
@@ -46,6 +53,16 @@ export const TIER_FEATURES = {
     "voice",
     "file_uploads",
     "sanctuary_rooms",
+    "unlimited_messages",
+  ],
+  forge: [
+    "basic_chat",
+    "session_memory",
+    "extended_conversation",
+    "persistent_memory",
+    "voice",
+    "file_uploads",
+    "forge_room",
     "unlimited_messages",
   ],
 } as const;

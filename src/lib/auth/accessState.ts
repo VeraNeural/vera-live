@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 
-export type AccessState = 'anonymous' | 'free' | 'sanctuary';
+export type AccessState = 'anonymous' | 'free' | 'sanctuary' | 'forge';
 
 export type UserAccessState = {
   state: AccessState;
@@ -15,7 +15,10 @@ function getPeriodEnd(row: Record<string, unknown> | null | undefined): string |
   return typeof raw === 'string' && raw.trim() ? raw : null;
 }
 
-function isLikelyActiveSanctuaryEntitlement(row: Record<string, unknown> | null | undefined): boolean {
+function isLikelyActiveEntitlement(
+  row: Record<string, unknown> | null | undefined,
+  entitlementKey: 'sanctuary' | 'forge'
+): boolean {
   if (!row) return false;
 
   const rawEntitlement = (row.entitlement ?? row.tier ?? row.product ?? row.sku ?? row.plan) as unknown;
@@ -27,8 +30,12 @@ function isLikelyActiveSanctuaryEntitlement(row: Record<string, unknown> | null 
   const rawActive = row.active as unknown;
   const activeFlag = typeof rawActive === 'boolean' ? rawActive : undefined;
 
-  const isSanctuary = entitlement === 'sanctuary' || entitlement.includes('sanctuary');
-  if (!isSanctuary) return false;
+  const isTargetEntitlement =
+    entitlementKey === 'sanctuary'
+      ? entitlement === 'sanctuary' || entitlement.includes('sanctuary')
+      : entitlement === 'forge' || entitlement.includes('forge') || entitlement === 'build' || entitlement.includes('build');
+
+  if (!isTargetEntitlement) return false;
 
   const statusOk =
     activeFlag === true ||
@@ -68,11 +75,12 @@ export async function getUserAccessState(userId?: string): Promise<UserAccessSta
   }
 
   const rows = Array.isArray(data) ? (data as Array<Record<string, unknown>>) : [];
-  const sanctuaryRow = rows.find((row) => isLikelyActiveSanctuaryEntitlement(row));
+  const sanctuaryRow = rows.find((row) => isLikelyActiveEntitlement(row, 'sanctuary'));
+  const forgeRow = rows.find((row) => isLikelyActiveEntitlement(row, 'forge'));
 
   return {
-    state: sanctuaryRow ? 'sanctuary' : 'free',
+    state: sanctuaryRow ? 'sanctuary' : forgeRow ? 'forge' : 'free',
     entitlement_source: 'user_entitlements',
-    period_end: getPeriodEnd(sanctuaryRow),
+    period_end: getPeriodEnd(sanctuaryRow ?? forgeRow),
   };
 }

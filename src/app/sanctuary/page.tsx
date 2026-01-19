@@ -48,6 +48,12 @@ export default function VeraSanctuary() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setSidebarOpen(window.innerWidth >= 768);
+    }
+  }, []);
+
   // Handle new conversation - reset all state
   const handleNewConversation = () => {
     setMessages([]);
@@ -55,7 +61,7 @@ export default function VeraSanctuary() {
     setIsTyping(false);
     setCurrentConversationId(null);
     setIsFirstMessage(true);
-    setSidebarOpen(false); // Close sidebar on mobile
+    // Sidebar stays as-is for persistent navigation
     
     // Reset textarea height
     if (inputRef.current) {
@@ -232,6 +238,7 @@ export default function VeraSanctuary() {
 
   const isDark = manualTheme === 'dark' ? true : manualTheme === 'light' ? false : (timeOfDay === 'evening' || timeOfDay === 'night');
   const colors = isDark ? TIME_COLORS.evening : TIME_COLORS[timeOfDay];
+  const separatorColor = isDark ? 'rgba(235, 210, 180, 0.12)' : 'rgba(140, 110, 80, 0.12)';
   const quickPrompts = getQuickPrompts(timeOfDay);
 
   // Handle consent response
@@ -568,10 +575,12 @@ export default function VeraSanctuary() {
         position: 'fixed',
         inset: 0,
         background: colors.bg,
-         zIndex: 1,
+        zIndex: 1,
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
+        paddingLeft: sidebarOpen ? '340px' : '60px',
+        transition: 'padding-left 300ms cubic-bezier(0.4, 0, 0.2, 1)',
       }}>
         {/* Toast */}
         {toastMessage && (
@@ -626,34 +635,6 @@ export default function VeraSanctuary() {
           justifyContent: 'space-between',
           zIndex: 50,
         }}>
-          {/* Orb - Sidebar Trigger */}
-          <button
-            onClick={() => setSidebarOpen(true)}
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: '50%',
-              border: 'none',
-              background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 50%, #5b21b6 100%)', // Purple gradient like main page
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'transform 0.2s ease',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.01)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
-            aria-label="Open menu"
-          >
-          </button>
-          
           <span style={{
             fontSize: 11,
             fontWeight: 600,
@@ -692,6 +673,12 @@ export default function VeraSanctuary() {
             ))}
           </div>
         </header>
+
+        <div style={{
+          height: 1,
+          backgroundColor: separatorColor,
+          margin: '8px 16px 12px',
+        }} />
 
         {/* Main Content */}
         <main style={{
@@ -769,6 +756,13 @@ export default function VeraSanctuary() {
                     </p>
                   </div>
 
+                  <div style={{
+                    height: 1,
+                    width: '100%',
+                    backgroundColor: separatorColor,
+                    margin: '4px 0 20px',
+                  }} />
+
                   {/* Chat Input - Centered (Welcome State Only) */}
                   <div style={{
                     width: '100%',
@@ -778,6 +772,14 @@ export default function VeraSanctuary() {
                     gap: 12,
                     marginBottom: 12,
                   }}>
+                    <div style={{
+                      fontSize: 14,
+                      color: isDark ? 'rgba(255, 255, 255, 0.65)' : colors.textMuted,
+                      textAlign: 'center',
+                      letterSpacing: '0.01em',
+                    }}>
+                      A quiet place to begin
+                    </div>
                     {/* Input Container */}
                     <ChatInput
                       inputValue={inputValue}
@@ -795,6 +797,13 @@ export default function VeraSanctuary() {
                     {/* AI Disclaimer - Removed from here */}
                   </div>
 
+                  <div style={{
+                    height: 1,
+                    width: '100%',
+                    backgroundColor: separatorColor,
+                    margin: '4px 0 16px',
+                  }} />
+
                   {/* Quick Prompts - Below Input */}
                   <QuickPrompts
                     prompts={quickPrompts}
@@ -808,7 +817,7 @@ export default function VeraSanctuary() {
               {/* Messages */}
               {hasMessages && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  {messages.map((message) => {
+                  {messages.map((message, index) => {
                     // Render signup gate prompt
                     if (message.isSignupPrompt) {
                       return (
@@ -1065,43 +1074,58 @@ export default function VeraSanctuary() {
                     }
 
                     // Render regular message
+                    const prev = messages[index - 1];
+                    const showRoleSeparator =
+                      prev &&
+                      (prev.role === 'user' || prev.role === 'assistant') &&
+                      (message.role === 'user' || message.role === 'assistant') &&
+                      prev.role !== message.role;
+
                     return (
-                      <div
-                        key={message.id}
-                        className="message-appear"
-                        style={{
-                          display: 'flex',
-                          justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
-                        }}
-                      >
-                        <div style={{
-                          maxWidth: '85%',
-                          padding: '14px 18px',
-                          borderRadius: message.role === 'user' ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
-                          background: message.role === 'user'
-                            ? (isDark 
-                                ? 'rgba(200, 170, 120, 0.3)' 
-                                : 'rgba(160, 130, 90, 0.2)') // More visible
-                            : (isDark 
-                                ? 'rgba(255, 255, 255, 0.1)' 
-                                : 'rgba(255, 255, 255, 0.95)'), // More solid white
-                          border: message.role === 'user'
-                            ? (isDark 
-                                ? '1px solid rgba(200, 170, 120, 0.4)' 
-                                : '1px solid rgba(160, 130, 90, 0.3)') // Stronger border
-                            : (isDark 
-                                ? '1px solid rgba(255, 255, 255, 0.15)' 
-                                : '1px solid rgba(0, 0, 0, 0.1)'), // Visible border
-                          color: isDark ? 'rgba(255, 250, 240, 0.95)' : 'rgba(35, 30, 25, 0.95)', // Much darker text
-                          fontSize: 15,
-                          lineHeight: 1.6,
-                          boxShadow: isDark 
-                            ? '0 2px 8px rgba(0, 0, 0, 0.2)' 
-                            : '0 2px 8px rgba(0, 0, 0, 0.08)', // Subtle shadow
-                        }}>
-                          {message.content}
+                      <React.Fragment key={message.id}>
+                        {showRoleSeparator && (
+                          <div style={{
+                            height: 1,
+                            backgroundColor: separatorColor,
+                            margin: '12px 0',
+                          }} />
+                        )}
+                        <div
+                          className="message-appear"
+                          style={{
+                            display: 'flex',
+                            justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
+                          }}
+                        >
+                          <div style={{
+                            maxWidth: '85%',
+                            padding: '14px 18px',
+                            borderRadius: message.role === 'user' ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
+                            background: message.role === 'user'
+                              ? (isDark 
+                                  ? 'rgba(200, 170, 120, 0.3)' 
+                                  : 'rgba(160, 130, 90, 0.2)') // More visible
+                              : (isDark 
+                                  ? 'rgba(255, 255, 255, 0.1)' 
+                                  : 'rgba(255, 255, 255, 0.95)'), // More solid white
+                            border: message.role === 'user'
+                              ? (isDark 
+                                  ? '1px solid rgba(200, 170, 120, 0.4)' 
+                                  : '1px solid rgba(160, 130, 90, 0.3)') // Stronger border
+                              : (isDark 
+                                  ? '1px solid rgba(255, 255, 255, 0.15)' 
+                                  : '1px solid rgba(0, 0, 0, 0.1)'), // Visible border
+                            color: isDark ? 'rgba(255, 250, 240, 0.95)' : 'rgba(35, 30, 25, 0.95)', // Much darker text
+                            fontSize: 15,
+                            lineHeight: 1.6,
+                            boxShadow: isDark 
+                              ? '0 2px 8px rgba(0, 0, 0, 0.2)' 
+                              : '0 2px 8px rgba(0, 0, 0, 0.08)', // Subtle shadow
+                          }}>
+                            {message.content}
+                          </div>
                         </div>
-                      </div>
+                      </React.Fragment>
                     );
                   })}
 
@@ -1147,7 +1171,7 @@ export default function VeraSanctuary() {
             padding: '16px 20px',
             paddingBottom: 'max(20px, env(safe-area-inset-bottom))',
             background: colors.bg,
-            borderTop: `1px solid ${colors.border}`,
+            borderTop: `1px solid ${separatorColor}`,
             zIndex: 100,
           }}>
             <div style={{

@@ -95,6 +95,34 @@ export function renderTikTokScript(input: {
   ].join('\n');
 }
 
+export function renderYouTubeDescription(input: {
+  title: string;
+  value: string;
+  cta: string;
+}): string {
+  return [
+    input.title,
+    '',
+    input.value,
+    '',
+    input.cta,
+  ].join('\n');
+}
+
+export function renderFacebookPost(input: {
+  hook: string;
+  value: string;
+  cta: string;
+}): string {
+  return [
+    input.hook,
+    '',
+    input.value,
+    '',
+    input.cta,
+  ].join('\n');
+}
+
 export function renderLinkedInPost(input: {
   hook: string;
   value: string;
@@ -135,6 +163,18 @@ export function formatForPlatform(
         hook3s: payload.tiktok?.hook3s ?? payload.hook,
         problem: payload.tiktok?.problem ?? payload.value,
         solution: payload.tiktok?.solution ?? payload.value,
+        cta: payload.cta,
+      });
+    case 'youtube':
+      return renderYouTubeDescription({
+        title: payload.hook,
+        value: payload.value,
+        cta: payload.cta,
+      });
+    case 'facebook':
+      return renderFacebookPost({
+        hook: payload.hook,
+        value: payload.value,
         cta: payload.cta,
       });
     case 'linkedin':

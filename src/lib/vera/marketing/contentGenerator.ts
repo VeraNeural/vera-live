@@ -31,28 +31,28 @@ function safeJsonParse<T>(text: string): T | null {
 }
 
 function defaultHashtags(theme: ContentTheme): string[] {
-  const base = ['#VERA', '#AI', '#mentalhealth'];
+  const base = ['#VERA', '#wellbeing', '#focus'];
   switch (theme) {
     case 'sleep':
-      return [...base, '#sleep', '#insomnia', '#nervoussystem'];
+      return [...base, '#sleep', '#rest', '#nervoussystem'];
     case 'anxiety':
-      return [...base, '#anxiety', '#panic', '#regulation'];
+      return [...base, '#anxiety', '#calm', '#regulation'];
     case 'productivity':
     case 'ops':
-      return [...base, '#productivity', '#focus', '#habits'];
+      return [...base, '#productivity', '#clarity', '#habits'];
     case 'language':
-      return [...base, '#languagelearning', '#spanish', '#polyglot'];
+      return [...base, '#languagelearning', '#practice', '#growth'];
     case 'cost-savings':
     case 'all-in-one':
-      return [...base, '#wellness', '#appfatigue', '#selfcare'];
+      return [...base, '#wellness', '#simplicity', '#selfcare'];
     case 'navigation':
       return [...base, '#UX', '#product', '#simplicity'];
     case 'testimonial':
-      return [...base, '#storytime', '#results'];
+      return [...base, '#story', '#experience'];
     case 'feature-demo':
-      return [...base, '#demo', '#buildinpublic'];
+      return [...base, '#demo', '#walkthrough'];
     case 'behind-the-scenes':
-      return [...base, '#buildinpublic', '#startup'];
+      return [...base, '#behindthescenes', '#build'];
     default:
       return base;
   }
@@ -70,14 +70,14 @@ function voiceSpec(): VERAVoice {
 
 export async function generatePost(platform: Platform, theme: ContentTheme): Promise<Post> {
   const hook = chooseHook(theme);
-  const cta = "Come find me — start free. I'll be right here. 💜";
+  const cta = "If this helps, you can start free.";
 
   const system = [
-    'You are VERA writing marketing content as yourself.',
+    'You are VERA writing calm, precise marketing content as yourself.',
     'Always first-person: I / me / my.',
-    'Warm, direct, confident, inviting. Never pushy.',
-    'Every post should drive to signup.',
+    'Tone: calm, grounded, trustworthy. Avoid hype or urgency.',
     'No exaggerated medical claims. No promises like "cure" or "guarantee".',
+    'No calls to virality or growth hacks.',
     'Output ONLY valid JSON with the exact keys requested. No markdown.',
   ].join('\n');
 
@@ -88,10 +88,12 @@ export async function generatePost(platform: Platform, theme: ContentTheme): Pro
     `Hook to use (exactly once): ${hook}`,
     '',
     'Write a post that matches platform constraints:',
-    '- Instagram: hook + value + CTA + hashtags. 2200 chars max.',
-    '- Twitter: 280 chars max OR a short thread (2-6 tweets).',
-    '- TikTok: script format: hook (0-3s), problem, solution, CTA.',
-    '- LinkedIn: professional angle, avoids therapy/coach positioning; focus on product value and user outcomes.',
+    '- Instagram: reflective, minimal copy. hook + value + CTA + hashtags. 2200 chars max.',
+    '- Twitter: concise, declarative thought. 280 chars max OR a short thread (2-6 tweets).',
+    '- TikTok: short grounded statements or questions. Script format: hook (0-3s), problem, solution, CTA.',
+    '- YouTube: calm explanatory title + short description. Avoid hype.',
+    '- Facebook: explanatory, human, non-salesy. Short paragraphs.',
+    '- LinkedIn: professional, system-level insight. Avoid therapy/coach positioning; focus on product value and user outcomes.',
     '',
     'Return JSON with these keys:',
     '{',
@@ -147,7 +149,7 @@ export async function generatePost(platform: Platform, theme: ContentTheme): Pro
 
   const caption = (parsed?.caption?.trim() || computedCaption).slice(
     0,
-    platform === 'instagram' ? 2200 : 20_000
+    platform === 'instagram' ? 2200 : platform === 'twitter' ? 280 * 6 : 20_000
   );
 
   const scheduledFor = new Date();

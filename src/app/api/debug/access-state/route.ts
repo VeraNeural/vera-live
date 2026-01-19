@@ -27,9 +27,9 @@ export async function GET() {
   const entitlement_source = access.entitlement_source ?? 'none';
 
   const features_enabled = {
-    voice: entitlement === 'sanctuary',
-    images: entitlement === 'sanctuary',
-    memory: entitlement === 'sanctuary',
+    voice: entitlement === 'sanctuary' || entitlement === 'forge',
+    images: entitlement === 'sanctuary' || entitlement === 'forge',
+    memory: entitlement === 'sanctuary' || entitlement === 'forge',
   };
 
   const metering_key: 'vera_sid' | 'clerk_user_id' = 'clerk_user_id';
@@ -37,7 +37,7 @@ export async function GET() {
   const meteringId = await resolveMeteringIdForClerkUserId(userId);
 
   const remaining_messages: number | 'unlimited' =
-    entitlement === 'sanctuary'
+    entitlement === 'sanctuary' || entitlement === 'forge'
       ? 'unlimited'
       : (await checkMessageLimit({ tier: 'free', meteringId })).remaining;
 

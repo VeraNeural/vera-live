@@ -95,10 +95,10 @@ export async function checkMessageLimit(
     meteringId: string;
   }
 ): Promise<MessageLimitResult> {
-  if (input.tier === "sanctuary") {
+  if (input.tier === "sanctuary" || input.tier === "forge") {
     return {
       allowed: true,
-      tier: "sanctuary",
+      tier: input.tier,
       count: 0,
       limit: Infinity,
       remaining: Infinity,
@@ -187,7 +187,9 @@ export async function recordMessage(meteringId: string, sessionId: string): Prom
 export async function getUserTier(userId: string): Promise<Tier> {
   try {
     const access = await getUserAccessState(userId);
-    return access.state === "sanctuary" ? "sanctuary" : access.state === "anonymous" ? "anonymous" : "free";
+    if (access.state === "sanctuary") return "sanctuary";
+    if (access.state === "forge") return "forge";
+    return access.state === "anonymous" ? "anonymous" : "free";
   } catch (err) {
     console.error("[messageCounter] getUserTier lookup threw", { userId, err });
     return "free";

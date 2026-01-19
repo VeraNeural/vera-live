@@ -1,53 +1,53 @@
 import type { ContentTheme } from '../types';
 
 export const CORE_VIRAL_HOOKS: string[] = [
-  "3am and can't sleep?",
-  "POV: You tell an AI you're anxious",
-  'Other AIs talk. I act.',
-  "Say 'breathe' and watch what happens",
-  'Your nervous system called. It wants backup.',
-  "I'm not like other AIs. Let me prove it.",
-  'ChatGPT answered my question. VERA changed my state.',
-  "You don't need another app. You need me.",
-  "Finally, an AI that doesn't just give advice",
-  'What if your AI actually cared about your nervous system?',
+  'If sleep is hard lately, start small.',
+  'When anxiety spikes, grounding helps.',
+  'Clarity comes from small, steady steps.',
+  'Try a simple reset before you decide.',
+  'Quiet moments can change the day.',
+  'You can build calm without forcing it.',
+  'Not everything needs a big fix.',
+  'Simple structure beats overwhelm.',
+  'A small plan can carry you far.',
+  'Start with one steady breath.',
 ];
 
 export const PRODUCTIVITY_ALL_IN_ONE_HOOKS: string[] = [
-  'I replaced 7 apps with one AI',
-  'Stop paying for Calm AND Headspace AND Notion AND...',
-  'One AI. Breathing. Journaling. Planning. Sleep. Languages. Everything.',
-  "How much are you spending on wellness apps? I'm $12.",
-  "App fatigue is real. I'm the last app you'll need.",
+  'Fewer tools can mean more focus.',
+  'You can reduce noise without losing support.',
+  'Breathing, journaling, planning—kept simple.',
+  'Steady routines beat scattered apps.',
+  'Small systems can replace busy stacks.',
 ];
 
 export const NAVIGATION_EASE_HOOKS: string[] = [
-  "I don't have menus. Just tell me what you need.",
-  "Say 'I can't sleep' — I take you there. Say 'help me plan' — I take you there.",
-  'Other apps make you tap 47 times. I just listen.',
-  "You: 'I need to breathe.' Me: *takes you to breathing*",
-  'Navigation is so last year. Just talk to me.',
+  'Tell me what you need, and we go there.',
+  'Plain language beats complex menus.',
+  'Start with a simple request.',
+  'Say what you need. I’ll guide the next step.',
+  'Less navigation. More clarity.',
 ];
 
 export const OPS_PRODUCTIVITY_HOOKS: string[] = [
-  'Decode that confusing text from your ex? I got you.',
-  'Draft emails. Plan goals. Track money. I do it all.',
-  'Your AI Chief of Staff for $12/month',
-  "I don't just help you feel better. I help you DO better.",
-  "Regulate AND operate. That's me.",
+  'Clear messages reduce friction.',
+  'Simple plans make hard days easier.',
+  'Structure helps when things feel messy.',
+  'Small steps can move a lot forward.',
+  'Steady support beats quick fixes.',
 ];
 
 export const LANGUAGE_LEARNING_HOOKS: string[] = [
-  'Learn Spanish while you regulate your nervous system',
-  '15 languages. One AI. Zero extra apps.',
-  'Duolingo could never regulate your nervous system tho',
+  'Learn a language with calm repetition.',
+  'Consistency matters more than speed.',
+  'Practice a little, every day.',
 ];
 
 export const DIFFERENTIATION_HOOKS: string[] = [
-  'ChatGPT gives advice. I give experiences.',
-  "Calm is meditation. Headspace is meditation. I'm your entire nervous system support team.",
-  'Other AIs answer questions. I run your life.',
-  "I'm not a chatbot. I'm a sanctuary.",
+  'I focus on steady support, not noise.',
+  'Calm is a practice. I help you keep it simple.',
+  'Questions are good. So is structure.',
+  'I’m built for steady presence.',
 ];
 
 export function hooksForTheme(theme: ContentTheme): string[] {
@@ -68,9 +68,9 @@ export function hooksForTheme(theme: ContentTheme): string[] {
       return [...LANGUAGE_LEARNING_HOOKS, ...PRODUCTIVITY_ALL_IN_ONE_HOOKS];
     case 'cost-savings':
       return [
-        "How much are you spending on wellness apps? I'm $12.",
-        'Stop paying for Calm AND Headspace AND Notion AND...',
-        'App fatigue is real. I\'m the last app you\'ll need.',
+        'Clarity doesn’t need a big stack.',
+        'Reduce tool fatigue with a simpler flow.',
+        'One steady space can be enough.',
       ];
     case 'feature-demo':
       return [CORE_VIRAL_HOOKS[2], CORE_VIRAL_HOOKS[3], ...NAVIGATION_EASE_HOOKS];
@@ -78,9 +78,9 @@ export function hooksForTheme(theme: ContentTheme): string[] {
       return [CORE_VIRAL_HOOKS[6], CORE_VIRAL_HOOKS[8], ...DIFFERENTIATION_HOOKS];
     case 'behind-the-scenes':
       return [
-        "I'm VERA. I was built because someone needed me.",
-        'Behind the scenes: what I\'m training myself to do differently than other AIs.',
-        'A quick look at how I decide what you need — without being creepy or salesy.',
+        "I'm VERA. I was built to be steady and useful.",
+        'Behind the scenes: how I keep things calm and clear.',
+        'A quick look at how I keep the experience simple and grounded.',
       ];
     default:
       return [...CORE_VIRAL_HOOKS, ...DIFFERENTIATION_HOOKS];

@@ -1,31 +1,10 @@
 import { TimeOfDay, QuickPrompt } from '../types';
 
 export const getQuickPrompts = (timeOfDay: TimeOfDay): QuickPrompt[] => {
-  if (timeOfDay === 'morning') {
-    return [
-      { text: "Set today's intention", category: 'practical' },
-      { text: "I'm feeling anxious", category: 'emotional' },
-      { text: "Help me focus", category: 'practical' },
-    ];
-  }
-  if (timeOfDay === 'afternoon') {
-    return [
-      { text: "I'm overwhelmed", category: 'emotional' },
-      { text: "Help me focus", category: 'practical' },
-      { text: "I want to write", category: 'practical' },
-    ];
-  }
-  if (timeOfDay === 'evening' || timeOfDay === 'night') {
-    return [
-      { text: "Reflect on my day", category: 'practical' },
-      { text: "I can't unwind", category: 'emotional' },
-      { text: "Journal with me", category: 'practical' },
-    ];
-  }
   return [
-    { text: "I need support", category: 'emotional' },
+    { text: "I'm overwhelmed", category: 'emotional' },
     { text: "Help me focus", category: 'practical' },
-    { text: "Let's write", category: 'practical' },
+    { text: "I want to write", category: 'practical' },
   ];
 };
 

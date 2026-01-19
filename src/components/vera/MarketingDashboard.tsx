@@ -4,9 +4,21 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { ContentTheme, Platform, Post, PostStatus, Performance } from '@/lib/vera/marketing/types';
 
-type Tab = 'generate' | 'ready' | 'posted' | 'analytics';
+type Tab = 'generate' | 'ready' | 'posted' | 'plans' | 'analytics';
 
-const PLATFORMS: Platform[] = ['instagram', 'twitter', 'tiktok', 'linkedin'];
+type PlanStatus = 'scheduled' | 'drafting' | 'drafted' | 'ready' | 'posted' | 'failed';
+
+type Plan = {
+  id: string;
+  platform: Platform;
+  theme: ContentTheme;
+  scheduleAt: Date;
+  status: PlanStatus;
+  campaignId?: string | null;
+  draftedPostId?: string | null;
+};
+
+const PLATFORMS: Platform[] = ['tiktok', 'youtube', 'instagram', 'facebook', 'twitter', 'linkedin'];
 const THEMES: ContentTheme[] = [
   'sleep',
   'anxiety',
@@ -33,6 +45,8 @@ function platformIcon(p: Platform): string {
   if (p === 'instagram') return '◎';
   if (p === 'twitter') return '𝕏';
   if (p === 'tiktok') return '♪';
+  if (p === 'youtube') return '▶';
+  if (p === 'facebook') return 'f';
   return '▣';
 }
 
@@ -73,6 +87,18 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const data = (await res.json().catch(() => ({}))) as any;
   if (!res.ok) throw new Error(data?.error || `Request failed (${res.status})`);
   return data as T;
+}
+
+function normalizePlan(raw: any): Plan {
+  return {
+    id: String(raw.id || ''),
+    platform: raw.platform as Platform,
+    theme: raw.theme as ContentTheme,
+    scheduleAt: new Date(String(raw.schedule_at || new Date().toISOString())),
+    status: (raw.status || 'scheduled') as PlanStatus,
+    campaignId: raw.campaign_id ?? null,
+    draftedPostId: raw.drafted_post_id ?? null,
+  };
 }
 
 // Styled Components
@@ -275,6 +301,29 @@ const styles = {
     fontSize: '12px',
     fontWeight: 500,
   } as CSSProperties,
+
+  statusBadge: (status: PlanStatus): CSSProperties => {
+    const palette: Record<PlanStatus, { bg: string; color: string; border: string }> = {
+      scheduled: { bg: 'rgba(59,130,246,0.12)', color: 'rgba(147,197,253,0.95)', border: 'rgba(59,130,246,0.25)' },
+      drafting: { bg: 'rgba(251,191,36,0.12)', color: 'rgba(252,211,77,0.95)', border: 'rgba(251,191,36,0.25)' },
+      drafted: { bg: 'rgba(34,197,94,0.12)', color: 'rgba(134,239,172,0.95)', border: 'rgba(34,197,94,0.25)' },
+      ready: { bg: 'rgba(99,102,241,0.12)', color: 'rgba(165,180,252,0.95)', border: 'rgba(99,102,241,0.25)' },
+      posted: { bg: 'rgba(16,185,129,0.12)', color: 'rgba(110,231,183,0.95)', border: 'rgba(16,185,129,0.25)' },
+      failed: { bg: 'rgba(239,68,68,0.12)', color: 'rgba(252,165,165,0.95)', border: 'rgba(239,68,68,0.25)' },
+    };
+    const token = palette[status] || palette.scheduled;
+    return {
+      padding: '4px 10px',
+      borderRadius: '999px',
+      border: `1px solid ${token.border}`,
+      background: token.bg,
+      color: token.color,
+      fontSize: '11px',
+      fontWeight: 600,
+      textTransform: 'uppercase' as const,
+      letterSpacing: '0.04em',
+    };
+  },
   
   postContent: {
     fontSize: '14px',
@@ -379,6 +428,7 @@ const styles = {
 export default function MarketingDashboard() {
   const [tab, setTab] = useState<Tab>('generate');
   const [posts, setPosts] = useState<Post[]>([]);
+  const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -390,13 +440,19 @@ export default function MarketingDashboard() {
   const [editCaption, setEditCaption] = useState('');
   const [editImagePrompt, setEditImagePrompt] = useState('');
 
+  const [planPreview, setPlanPreview] = useState<Plan | null>(null);
+
   const [selectedIds, setSelectedIds] = useState<Record<string, boolean>>({});
   const draggingIdRef = useRef<string | null>(null);
 
   const refresh = useCallback(async () => {
     setError(null);
-    const data = await api<{ posts: Post[] }>('/api/vera/marketing/posts');
-    setPosts(data.posts);
+    const [postsData, plansData] = await Promise.all([
+      api<{ posts: Post[] }>('/api/vera/marketing/posts'),
+      api<{ plans: any[] }>('/api/vera/marketing/plans'),
+    ]);
+    setPosts(postsData.posts);
+    setPlans((plansData.plans || []).map(normalizePlan));
   }, []);
 
   useEffect(() => {
@@ -561,6 +617,45 @@ export default function MarketingDashboard() {
     [refresh]
   );
 
+  const reschedulePlan = useCallback(
+    async (id: string, scheduleAt: Date) => {
+      setLoading(true);
+      setError(null);
+      try {
+        await api('/api/vera/marketing/plans', {
+          method: 'PATCH',
+          body: JSON.stringify({ id, scheduleAt: scheduleAt.toISOString() }),
+        });
+        await refresh();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Plan reschedule failed');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [refresh]
+  );
+
+  const cancelPlan = useCallback(
+    async (id: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        await api(`/api/vera/marketing/plans?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+        await refresh();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Plan cancel failed');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [refresh]
+  );
+
+  const openPlan = useCallback((plan: Plan) => {
+    setPlanPreview(plan);
+  }, []);
+
   const reorderReady = useCallback(
     async (draggedId: string, targetId: string) => {
       const list = readyQueue.filter((p) => p.status === 'ready');
@@ -632,7 +727,7 @@ export default function MarketingDashboard() {
   }, [refresh, selectedInReady]);
 
   const analytics = useMemo(() => {
-    const byPlatform: Record<Platform, number> = { instagram: 0, twitter: 0, tiktok: 0, linkedin: 0 };
+    const byPlatform: Record<Platform, number> = { instagram: 0, twitter: 0, tiktok: 0, linkedin: 0, youtube: 0, facebook: 0 };
     for (const p of posts) byPlatform[p.platform] += 1;
 
     const engagementByDay = new Map<string, number>();
@@ -703,7 +798,7 @@ export default function MarketingDashboard() {
 
       {/* Tabs */}
       <div style={styles.tabsContainer}>
-        {(['generate', 'ready', 'posted', 'analytics'] as Tab[]).map((t) => (
+        {(['generate', 'ready', 'posted', 'plans', 'analytics'] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -712,6 +807,7 @@ export default function MarketingDashboard() {
             {t === 'generate' && '✦ Generate'}
             {t === 'ready' && '◎ Ready'}
             {t === 'posted' && '✓ Posted'}
+            {t === 'plans' && '⏱ Plans'}
             {t === 'analytics' && '◈ Analytics'}
           </button>
         ))}
@@ -982,6 +1078,88 @@ export default function MarketingDashboard() {
         </div>
       )}
 
+      {/* Plans Tab */}
+      {tab === 'plans' && (
+        <div style={styles.card}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div style={styles.cardTitle}>Posting Plans</div>
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
+              scheduled → claimed → drafted
+            </div>
+          </div>
+
+          {plans.length === 0 ? (
+            <div style={styles.emptyState}>No scheduled plans yet.</div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th style={{ ...styles.tableHeader, width: '130px' }}>Status</th>
+                    <th style={{ ...styles.tableHeader, width: '140px' }}>Platform</th>
+                    <th style={{ ...styles.tableHeader, width: '160px' }}>Theme</th>
+                    <th style={{ ...styles.tableHeader, width: '200px' }}>Schedule</th>
+                    <th style={styles.tableHeader}>Draft Preview</th>
+                    <th style={{ ...styles.tableHeader, width: '200px' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {plans.map((plan) => {
+                    const drafted = plan.draftedPostId
+                      ? posts.find((p) => p.id === plan.draftedPostId)
+                      : null;
+                    const statusLabel = plan.status === 'drafting' ? 'CLAIMED' : plan.status.toUpperCase();
+                    return (
+                      <tr key={plan.id}>
+                        <td style={styles.tableCell}>
+                          <span style={styles.statusBadge(plan.status)}>{statusLabel}</span>
+                        </td>
+                        <td style={styles.tableCell}>
+                          <span style={styles.platformBadge}>{platformIcon(plan.platform)} {prettyPlatform(plan.platform)}</span>
+                        </td>
+                        <td style={styles.tableCell}>
+                          <span style={styles.themeBadge}>{prettyTheme(plan.theme)}</span>
+                        </td>
+                        <td style={styles.tableCell}>
+                          {plan.status === 'scheduled' ? (
+                            <input
+                              type="datetime-local"
+                              defaultValue={fmtDateTimeLocal(plan.scheduleAt)}
+                              onBlur={(e) => {
+                                const d = parseDateTimeLocal(e.target.value);
+                                if (d) reschedulePlan(plan.id, d).catch(() => null);
+                              }}
+                              style={{ ...styles.input, padding: '8px 10px', fontSize: '12px' }}
+                            />
+                          ) : (
+                            <span style={styles.dateText}>{plan.scheduleAt.toLocaleString()}</span>
+                          )}
+                        </td>
+                        <td style={{ ...styles.tableCell, maxWidth: '320px' }}>
+                          {drafted ? (
+                            <span style={{ ...styles.postContent, fontSize: '13px' }}>{truncate(drafted.caption, 100)}</span>
+                          ) : (
+                            <span style={styles.dateText}>No draft yet</span>
+                          )}
+                        </td>
+                        <td style={styles.tableCell}>
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                            <button onClick={() => openPlan(plan)} style={styles.actionBtn()}>View</button>
+                            {plan.status === 'scheduled' && (
+                              <button onClick={() => cancelPlan(plan.id)} style={styles.actionBtn('danger')}>Cancel</button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Analytics Tab */}
       {tab === 'analytics' && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
@@ -1072,6 +1250,59 @@ export default function MarketingDashboard() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Plan Preview Modal */}
+      {planPreview && (
+        <div onClick={() => setPlanPreview(null)} style={styles.modal} role="dialog" aria-modal="true">
+          <div onClick={(e) => e.stopPropagation()} style={styles.modalContent}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'rgba(255,255,255,0.9)' }}>Plan Details</h2>
+              <button onClick={() => setPlanPreview(null)} style={styles.actionBtn()}>✕ Close</button>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+              <span style={styles.statusBadge(planPreview.status)}>
+                {planPreview.status === 'drafting'
+                  ? 'CLAIMED'
+                  : planPreview.status.toUpperCase()}
+              </span>
+              <span style={styles.platformBadge}>{platformIcon(planPreview.platform)} {prettyPlatform(planPreview.platform)}</span>
+              <span style={styles.themeBadge}>{prettyTheme(planPreview.theme)}</span>
+            </div>
+
+            <div style={{ marginBottom: '12px', fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>
+              Schedule: {planPreview.scheduleAt.toLocaleString()}
+            </div>
+
+            {planPreview.campaignId && (
+              <div style={{ marginBottom: '12px', fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>
+                Campaign: {planPreview.campaignId}
+              </div>
+            )}
+
+            {(() => {
+              const drafted = planPreview.draftedPostId
+                ? posts.find((p) => p.id === planPreview.draftedPostId)
+                : null;
+              if (!drafted) {
+                return <div style={styles.emptyState}>No draft linked to this plan yet.</div>;
+              }
+              return (
+                <div>
+                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Draft Preview
+                  </div>
+                  <div style={styles.postContent}>{drafted.caption}</div>
+                  <div style={styles.postActions}>
+                    <button onClick={() => copyToClipboard(drafted.caption)} style={styles.actionBtn()}>Copy</button>
+                    <button onClick={() => openEdit(drafted)} style={styles.actionBtn()}>Edit Draft</button>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}

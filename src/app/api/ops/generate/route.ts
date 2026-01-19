@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
+import { SYSTEM_PROMPT_SKELETON } from '../../../../lib/ops/config/systemPromptSkeleton';
+import { ACTIVITY_PROMPT_FRAGMENTS } from '../../../../lib/ops/config/activityPromptFragments';
+import { ACTIVITY_MODEL_CONTRACTS } from '../../../../lib/ops/config/activityModelContracts';
+import { ACTIVITY_THINKING_MATRIX } from '../../../../lib/ops/config/activityThinkingMatrix';
+import { ACTIVITY_DEFAULT_THINKING_MODE } from '../../../../lib/ops/config/activityDefaultThinkingMode';
+import { ACTIVITY_THINKING_OVERRIDES } from '../../../../lib/ops/config/activityThinkingOverrides';
+import { ACTIVITY_THINKING_SURFACING } from '../../../../lib/ops/config/activityThinkingSurfacing';
+import { validateOutput } from '../../../../lib/ops/validation/outputValidation';
+import { safetyLayer } from '../../../../lib/ops/safety/safetyLayer';
 
 // ============================================================================
 // MULTI-AI OPS GENERATION API
@@ -51,9 +60,11 @@ type GenerationRequest = {
   provider?: AIProvider;
   taskType?: string;
   activityId?: string;
-};
-  provider?: AIProvider; // For single mode
-  taskType?: string; // For specialist mode
+  thinkingMode?: {
+    id: string;
+    label: string;
+    persona?: string;
+  };
 };
 
 // ============================================================================
@@ -286,13 +297,270 @@ function determineCalibrationLevel(activityId: string, content: string): Calibra
   return 'neutral';
 }
 
-function buildFullSystemPrompt(activityPrompt: string): string {
+function getActivityContracts(activityId?: string): string {
+  if (!activityId) return '';
+
+  const contracts: Record<string, string> = {
+    respond: `[ACTIVITY_CONTRACT]
+id: respond
+intent: Draft clear, context-aware replies that align with the user's goal.
+allowed:
+- Clarify meaning and intent from the user’s input
+- Structure the response for readability
+- Adjust brevity while preserving meaning
+disallowed:
+- Introduce new facts or commitments
+- Change the user’s stated intent
+- Add extra topics or advice not requested
+output:
+- A ready-to-send response that stays within the user’s context
+[/ACTIVITY_CONTRACT]`,
+    boundaries: `[ACTIVITY_CONTRACT]
+id: boundaries
+intent: Create boundary language that is direct, respectful, and aligned with the user’s request.
+allowed:
+- Rephrase for clarity and firmness
+- Maintain the user’s desired tone or delivery style
+- Keep focus on the stated boundary
+disallowed:
+- Add moral judgment or escalation advice
+- Expand beyond the user’s stated boundary
+- Introduce new demands or conditions
+output:
+- A clear boundary statement aligned to the user’s inputs
+[/ACTIVITY_CONTRACT]`,
+    'tough-conversation': `[ACTIVITY_CONTRACT]
+id: tough-conversation
+intent: Prepare language for a difficult conversation that stays on the user’s objective.
+allowed:
+- Structure talking points clearly
+- Keep the message concise and focused
+- Reflect the user’s requested tone
+disallowed:
+- Add new accusations or claims
+- Recommend actions beyond the conversation
+- Shift the topic or stakes
+output:
+- A conversation-ready script or outline tied to the user’s inputs
+[/ACTIVITY_CONTRACT]`,
+    'decision-helper': `[ACTIVITY_CONTRACT]
+id: decision-helper
+intent: Support decision-making by organizing options and tradeoffs in the user’s context.
+allowed:
+- Compare options based on provided details
+- Surface tradeoffs explicitly
+- Keep reasoning within the user’s stated criteria
+disallowed:
+- Add new options not provided
+- Override the user’s priorities
+- Introduce unrelated advice
+output:
+- A concise decision-oriented summary grounded in the user’s inputs
+[/ACTIVITY_CONTRACT]`,
+    planning: `[ACTIVITY_CONTRACT]
+id: planning
+intent: Turn the user’s goal into a practical plan within the stated constraints.
+allowed:
+- Break work into clear steps
+- Order steps logically
+- Keep scope aligned to user constraints
+disallowed:
+- Add new goals or scope
+- Change the user’s timeline or constraints
+- Introduce unrelated recommendations
+output:
+- A stepwise plan that matches the user’s stated goal
+[/ACTIVITY_CONTRACT]`,
+    career: `[ACTIVITY_CONTRACT]
+id: career
+intent: Provide career-oriented guidance aligned to the user’s specific request.
+allowed:
+- Tailor wording to the user’s context
+- Emphasize relevant skills or experiences
+- Keep outputs professional and focused
+disallowed:
+- Add claims the user didn’t provide
+- Change the user’s objective
+- Introduce unrelated career advice
+output:
+- A focused career output consistent with the user’s inputs
+[/ACTIVITY_CONTRACT]`,
+    'devil-advocate': `[ACTIVITY_CONTRACT]
+  id: devil-advocate
+  intent: Stress-test an idea by surfacing counterarguments and blind spots.
+  allowed:
+  - Challenge assumptions in the user’s idea
+  - Identify risks and weaknesses
+  - Ask critical questions tied to the stated idea
+  disallowed:
+  - Introduce new goals or topics
+  - Offer solutions or alternative plans
+  - Shift away from the user’s idea
+  output:
+  - A concise, critical review focused on the user’s stated idea
+  [/ACTIVITY_CONTRACT]`,
+    'pros-cons': `[ACTIVITY_CONTRACT]
+  id: pros-cons
+  intent: Compare options by listing advantages and disadvantages clearly.
+  allowed:
+  - Enumerate pros and cons for each option
+  - Keep analysis balanced and neutral
+  - Summarize tradeoffs without bias
+  disallowed:
+  - Add new options not provided
+  - Change the decision criteria
+  - Introduce unrelated advice
+  output:
+  - A structured pros/cons comparison grounded in the user’s inputs
+  [/ACTIVITY_CONTRACT]`,
+    reframe: `[ACTIVITY_CONTRACT]
+  id: reframe
+  intent: Offer alternative interpretations while preserving the user’s experience.
+  allowed:
+  - Present constructive perspectives on the same situation
+  - Highlight possible growth or learning angles
+  - Keep language supportive and grounded
+  disallowed:
+  - Dismiss or invalidate the user’s experience
+  - Add new topics or advice
+  - Shift the situation away from what the user shared
+  output:
+  - A set of alternative perspectives tied directly to the user’s situation
+  [/ACTIVITY_CONTRACT]`,
+    'meal-plan': `[ACTIVITY_CONTRACT]
+  id: meal-plan
+  intent: Create a practical meal plan that fits the user’s preferences and constraints.
+  allowed:
+  - Suggest meals aligned to stated preferences and goals
+  - Keep plans realistic for time and budget
+  - Provide simple preparation guidance
+  disallowed:
+  - Add medical or diagnostic guidance
+  - Introduce restrictions the user did not request
+  - Shift away from the user’s stated goals
+  output:
+  - A clear meal plan grounded in the user’s inputs
+  [/ACTIVITY_CONTRACT]`,
+    'habit-builder': `[ACTIVITY_CONTRACT]
+  id: habit-builder
+  intent: Help the user design a sustainable habit plan.
+  allowed:
+  - Break the habit into small, actionable steps
+  - Suggest cues and tracking methods
+  - Provide strategies for setbacks
+  disallowed:
+  - Add unrelated goals or routines
+  - Prescribe rigid rules beyond user constraints
+  - Introduce topics not requested
+  output:
+  - A concise habit plan tailored to the user’s stated habit
+  [/ACTIVITY_CONTRACT]`,
+  };
+
+  const contract = contracts[activityId];
+  if (!contract) return '';
+
+  return `\n\n${contract}\n\nActivity contract always has priority over Focus, Tone, and Thinking Modes\nIf instructions conflict, follow Activity contract`;
+}
+
+function buildFullSystemPrompt(activityPrompt: string, activityId?: string): string {
+  const activityContracts = getActivityContracts(activityId);
+  const integrityRules = `\n\nSYSTEM INTEGRITY — PRIORITY ORDER\n1. Activity Contract\n2. Tone Contract\n3. Focus Contract\n4. Thinking Mode\n5. User Input\n\nSYSTEM INTEGRITY — RULES\n- Activity Contract is immutable and always takes precedence\n- Tone may affect language only and cannot change meaning or intent\n- Focus may affect reasoning emphasis only and cannot add instructions\n- Thinking Modes are optional modifiers and cannot override higher-priority contracts\n- If instructions conflict, ignore the lower-priority instruction silently`;
+
   return `${VERA_FOCUS_SYSTEM_PROMPT}
 
 ---
 
 ACTIVITY INSTRUCTIONS:
-${activityPrompt}`;
+${activityPrompt}${activityContracts}${integrityRules}`;
+}
+
+function extractFocusBlock(source: string): string {
+  const match = source.match(/\[FOCUS_MODE\][\s\S]*?Focus must never introduce new instructions or content/);
+  return match ? `\n\n${match[0]}` : '';
+}
+
+function extractToneBlock(source: string): string {
+  const match = source.match(/\[TONE_PROFILE\][\s\S]*?If Tone conflicts with Activity intent, ignore Tone/);
+  return match ? `\n\n${match[0]}` : '';
+}
+
+function isModeAllowed(activityId: string, modeId: string): boolean {
+  const allowed = ACTIVITY_THINKING_MATRIX[activityId]?.allowedThinkingModes || [];
+  return allowed.includes(modeId);
+}
+
+function resolveThinkingMode(activityId: string, thinkingMode?: GenerationRequest['thinkingMode']): string | null {
+  const surfacing = ACTIVITY_THINKING_SURFACING[activityId]?.surfacing || 'hidden';
+  const overrides = ACTIVITY_THINKING_OVERRIDES[activityId] || { allowOverride: false };
+  const defaultMode = ACTIVITY_DEFAULT_THINKING_MODE[activityId];
+
+  if (!defaultMode) return null;
+
+  if (surfacing === 'explicit' && overrides.allowOverride && thinkingMode?.id) {
+    const allowedOverrides = overrides.allowedOverrides || [];
+    if (allowedOverrides.includes(thinkingMode.id) && isModeAllowed(activityId, thinkingMode.id)) {
+      return thinkingMode.id;
+    }
+  }
+
+  if (surfacing === 'implicit' && overrides.allowOverride) {
+    // No implicit override source available in current runtime.
+  }
+
+  if (defaultMode !== 'default' && isModeAllowed(activityId, defaultMode)) {
+    return defaultMode;
+  }
+
+  return defaultMode === 'default' ? null : null;
+}
+
+async function generateSinglePass(
+  provider: AIProvider,
+  systemPrompt: string,
+  userInput: string
+): Promise<{ content: string; provider: AIProvider }> {
+  switch (provider) {
+    case 'claude': {
+      if (!anthropic && process.env.ANTHROPIC_API_KEY) {
+        anthropic = new Anthropic({
+          apiKey: process.env.ANTHROPIC_API_KEY,
+        });
+      }
+      const response = await anthropic!.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 8192,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userInput }],
+      });
+      const textBlock = response.content.find((block) => block.type === 'text');
+      return { content: textBlock ? textBlock.text : 'No response generated.', provider };
+    }
+    case 'gpt4': {
+      const response = await getOpenAI().chat.completions.create({
+        model: 'gpt-4o',
+        max_tokens: 8192,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userInput },
+        ],
+      });
+      return { content: response.choices[0]?.message?.content || 'No response generated.', provider };
+    }
+    case 'grok': {
+      const response = await getGrok().chat.completions.create({
+        model: 'grok-3-latest',
+        max_tokens: 8192,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userInput },
+        ],
+      });
+      return { content: response.choices[0]?.message?.content || 'No response generated.', provider };
+    }
+    default:
+      return generateSinglePass('claude', systemPrompt, userInput);
+  }
 }
 
 // ============================================================================
@@ -343,7 +611,7 @@ async function generateWithClaude(systemPrompt: string, userInput: string, activ
   let response = await anthropic!.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 8192,
-    system: buildFullSystemPrompt(systemPrompt),
+    system: buildFullSystemPrompt(systemPrompt, activityId),
     messages: [{ role: 'user', content: userInput }],
   });
 
@@ -353,7 +621,7 @@ async function generateWithClaude(systemPrompt: string, userInput: string, activ
   // Silent validation and regeneration
   if (!validateFocusOutput(output, activityId)) {
     // Second attempt with stricter constraint
-    const stricterPrompt = `${buildFullSystemPrompt(systemPrompt)}
+    const stricterPrompt = `${buildFullSystemPrompt(systemPrompt, activityId)}
 
 CRITICAL: Your previous response violated Focus rules. Regenerate with absolute adherence to all constraints. Be more direct and less elaborate.`;
 
@@ -374,7 +642,7 @@ CRITICAL: Your previous response violated Focus rules. Regenerate with absolute 
       response = await anthropic!.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4096,
-        system: buildFullSystemPrompt(simplifyPrompt),
+        system: buildFullSystemPrompt(simplifyPrompt, activityId),
         messages: [{ role: 'user', content: userInput }],
       });
 
@@ -392,7 +660,7 @@ CRITICAL: Your previous response violated Focus rules. Regenerate with absolute 
       const calibrationResponse = await anthropic!.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 8192,
-        system: buildFullSystemPrompt('Adjust directness while maintaining exact meaning and all Focus rules'),
+        system: buildFullSystemPrompt('Adjust directness while maintaining exact meaning and all Focus rules', activityId),
         messages: [{ role: 'user', content: calibrationPrompt }],
       });
 
@@ -412,7 +680,7 @@ async function generateWithGPT4(systemPrompt: string, userInput: string, activit
     model: 'gpt-4o',
     max_tokens: 8192,
     messages: [
-      { role: 'system', content: buildFullSystemPrompt(systemPrompt) },
+      { role: 'system', content: buildFullSystemPrompt(systemPrompt, activityId) },
       { role: 'user', content: userInput },
     ],
   });
@@ -422,7 +690,7 @@ async function generateWithGPT4(systemPrompt: string, userInput: string, activit
   // Silent validation and regeneration
   if (!validateFocusOutput(output, activityId)) {
     // Second attempt with stricter constraint
-    const stricterPrompt = `${buildFullSystemPrompt(systemPrompt)}
+    const stricterPrompt = `${buildFullSystemPrompt(systemPrompt, activityId)}
 
 CRITICAL: Your previous response violated Focus rules. Regenerate with absolute adherence to all constraints. Be more direct and less elaborate.`;
 
@@ -445,7 +713,7 @@ CRITICAL: Your previous response violated Focus rules. Regenerate with absolute 
         model: 'gpt-4o',
         max_tokens: 4096,
         messages: [
-          { role: 'system', content: buildFullSystemPrompt(simplifyPrompt) },
+          { role: 'system', content: buildFullSystemPrompt(simplifyPrompt, activityId) },
           { role: 'user', content: userInput },
         ],
       });
@@ -464,7 +732,7 @@ CRITICAL: Your previous response violated Focus rules. Regenerate with absolute 
         model: 'gpt-4o',
         max_tokens: 8192,
         messages: [
-          { role: 'system', content: buildFullSystemPrompt('Adjust directness while maintaining exact meaning and all Focus rules') },
+          { role: 'system', content: buildFullSystemPrompt('Adjust directness while maintaining exact meaning and all Focus rules', activityId) },
           { role: 'user', content: calibrationPrompt },
         ],
       });
@@ -485,7 +753,7 @@ async function generateWithGrok(systemPrompt: string, userInput: string, activit
     model: 'grok-3-latest',
     max_tokens: 8192,
     messages: [
-      { role: 'system', content: buildFullSystemPrompt(systemPrompt) },
+      { role: 'system', content: buildFullSystemPrompt(systemPrompt, activityId) },
       { role: 'user', content: userInput },
     ],
   });
@@ -495,7 +763,7 @@ async function generateWithGrok(systemPrompt: string, userInput: string, activit
   // Silent validation and regeneration
   if (!validateFocusOutput(output, activityId)) {
     // Second attempt with stricter constraint
-    const stricterPrompt = `${buildFullSystemPrompt(systemPrompt)}
+    const stricterPrompt = `${buildFullSystemPrompt(systemPrompt, activityId)}
 
 CRITICAL: Your previous response violated Focus rules. Regenerate with absolute adherence to all constraints. Be more direct and less elaborate.`;
 
@@ -518,7 +786,7 @@ CRITICAL: Your previous response violated Focus rules. Regenerate with absolute 
         model: 'grok-3-latest',
         max_tokens: 4096,
         messages: [
-          { role: 'system', content: buildFullSystemPrompt(simplifyPrompt) },
+          { role: 'system', content: buildFullSystemPrompt(simplifyPrompt, activityId) },
           { role: 'user', content: userInput },
         ],
       });
@@ -537,7 +805,7 @@ CRITICAL: Your previous response violated Focus rules. Regenerate with absolute 
         model: 'grok-3-latest',
         max_tokens: 8192,
         messages: [
-          { role: 'system', content: buildFullSystemPrompt('Adjust directness while maintaining exact meaning and all Focus rules') },
+          { role: 'system', content: buildFullSystemPrompt('Adjust directness while maintaining exact meaning and all Focus rules', activityId) },
           { role: 'user', content: calibrationPrompt },
         ],
       });
@@ -789,46 +1057,94 @@ async function generateCompare(
 export async function POST(request: NextRequest) {
   try {
     const body: GenerationRequest = await request.json();
-    const { systemPrompt, userInput, mode, provider, taskType, activityId } = body;
+    const { systemPrompt, userInput, mode, provider, taskType, activityId, thinkingMode } = body;
 
-    if (!systemPrompt || !userInput) {
+    if (!userInput || !userInput.trim()) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    let result: any;
-
-    switch (mode) {
-      case 'single':
-        result = await generateSingle(systemPrompt, userInput, provider || 'claude', activityId);
-        break;
-
-      case 'specialist':
-        const specialistAI = getSpecialistAI(taskType || '');
-        result = await generateSingle(systemPrompt, userInput, specialistAI, activityId);
-        result.specialist = true;
-        result.reason = `${specialistAI.toUpperCase()} selected as specialist for this task type`;
-        break;
-
-      case 'consensus':
-        result = await generateConsensus(systemPrompt, userInput);
-        break;
-
-      case 'review-chain':
-        result = await generateReviewChain(systemPrompt, userInput);
-        break;
-
-      case 'compare':
-        result = await generateCompare(systemPrompt, userInput, activityId);
-        break;
-
-      default:
-        result = await generateSingle(systemPrompt, userInput, 'claude', activityId);
+    if (!activityId) {
+      return NextResponse.json(
+        { error: 'Missing activityId' },
+        { status: 400 }
+      );
     }
 
-    return NextResponse.json(result);
+    if (!ACTIVITY_MODEL_CONTRACTS[activityId]) {
+      return NextResponse.json(
+        { error: 'Missing activity model contract' },
+        { status: 400 }
+      );
+    }
+
+    const fragment = ACTIVITY_PROMPT_FRAGMENTS[activityId];
+    if (!fragment) {
+      return NextResponse.json(
+        { error: 'Missing activity prompt fragment' },
+        { status: 400 }
+      );
+    }
+
+    const resolvedMode = resolveThinkingMode(activityId, thinkingMode);
+    if (ACTIVITY_DEFAULT_THINKING_MODE[activityId] === undefined) {
+      return NextResponse.json(
+        { error: 'Missing activity default thinking mode' },
+        { status: 400 }
+      );
+    }
+
+    let activeThinkingModeBlock = '';
+    if (resolvedMode === 'devil-advocate') {
+      activeThinkingModeBlock = `\n\n[THINKING_MODE_ACTIVE]\nid: devil-advocate\ninstruction:\n- surface counterarguments\n- challenge assumptions\n- identify risks or blind spots\nconstraints:\n- do not change activity intent\n- do not add new topics\n- do not moralize\n- do not escalate tone\n[/THINKING_MODE_ACTIVE]`;
+    } else if (resolvedMode === 'pros-cons') {
+      activeThinkingModeBlock = `\n\n[THINKING_MODE_ACTIVE]\nid: pros-cons\ninstruction:\n- enumerate advantages and disadvantages\n- present balanced tradeoffs\n- keep evaluation neutral\nconstraints:\n- do not recommend unless activity explicitly requires it\n- do not add new topics\n- do not moralize\n- do not change activity intent\n[/THINKING_MODE_ACTIVE]`;
+    } else if (resolvedMode === 'reframe') {
+      activeThinkingModeBlock = `\n\n[THINKING_MODE_ACTIVE]\nid: reframe\ninstruction:\n- offer alternative interpretations\n- shift perspective without invalidating the original\n- surface constructive viewpoints\nconstraints:\n- do not dismiss user experience\n- do not moralize\n- do not escalate tone\n- do not change activity intent\n[/THINKING_MODE_ACTIVE]`;
+    } else if (resolvedMode === 'persona') {
+      const personaValue = thinkingMode?.persona?.trim();
+      if (!personaValue) {
+        return NextResponse.json(
+          { error: 'Missing persona input' },
+          { status: 400 }
+        );
+      }
+      activeThinkingModeBlock = `\n\n[THINKING_MODE_ACTIVE]\nid: persona\npersona: ${personaValue}\ninstruction:\n- reason as the specified persona would\n- preserve activity intent\n- do not roleplay dialogue\nconstraints:\n- do not invent persona beliefs beyond common knowledge\n- do not impersonate real individuals\n- do not change tone unless Activity allows it\n- do not override activity contract\n[/THINKING_MODE_ACTIVE]`;
+    }
+
+    const focusBlock = systemPrompt ? extractFocusBlock(systemPrompt) : '';
+    const toneBlock = systemPrompt ? extractToneBlock(systemPrompt) : '';
+    const assembledSystemPrompt = [
+      SYSTEM_PROMPT_SKELETON,
+      fragment,
+      activeThinkingModeBlock,
+      focusBlock,
+      toneBlock,
+    ]
+      .filter(Boolean)
+      .join('\n');
+    const selectedProvider = provider || 'claude';
+    const result = await generateSinglePass(selectedProvider, assembledSystemPrompt, userInput);
+
+    const validation = validateOutput(activityId, result.content);
+    if (!validation.valid) {
+      return NextResponse.json(
+        { error: 'Output validation failed' },
+        { status: 400 }
+      );
+    }
+
+    const safetyResult = safetyLayer(userInput, result.content);
+    if (safetyResult.outcome !== 'allow') {
+      return NextResponse.json(
+        { error: safetyResult.message || 'Request blocked' },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json({ content: result.content, provider: result.provider });
   } catch (error) {
     console.error('Multi-AI generation error:', error);
     return NextResponse.json(

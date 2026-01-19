@@ -79,7 +79,14 @@ export async function resolveTier(sessionId: string): Promise<ResolvedTier> {
     const access = await getUserAccessState(userId);
     console.log('[TIER DEBUG]', { userId, accessState: access.state });
     // Map anonymous to free for routing purposes
-    entitlementTier = access.state === 'anonymous' ? 'free' : access.state;
+    if (access.state === 'sanctuary') {
+      entitlementTier = 'sanctuary';
+    } else if (access.state === 'forge') {
+      // Forge is routed through Build tier behavior.
+      entitlementTier = 'build';
+    } else {
+      entitlementTier = access.state === 'anonymous' ? 'free' : access.state;
+    }
   } catch (e) {
     console.error('getUserAccessState failed; falling back to free', e);
     entitlementTier = 'free';

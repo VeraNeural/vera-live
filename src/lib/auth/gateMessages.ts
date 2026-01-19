@@ -12,3 +12,17 @@ export const SANCTUARY_PREVIEW = {
   cta_primary: "Enter Sanctuary",
   cta_secondary: "Continue with free",
 } as const;
+
+export const FORGE_PREVIEW = {
+  title: "Forge",
+  description:
+    "A focused builder space for sustained projects, structured iterations, and decision support.",
+  features: [
+    "Project memory + continuity",
+    "Structured plans and iterations",
+    "Build-focused tools and rooms",
+    "Unlimited conversations",
+  ],
+  cta_primary: "Enter Forge",
+  cta_secondary: "Continue with free",
+} as const;
