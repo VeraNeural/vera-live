@@ -173,7 +173,6 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
   const isApplicationKit = action.id === 'career' && activeOptionId === 'application-kit';
   const showCreateTone = action.id === 'create' && (createActivityId === 'write-email' || createActivityId === 'social-post');
   const showCareerTone = action.id === 'career' && (!activeOptionId || activeOptionId === 'cover-letter');
-  const showWorkLifeTone = action.id === 'work-life' && (activeMode === 'decision' || activeMode === 'planning');
   const showMoneyTone = action.id === 'money' && moneyMode === 'money-conversations' && (!activeOptionId || activeOptionId === 'salary-negotiation');
   const showRelationshipsTone = action.id === 'relationships-wellness' && relationshipMode === 'relationship-help';
   const getApplicationKitSections = (text: string) => {
@@ -285,6 +284,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
   const [activeMode, setActiveMode] = useState<
     'task' | 'decision' | 'planning' | 'career' | 'prioritization' | 'time' | 'overwhelm' | 'project'
   >('task');
+  const showWorkLifeTone = action.id === 'work-life' && (activeMode === 'decision' || activeMode === 'planning');
   const [showMoreModes, setShowMoreModes] = useState(false);
   const workLifePrimaryModes = [
     { id: 'task', label: 'Task Breakdown' },

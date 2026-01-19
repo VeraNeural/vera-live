@@ -28,7 +28,8 @@ export async function POST(request: NextRequest) {
     // If email provided, find user by email in Clerk
     if (!finalClerkUserId && email) {
       try {
-        const users = await clerkClient.users.getUserList({
+        const client = await clerkClient();
+        const users = await client.users.getUserList({
           emailAddress: [email],
           limit: 1,
         });
@@ -111,7 +112,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Find user by email in Clerk
-    const users = await clerkClient.users.getUserList({
+    const client = await clerkClient();
+    const users = await client.users.getUserList({
       emailAddress: [email],
       limit: 1,
     });
