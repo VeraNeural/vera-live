@@ -8,8 +8,10 @@ async function grantCEOAccess() {
   try {
     console.log('Finding user in Clerk...');
     
+    const client = await clerkClient();
+
     // Find user by email in Clerk
-    const users = await clerkClient.users.getUserList({
+    const users = await client.users.getUserList({
       emailAddress: [email],
       limit: 1,
     });
