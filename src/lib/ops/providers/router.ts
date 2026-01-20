@@ -2,6 +2,7 @@ import { AIProvider } from '../types';
 import { generateWithClaude } from './claude';
 import { generateWithGPT4 } from './gpt4';
 import { generateWithGrok } from './grok';
+import { generateWithVeraNeural } from './vera-neural';
 
 /**
  * Specialist mapping: which AI is best for each task type
@@ -97,6 +98,7 @@ const SPECIALIST_MAPPING: Record<string, AIProvider> = {
   'weekly-review': 'claude',
   'vision-board': 'grok',
   'accountability': 'claude',
+  'ai-nervous-system': 'vera-neural',
 };
 
 /**
@@ -121,6 +123,8 @@ export async function routeToProvider(
       return generateWithGPT4(systemPrompt, userInput);
     case 'grok':
       return generateWithGrok(systemPrompt, userInput);
+    case 'vera-neural':
+      return generateWithVeraNeural(systemPrompt, userInput);
     default:
       return generateWithClaude(systemPrompt, userInput);
   }
@@ -133,16 +137,18 @@ export async function generateWithAllProviders(
   systemPrompt: string,
   userInput: string
 ): Promise<{ provider: AIProvider; content: string }[]> {
-  const [claudeResponse, gpt4Response, grokResponse] = await Promise.all([
+  const [claudeResponse, gpt4Response, grokResponse, veraNeuralResponse] = await Promise.all([
     generateWithClaude(systemPrompt, userInput),
     generateWithGPT4(systemPrompt, userInput),
     generateWithGrok(systemPrompt, userInput),
+    generateWithVeraNeural(systemPrompt, userInput),
   ]);
 
   return [
     { provider: 'claude', content: claudeResponse },
     { provider: 'gpt4', content: gpt4Response },
     { provider: 'grok', content: grokResponse },
+    { provider: 'vera-neural', content: veraNeuralResponse },
   ];
 }
 
@@ -158,16 +164,18 @@ export async function generateConsensus(
   individualResponses: Record<AIProvider, string>;
 }> {
   // Get responses from all 3 AIs in parallel
-  const [claudeResponse, gpt4Response, grokResponse] = await Promise.all([
+  const [claudeResponse, gpt4Response, grokResponse, veraNeuralResponse] = await Promise.all([
     generateWithClaude(systemPrompt, userInput),
     generateWithGPT4(systemPrompt, userInput),
     generateWithGrok(systemPrompt, userInput),
+    generateWithVeraNeural(systemPrompt, userInput),
   ]);
 
   const individualResponses = {
     claude: claudeResponse,
     gpt4: gpt4Response,
     grok: grokResponse,
+    'vera-neural': veraNeuralResponse,
   };
 
   // Use Claude to synthesize the best response
@@ -192,13 +200,16 @@ ${gpt4Response}
 **Response 3 (Grok):**
 ${grokResponse}
 
+**Response 4 (Vera Neural):**
+${veraNeuralResponse}
+
 Please synthesize the best possible response:`;
 
   const synthesized = await generateWithClaude(synthesisPrompt, synthesisInput);
 
   return {
     content: synthesized,
-    providers: ['claude', 'gpt4', 'grok'],
+    providers: ['claude', 'gpt4', 'grok', 'vera-neural'],
     individualResponses,
   };
 }
