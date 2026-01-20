@@ -22,6 +22,7 @@ import { WorkLifeOrchestrator } from './orchestrators/WorkLifeOrchestrator';
 import { CommunicationOrchestrator } from './orchestrators/CommunicationOrchestrator';
 import { createStyles } from './styles/opsRoom.styles';
 import { GLOBAL_STYLES, GENERATION_MODES, AI_PROVIDERS, SPACES, type Space } from './constants/opsRoom.constants';
+import { type SavedOutput, type FocusMode, type AccessTier } from './types/opsRoom.types';
 import {
   thinkingAction,
   wellnessAction,
@@ -41,17 +42,6 @@ interface OpsRoomProps {
   initialActivity?: string;
   initialOption?: string;
 }
-
-type SavedOutput = {
-  id: string;
-  space: Space;
-  timestamp: string;
-  activityId: string;
-  text: string;
-};
-
-type FocusMode = 'think' | 'decide' | 'do' | 'create' | 'reflect';
-type AccessTier = 'anonymous' | 'free' | 'forge' | 'sanctuary';
 
 export default function OpsRoom({ onBack, initialView, initialCategory, initialActivity, initialOption }: OpsRoomProps) {
   const { isLoaded: clerkLoaded, isSignedIn, user } = useUser();
