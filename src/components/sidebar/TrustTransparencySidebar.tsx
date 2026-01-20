@@ -22,6 +22,7 @@ import {
   DollarSign,
   Heart,
   Wand2,
+  Lock,
 } from 'lucide-react';
 import { opsRoom } from '@/app/sanctuary/ops/consolidatedData';
 
@@ -33,7 +34,7 @@ type TrustTransparencySidebarProps = {
   onLoadConversation?: (conversationId: string) => void;
 };
 
-type AccessTier = 'anonymous' | 'free' | 'sanctuary';
+type AccessTier = 'anonymous' | 'free' | 'forge' | 'sanctuary';
 
 // Map icon strings from data to Lucide components
 const categoryIcons: Record<string, React.ElementType> = {
@@ -143,17 +144,45 @@ export default function TrustTransparencySidebar({
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
+  const [serverTier, setServerTier] = useState<AccessTier | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    let isMounted = true;
+    const fetchTier = async () => {
+      try {
+        const res = await fetch('/api/user/tier');
+        const data = await res.json();
+        const tier = typeof data?.tier === 'string' ? data.tier.toLowerCase() : 'free';
+        if (!isMounted) return;
+        if (tier === 'sanctuary' || tier === 'forge' || tier === 'free' || tier === 'anonymous') {
+          setServerTier(tier as AccessTier);
+        } else {
+          setServerTier('free');
+        }
+      } catch {
+        if (isMounted) setServerTier(null);
+      }
+    };
+    fetchTier();
+    return () => {
+      isMounted = false;
+    };
+  }, [open]);
+
   const accessTier: AccessTier = useMemo(() => {
+    if (serverTier) return serverTier;
     if (!isLoaded || !isSignedIn) return 'anonymous';
     const md = (user?.publicMetadata ?? {}) as Record<string, unknown>;
     const rawTier = md.accessTier as unknown;
     if (typeof rawTier === 'string') {
       const v = rawTier.trim().toLowerCase();
       if (v === 'sanctuary') return 'sanctuary';
+      if (v === 'forge') return 'forge';
       if (v === 'free') return 'free';
     }
     return 'free';
-  }, [isLoaded, isSignedIn, user?.publicMetadata]);
+  }, [serverTier, isLoaded, isSignedIn, user?.publicMetadata]);
 
   // Load conversations from localStorage
   useEffect(() => {
@@ -219,6 +248,9 @@ export default function TrustTransparencySidebar({
     hover: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
     card: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
   };
+
+  const canAccessForge = accessTier === 'forge' || accessTier === 'sanctuary';
+  const forgeLabel = canAccessForge ? 'Forge' : 'Forge — Build with VERA';
   const separatorColor = isDark ? 'rgba(235, 210, 180, 0.12)' : 'rgba(140, 110, 80, 0.12)';
 
   return (
@@ -314,16 +346,24 @@ export default function TrustTransparencySidebar({
                 justifyContent: 'center',
                 gap: '8px',
                 width: '100%',
-                background: colors.accentBg,
-                border: `1.5px solid ${colors.accentBorder}`,
-                color: colors.accent,
-                fontWeight: 600,
+                background: 'transparent',
+                border: '1.5px solid #d4a574',
+                color: '#8b7355',
+                fontWeight: 500,
                 fontSize: 14,
                 padding: '12px 16px',
                 borderRadius: 12,
                 cursor: 'pointer',
                 transition: 'all 200ms ease',
                 marginBottom: '12px',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#faf6f1';
+                e.currentTarget.style.borderColor = '#c9b896';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.borderColor = '#d4a574';
               }}
             >
               <Plus size={18} />
@@ -833,6 +873,36 @@ export default function TrustTransparencySidebar({
           padding: open ? '16px 20px' : '12px 8px',
           borderTop: `1px solid ${colors.border}`,
         }}>
+          {false && open && (
+            <button
+              onClick={() => navigate(canAccessForge ? '/forge/room' : '/forge')}
+              style={{
+                width: '100%',
+                background: colors.card,
+                border: `1px solid ${colors.border}`,
+                color: colors.textMuted,
+                fontWeight: 500,
+                fontSize: 14,
+                padding: '10px 16px',
+                marginBottom: '12px',
+                borderRadius: 10,
+                cursor: 'pointer',
+                opacity: canAccessForge ? 1 : 0.65,
+                transition: 'all 150ms ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 10,
+              }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Target size={16} style={{ opacity: 0.8 }} />
+                {forgeLabel}
+              </span>
+              {!canAccessForge && <Lock size={14} style={{ opacity: 0.7 }} />}
+            </button>
+          )}
+
           {open && accessTier !== 'anonymous' && (
             <button
               onClick={() => clerk.openUserProfile()}

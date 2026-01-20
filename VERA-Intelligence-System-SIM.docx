@@ -1,0 +1,49 @@
+# VERA Intelligence System (SIM)
+
+## System Prompts
+
+### `src/lib/ops/config/systemPromptSkeleton.ts`
+- `SYSTEM_PROMPT_SKELETON`:
+  ```
+  ROLE DECLARATION
+  - Obey the Activity Model Contract (AM-01).
+  1) Apply Activity Model Contract (AM-01).
+  - Activity Model Contract (AM-01) is authoritative for output obligations.
+  - Missing Activity Model Contract (AM-01).
+  ```
+
+## Persona Definitions
+
+### `src/lib/ops/providers/router.ts`
+- Example Persona:
+  - `'persona': 'claude'`
+
+## Activity IDs
+
+### `src/lib/ops/components/DynamicForm.tsx`
+- `createActivityId`: Represents activity creation.
+- `onCreateActivityChange`: Handles activity changes.
+- Activity types include:
+  - `personal`
+  - `work-life`
+  - `money`
+
+## Clarifying Question System
+- Found in `src/lib/ops/components/DynamicForm.tsx`.
+- Uses `onSelectDropdownOption` to handle clarifying questions.
+
+## "Go Deeper" Pattern
+- Found in `src/lib/ops/components/DynamicForm.tsx`.
+- Uses `allowedThinkingModes` and `personaInput` to refine user input.
+
+## Files in `src/lib/sim`
+- `evaluateSignalIntegrity.ts`: Evaluates signal integrity for the system.
+
+## Prompt-Related Files in `src/lib/ops`
+- `config/systemPromptSkeleton.ts`: Defines the structure for system prompts.
+- `providers/router.ts`: Handles persona-based routing.
+- `components/DynamicForm.tsx`: Manages dynamic forms and activities.
+
+---
+
+This document provides a detailed overview of the VERA Intelligence System (SIM), including system prompts, persona definitions, activity IDs, and unique patterns such as clarifying questions and the "Go Deeper" pattern.

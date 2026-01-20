@@ -6,6 +6,15 @@ export const ACTIVITY_DEFAULT_THINKING_MODE: Record<string, string> = {
   'decode-message': 'default',
   respond: 'reframe',
   boundaries: 'reframe',
+  'worklife-analysis': 'default',
+  'worklife-action': 'default',
+  'worklife-clarify': 'default',
+  'worklife-sorted': 'default',
+  'money-analysis': 'default',
+  'money-action': 'default',
+  'thinking-detect': 'default',
+  'thinking-analysis': 'default',
+  'thinking-action': 'default',
 
   // Work & Life
   'task-breakdown': 'reframe',
@@ -63,4 +72,10 @@ export const ACTIVITY_DEFAULT_THINKING_MODE: Record<string, string> = {
   'metaphor-maker': 'reframe',
   'bio-about': 'default',
   'creative-writing': 'reframe',
+
+  // Relationships & Wellness Orchestrator
+  'wellness-clarify': 'default',
+  'wellness-analysis': 'default',
+  'wellness-action': 'default',
+  'wellness-deeper': 'default',
 };

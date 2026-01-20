@@ -1,0 +1,39 @@
+# VERA Security and Infrastructure
+
+## Authentication System
+- **Supabase Setup**:
+  - Used for user authentication and session management.
+  - Provides secure access to the database and APIs.
+
+## Database Schema
+- **Tables and Columns**:
+  - Details not fully extracted; database schema resides in Supabase.
+
+## Payment Integration
+- **Stripe Setup**:
+  - Handles payment processing.
+  - Integrated via `src/app/api/stripe`.
+
+## Environment Variables
+- **Required Variables**:
+  - `.env.local` contains sensitive keys and configurations.
+  - Example variables:
+    - `NEXT_PUBLIC_SUPABASE_URL`
+    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+    - `STRIPE_SECRET_KEY`
+
+## Security Measures
+- **Data Encryption**:
+  - Sensitive data encrypted at rest and in transit.
+- **Access Control**:
+  - Role-based access control implemented via Supabase.
+
+## Data Privacy Implementation
+- **Compliance**:
+  - Adheres to GDPR and other data privacy regulations.
+- **User Data**:
+  - User data is securely stored and managed.
+
+---
+
+This document provides an overview of the VERA platform's security and infrastructure, including authentication, database schema, payment integration, environment variables, and data privacy measures.

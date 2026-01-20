@@ -7,13 +7,11 @@ export const dynamic = "force-dynamic";
 
 export default async function ForgePage() {
   const { userId } = await auth();
-  if (!userId) {
-    redirect("/login");
-  }
-
-  const access = await getUserAccessState(userId);
-  if (access.state === "forge" || access.state === "sanctuary") {
-    redirect("/forge/room");
+  if (userId) {
+    const access = await getUserAccessState(userId);
+    if (access.state === "forge" || access.state === "sanctuary") {
+      redirect("/forge/room");
+    }
   }
 
   return <ForgeLanding />;

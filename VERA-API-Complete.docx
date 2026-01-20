@@ -1,0 +1,50 @@
+# VERA API Complete
+
+## API Endpoints
+
+### `src/app/api/admin`
+- **Description**: Handles administrative tasks.
+
+### `src/app/api/chat`
+- **Description**: Manages chat-related features.
+
+### `src/app/api/checkout`
+- **Description**: Handles payment checkout processes.
+
+### `src/app/api/debug`
+- **Description**: Provides debugging tools and endpoints.
+
+### `src/app/api/narrate`
+- **Description**: Manages narration-related features.
+
+### `src/app/api/ops`
+- **Description**: Handles operational tasks.
+
+### `src/app/api/sanctuary`
+- **Description**: Manages sanctuary-related features.
+
+### `src/app/api/speak`
+- **Description**: Handles speech-related features.
+
+### `src/app/api/stripe`
+- **Description**: Integrates with Stripe for payment processing.
+
+### `src/app/api/translate`
+- **Description**: Manages translation-related features.
+
+### `src/app/api/user`
+- **Description**: Handles user-related tasks.
+
+### `src/app/api/vera`
+- **Description**: Core VERA API endpoints.
+
+## Request and Response Formats
+- **Request Format**: Varies by endpoint; typically JSON payloads.
+- **Response Format**: Varies by endpoint; typically JSON responses.
+
+## Authentication Requirements
+- Most endpoints require authentication via Supabase.
+
+---
+
+This document provides a detailed overview of all API endpoints in the VERA platform, including their descriptions, request/response formats, and authentication requirements.

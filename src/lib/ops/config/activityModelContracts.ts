@@ -37,6 +37,72 @@ export const ACTIVITY_MODEL_CONTRACTS: Record<string, ActivityModelContract> = {
     disallowedBehaviors: ['Add commitments', 'Introduce new topics', 'Change user intent'],
     completionCriteria: ['Message is complete', 'Tone aligned to input', 'No extra content'],
   },
+  'worklife-analysis': {
+    outputType: 'analysis',
+    outputStructure: 'Structured analysis with headers: What I\'m hearing, Why you might be stuck, What\'s actually true, What might help.',
+    allowedTransformations: ['Clarify', 'Condense', 'Rephrase for warmth'],
+    disallowedBehaviors: ['Add clinical language', 'Lecture', 'Add new topics'],
+    completionCriteria: ['All four headers present', 'Warm tone', 'Human-centered'],
+  },
+  'worklife-action': {
+    outputType: 'plan',
+    outputStructure: 'Single actionable next step with headers: Your one next step, Why this helps, If you need more.',
+    allowedTransformations: ['Clarify', 'Simplify', 'Make more concrete'],
+    disallowedBehaviors: ['Add bullet-point overload', 'Add new goals', 'Overwhelm'],
+    completionCriteria: ['All three headers present', 'One clear action', 'Supportive tone'],
+  },
+  'worklife-clarify': {
+    outputType: 'analysis',
+    outputStructure: 'JSON with question, options array, and insight.',
+    allowedTransformations: ['Clarify', 'Simplify'],
+    disallowedBehaviors: ['Add advice', 'Skip the question'],
+    completionCriteria: ['Valid JSON', 'One question', '2-3 options'],
+  },
+  'worklife-sorted': {
+    outputType: 'analysis',
+    outputStructure: 'Sorted task list with headers: What I see, Not yours to do right now, Quick wins, The real one, Your move.',
+    allowedTransformations: ['Categorize', 'Prioritize', 'Simplify'],
+    disallowedBehaviors: ['Be generic', 'Ignore specific items', 'Add new tasks'],
+    completionCriteria: ['All headers present', 'Specific to user list', 'Clear next action'],
+  },
+  'money-analysis': {
+    outputType: 'analysis',
+    outputStructure: 'CFO-style analysis with headers: Okay here is what I am hearing, The real talk, Where your money is probably sneaking out, The math you are avoiding, Your one move.',
+    allowedTransformations: ['Clarify', 'Personalize', 'Add humor'],
+    disallowedBehaviors: ['Be generic', 'Lecture', 'Be cruel'],
+    completionCriteria: ['All headers present', 'Sharp but warm tone', 'Specific to user situation'],
+  },
+  'money-action': {
+    outputType: 'plan',
+    outputStructure: '7-day money reset plan with headers: Your 7-Day Money Reset, Day 1-2 The Audit, Day 3-4 The Cuts, Day 5-6 The Setup, Day 7 The Rule, The number to know.',
+    allowedTransformations: ['Simplify', 'Make concrete', 'Personalize'],
+    disallowedBehaviors: ['Overwhelm', 'Be generic', 'Add complex financial advice'],
+    completionCriteria: ['All headers present', 'Actionable daily steps', 'One clear number'],
+  },
+
+  // Thinking & Learning
+  'thinking-detect': {
+    outputType: 'analysis',
+    outputStructure: 'JSON with mode (thinking or learning), clarifyQuestion, options array, and insight.',
+    allowedTransformations: ['Clarify'],
+    disallowedBehaviors: ['Make assumptions', 'Skip detection', 'Add advice'],
+    completionCriteria: ['Valid JSON', 'Mode detected', 'Clarifying question present', '2-4 options'],
+  },
+  'thinking-analysis': {
+    outputType: 'analysis',
+    outputStructure: 'Deep analysis based on detected mode. For THINKING: What you are actually trying to decide, The hidden assumptions, Different angles, The real question. For LEARNING: What you are actually trying to learn, Why this matters to you, The learning path, Where to start.',
+    allowedTransformations: ['Clarify', 'Deepen', 'Connect ideas'],
+    disallowedBehaviors: ['Be shallow', 'Add generic advice', 'Skip the real issue'],
+    completionCriteria: ['All headers present', 'Specific to user input', 'Clear and insightful'],
+  },
+  'thinking-action': {
+    outputType: 'plan',
+    outputStructure: 'Actionable next step based on detected mode. For THINKING: Your next move, Why this helps, If you need to go deeper. For LEARNING: Your first step, The 30-day path, Resources to use, How to know it is working.',
+    allowedTransformations: ['Simplify', 'Make concrete', 'Personalize'],
+    disallowedBehaviors: ['Overwhelm', 'Be abstract', 'Skip the action'],
+    completionCriteria: ['All headers present', 'One clear action', 'Tailored to mode'],
+  },
+
   boundaries: {
     outputType: 'script',
     outputStructure: 'Clear boundary statement with supportive wording.',
@@ -382,5 +448,35 @@ export const ACTIVITY_MODEL_CONTRACTS: Record<string, ActivityModelContract> = {
     allowedTransformations: ['Vary concepts', 'Clarify wording', 'Organize list'],
     disallowedBehaviors: ['Change genre', 'Add unrelated topics', 'Overconstrain'],
     completionCriteria: ['Multiple ideas', 'Genre aligned', 'Usable seeds'],
+  },
+
+  // Relationships & Wellness Orchestrator
+  'wellness-clarify': {
+    outputType: 'analysis',
+    outputStructure: 'JSON with mode (relationship or self-care), clarifyQuestion, options array, and insight.',
+    allowedTransformations: ['Clarify'],
+    disallowedBehaviors: ['Skip detection', 'Add advice'],
+    completionCriteria: ['Valid JSON', 'Mode detected', 'Clarifying question present', '2-3 options'],
+  },
+  'wellness-analysis': {
+    outputType: 'analysis',
+    outputStructure: 'Deep analysis based on mode. For RELATIONSHIP: pattern, dynamics, boundaries. For SELF-CARE: motivation, obstacles, self-compassion.',
+    allowedTransformations: ['Clarify', 'Deepen', 'Personalize'],
+    disallowedBehaviors: ['Be clinical', 'Be judgmental', 'Skip the core issue'],
+    completionCriteria: ['All headers present', 'Specific to user input', 'Warm and insightful'],
+  },
+  'wellness-action': {
+    outputType: 'plan',
+    outputStructure: 'One clear, doable next step. Warm, supportive tone.',
+    allowedTransformations: ['Simplify', 'Make concrete', 'Personalize'],
+    disallowedBehaviors: ['Overwhelm', 'Be abstract', 'Skip the action'],
+    completionCriteria: ['One clear step', 'Specific to situation', 'Supportive tone'],
+  },
+  'wellness-deeper': {
+    outputType: 'analysis',
+    outputStructure: 'Deep pattern recognition and real blocks. For RELATIONSHIP: pattern, avoided question, what changes it. For SELF-CARE: real block, smallest step, reassurance.',
+    allowedTransformations: ['Clarify', 'Deepen', 'Personalize'],
+    disallowedBehaviors: ['Be clinical', 'Lecture', 'Skip the real thing'],
+    completionCriteria: ['Pattern identified', 'Real block surfaced', 'Warm and honest'],
   },
 };

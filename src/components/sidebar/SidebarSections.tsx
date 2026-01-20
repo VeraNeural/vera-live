@@ -5,7 +5,7 @@ import { ShieldIcon, ChevronRightIcon, ChevronDownIcon } from './SidebarIcons';
 
 type SidebarSectionsProps = {
   isDark: boolean;
-  accessTier: 'anonymous' | 'free' | 'sanctuary';
+  accessTier: 'anonymous' | 'free' | 'forge' | 'sanctuary';
 };
 
 type Section = {
@@ -60,12 +60,16 @@ export function SidebarSections({ isDark, accessTier }: SidebarSectionsProps) {
         ? 'Anonymous conversations' 
         : accessTier === 'free' 
           ? 'Free account' 
-          : 'Sanctuary',
+          : accessTier === 'forge'
+            ? 'Forge'
+            : 'Sanctuary',
       content: accessTier === 'anonymous'
         ? ["Anonymous conversations are temporary: they are not saved and not tied to you as a person."]
         : accessTier === 'free'
           ? ["With a free account, basic usage is tracked. Conversations are not saved as long term history."]
-          : ["You are in Sanctuary. Conversations can go deeper, memory is available with consent, and usage limits are lifted."],
+          : accessTier === 'forge'
+            ? ["You are in Forge. Structured build workflows are available with deterministic outputs."]
+            : ["You are in Sanctuary. Conversations can go deeper, memory is available with consent, and usage limits are lifted."],
     },
     {
       id: 'build',

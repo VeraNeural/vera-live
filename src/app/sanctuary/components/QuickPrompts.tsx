@@ -21,7 +21,7 @@ export function QuickPrompts({ prompts, onSelect, colors, isDark }: QuickPrompts
       display: 'flex',
       flexWrap: 'wrap',
       justifyContent: 'center',
-      gap: 12,
+      gap: 8,
       maxWidth: '100%',
     }}>
       {prompts.map((prompt, index) => (
@@ -30,34 +30,24 @@ export function QuickPrompts({ prompts, onSelect, colors, isDark }: QuickPrompts
           className="prompt-btn"
           onClick={() => onSelect(prompt.text)}
           style={{
-            padding: '12px 20px',
-            background: isDark ? 'rgba(255, 255, 255, 0.08)' : colors.cardBg,
-            border: isDark ? '1px solid rgba(255, 255, 255, 0.15)' : `1px solid ${colors.cardBorder}`,
-            borderRadius: 50,
-            color: isDark ? 'rgba(255, 255, 255, 0.85)' : colors.text,
-            fontSize: 14,
-            fontWeight: 500,
+            padding: '8px 16px',
+            background: 'transparent',
+            border: isDark ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid #d1d5db',
+            borderRadius: '50px',
+            color: isDark ? 'rgba(255, 255, 255, 0.7)' : '#6b7280',
+            fontSize: 13,
+            fontWeight: 400,
             cursor: 'pointer',
-            backdropFilter: 'blur(10px)',
             whiteSpace: 'nowrap',
-            boxShadow: isDark
-              ? '0 2px 8px rgba(0, 0, 0, 0.2)'
-              : '0 2px 8px rgba(0, 0, 0, 0.06)',
             transition: 'all 0.2s ease',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-2px)';
-            e.currentTarget.style.boxShadow = isDark
-              ? '0 4px 12px rgba(0, 0, 0, 0.3)'
-              : '0 4px 12px rgba(0, 0, 0, 0.1)';
-            e.currentTarget.style.borderColor = colors.accent;
+            e.currentTarget.style.borderColor = isDark ? 'rgba(251, 191, 36, 0.6)' : '#fbbf24';
+            e.currentTarget.style.color = isDark ? 'rgba(251, 191, 36, 0.9)' : '#d97706';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = isDark
-              ? '0 2px 8px rgba(0, 0, 0, 0.2)'
-              : '0 2px 8px rgba(0, 0, 0, 0.06)';
-            e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.15)' : colors.cardBorder;
+            e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.2)' : '#d1d5db';
+            e.currentTarget.style.color = isDark ? 'rgba(255, 255, 255, 0.7)' : '#6b7280';
           }}
         >
           {prompt.text}

@@ -375,7 +375,7 @@ export default function VeraSanctuary() {
       }
 
       if (room === 'back') {
-        router.back();
+        router.push('/sanctuary');
         return;
       }
 

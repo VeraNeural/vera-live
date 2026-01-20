@@ -1,0 +1,31 @@
+# VERA Integrations
+
+## OpenAI Integration
+- **Usage**:
+  - Found in `src/lib/ops/providers/router.ts`.
+  - Used for generating responses and processing user inputs.
+
+## Hume AI Integration
+- **Usage**:
+  - Found in `src/lib/hume/`.
+  - Provides emotional analysis and insights.
+
+## Supabase Integration
+- **Usage**:
+  - Found in `src/lib/supabase/`.
+  - Handles database operations and authentication.
+
+## Stripe Integration
+- **Usage**:
+  - Found in `src/app/api/stripe`.
+  - Manages payment processing.
+
+## Other APIs or Services
+- **Lucide React**:
+  - Provides icons for the UI.
+- **Clerk**:
+  - Manages user sessions and authentication.
+
+---
+
+This document provides an overview of all external integrations in the VERA platform, including OpenAI, Hume AI, Supabase, Stripe, and other services.

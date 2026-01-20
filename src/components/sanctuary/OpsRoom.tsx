@@ -1,6 +1,8 @@
-'use client';
+﻿'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { useUser } from '@clerk/nextjs';
+import { useRouter } from 'next/navigation';
 import { opsRoom, type Category, type Activity, type DropdownOption } from '@/app/sanctuary/ops/consolidatedData';
 import { ActionSelector } from '@/lib/ops/components/ActionSelector';
 import { DynamicForm } from '@/lib/ops/components/DynamicForm';
@@ -11,6 +13,7 @@ import { OpsIcon } from '@/lib/ops/icons';
 import { TIME_COLORS, getTimeOfDay } from '@/lib/ops/theme';
 import { type AIProvider, type GenerationMode, type TimeOfDay, type ThemeMode } from '@/lib/ops/types';
 import { default as LanguageExperience } from '@/lib/ops/experiences/Language';
+import { ACTIVITY_PROMPT_FRAGMENTS } from '@/lib/ops/config/activityPromptFragments';
 
 interface OpsRoomProps {
   onBack: () => void;
@@ -127,8 +130,11 @@ type SavedOutput = {
 };
 
 type FocusMode = 'think' | 'decide' | 'do' | 'create' | 'reflect';
+type AccessTier = 'anonymous' | 'free' | 'forge' | 'sanctuary';
 
 export default function OpsRoom({ onBack, initialView, initialCategory, initialActivity, initialOption }: OpsRoomProps) {
+  const { isLoaded: clerkLoaded, isSignedIn, user } = useUser();
+  const router = useRouter();
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('afternoon');
   const [manualTheme, setManualTheme] = useState<ThemeMode>('auto');
   const [isLoaded, setIsLoaded] = useState(false);
@@ -149,6 +155,7 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
   const [compareOutputs, setCompareOutputs] = useState<{ provider: AIProvider; content: string }[] | null>(null);
   const [usedProvider, setUsedProvider] = useState<AIProvider | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showClosingMessage, setShowClosingMessage] = useState(false);
   const [signalLayer, setSignalLayer] = useState('');
   const [handoffFlags, setHandoffFlags] = useState<string[]>([]);
   const [selectedSpace, setSelectedSpace] = useState<Space>('General');
@@ -158,10 +165,49 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
   const [handoffContext, setHandoffContext] = useState('');
   const [focusMode, setFocusMode] = useState<FocusMode>('think');
   const [respondMode, setRespondMode] = useState<string>('quick');
+  const [respondTone, setRespondTone] = useState<string>('neutral');
   const [boundaryMode, setBoundaryMode] = useState<string>('boundary-script');
   const [boundaryTone, setBoundaryTone] = useState<string>('gentle');
   const [boundaryDelivery, setBoundaryDelivery] = useState<string>('');
-  const [workLifeMode, setWorkLifeMode] = useState<string>('task');
+  const [communicationInput, setCommunicationInput] = useState('');
+  const [communicationBoundaryInput, setCommunicationBoundaryInput] = useState('');
+  const [communicationRespondIntent, setCommunicationRespondIntent] = useState('');
+  const [communicationIncludeBoundary, setCommunicationIncludeBoundary] = useState(false);
+  const [communicationDecodeOutput, setCommunicationDecodeOutput] = useState<string | null>(null);
+  const [communicationBoundaryOutput, setCommunicationBoundaryOutput] = useState<string | null>(null);
+  const [communicationRespondOutput, setCommunicationRespondOutput] = useState<string | null>(null);
+  const [communicationDecodeGenerating, setCommunicationDecodeGenerating] = useState(false);
+  const [communicationBoundaryGenerating, setCommunicationBoundaryGenerating] = useState(false);
+  const [communicationRespondGenerating, setCommunicationRespondGenerating] = useState(false);
+  const [communicationBoundaryNeeded, setCommunicationBoundaryNeeded] = useState(false);
+  const [communicationBoundaryMode, setCommunicationBoundaryMode] = useState(false);
+  const [communicationBoundaryType, setCommunicationBoundaryType] = useState<string>('boundary-script');
+  const [communicationBoundaryTone, setCommunicationBoundaryTone] = useState<string>('gentle');
+  const [showCommunicationAnalysis, setShowCommunicationAnalysis] = useState(false);
+  const [communicationSignalLayer, setCommunicationSignalLayer] = useState('');
+  const [communicationCoreMove, setCommunicationCoreMove] = useState('');
+  const [communicationTimeOrientation, setCommunicationTimeOrientation] = useState('');
+  const [communicationWhatsMissing, setCommunicationWhatsMissing] = useState<string[]>([]);
+  const [communicationCleanContrast, setCommunicationCleanContrast] = useState('');
+  const [showCommunicationWhatsMissing, setShowCommunicationWhatsMissing] = useState(false);
+  const [showCommunicationCleanContrast, setShowCommunicationCleanContrast] = useState(false);
+  // Work & Life unified flow states
+  const [workLifeInput, setWorkLifeInput] = useState('');
+  const [workLifeAnalysisOutput, setWorkLifeAnalysisOutput] = useState<string | null>(null);
+  const [workLifeActionOutput, setWorkLifeActionOutput] = useState<string | null>(null);
+  const [workLifeGenerating, setWorkLifeGenerating] = useState(false);
+  const [showWorkLifeAnalysis, setShowWorkLifeAnalysis] = useState(false);
+  const [workLifeStage, setWorkLifeStage] = useState<'input' | 'clarify' | 'result'>('input');
+  const [workLifeClarifyQuestion, setWorkLifeClarifyQuestion] = useState('');
+  const [workLifeClarifyOptions, setWorkLifeClarifyOptions] = useState<string[]>([]);
+  const [workLifeClarifyInsight, setWorkLifeClarifyInsight] = useState('');
+  const [workLifeUserChoice, setWorkLifeUserChoice] = useState('');
+  const [workLifeCustomAnswer, setWorkLifeCustomAnswer] = useState('');
+  const [workLifeDumpStage, setWorkLifeDumpStage] = useState<'initial' | 'sorted'>('initial');
+  const [workLifeDumpInput, setWorkLifeDumpInput] = useState('');
+  const [workLifeSortedOutput, setWorkLifeSortedOutput] = useState<string | null>(null);
+  const [workLifeSortedGenerating, setWorkLifeSortedGenerating] = useState(false);
+  const [workLifeMode, setWorkLifeMode] = useState<string>('task-breakdown');
   const [workLifeTone, setWorkLifeTone] = useState<string>('clear');
   const [workLifeContext, setWorkLifeContext] = useState<string>('');
   const [workLifeSecondaryMode, setWorkLifeSecondaryMode] = useState<string>('');
@@ -180,14 +226,140 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
   const [moneyScope, setMoneyScope] = useState<string>('');
   const [moneyContext, setMoneyContext] = useState<string>('');
   const [moneySecondaryMode, setMoneySecondaryMode] = useState<string>('');
+  // Money unified flow states
+  const [moneyInput, setMoneyInput] = useState('');
+  const [moneyAnalysisOutput, setMoneyAnalysisOutput] = useState<string | null>(null);
+  const [moneyActionOutput, setMoneyActionOutput] = useState<string | null>(null);
+  const [moneyGenerating, setMoneyGenerating] = useState(false);
+  const [showMoneyAnalysis, setShowMoneyAnalysis] = useState(false);
+  const [moneyDumpInput, setMoneyDumpInput] = useState('');
+  const [moneySortedOutput, setMoneySortedOutput] = useState<string | null>(null);
+  const [moneySorting, setMoneySorting] = useState(false);
+  // Thinking & Learning unified flow states
+  const [thinkingInput, setThinkingInput] = useState('');
+  const [thinkingAnalysisOutput, setThinkingAnalysisOutput] = useState<string | null>(null);
+  const [thinkingActionOutput, setThinkingActionOutput] = useState<string | null>(null);
+  const [thinkingDumpInput, setThinkingDumpInput] = useState('');
+  const [thinkingSortedOutput, setThinkingSortedOutput] = useState('');
+  const [thinkingSorting, setThinkingSorting] = useState(false);
+  const [thinkingGenerating, setThinkingGenerating] = useState(false);
+  const [showThinkingAnalysis, setShowThinkingAnalysis] = useState(false);
+  const [thinkingDetectedMode, setThinkingDetectedMode] = useState<'thinking' | 'learning' | null>(null);
+  const [thinkingClarifyQuestion, setThinkingClarifyQuestion] = useState('');
+  const [thinkingClarifyOptions, setThinkingClarifyOptions] = useState<string[]>([]);
+  const [thinkingClarifyInsight, setThinkingClarifyInsight] = useState('');
+  const [thinkingUserChoice, setThinkingUserChoice] = useState('');
+  const [thinkingCustomAnswer, setThinkingCustomAnswer] = useState('');
+  const [thinkingStage, setThinkingStage] = useState<'input' | 'clarify' | 'result'>('input');
+
+  // Life Stuff unified flow states
+  const [wellnessInput, setWellnessInput] = useState('');
+  const [wellnessAnalysisOutput, setWellnessAnalysisOutput] = useState<string | null>(null);
+  const [wellnessActionOutput, setWellnessActionOutput] = useState<string | null>(null);
+  const [wellnessGenerating, setWellnessGenerating] = useState(false);
+  const [showWellnessAnalysis, setShowWellnessAnalysis] = useState(false);
+  const [wellnessStage, setWellnessStage] = useState<'input' | 'clarify' | 'result'>('input');
+  const [wellnessMode, setWellnessMode] = useState<'relationship' | 'self-care' | null>(null);
+  const [wellnessUserChoice, setWellnessUserChoice] = useState('');
+  const [wellnessClarifyQuestion, setWellnessClarifyQuestion] = useState('');
+  const [wellnessClarifyOptions, setWellnessClarifyOptions] = useState<string[]>([]);
+  const [wellnessClarifyInsight, setWellnessClarifyInsight] = useState('');
+  const [wellnessCustomAnswer, setWellnessCustomAnswer] = useState('');
+  const [wellnessDumpInput, setWellnessDumpInput] = useState('');
+  const [wellnessSortedOutput, setWellnessSortedOutput] = useState<string | null>(null);
+  const [wellnessSorting, setWellnessSorting] = useState(false);
+
+  // Application Kit states
+  const [appKitJobDescription, setAppKitJobDescription] = useState('');
+  const [appKitResume, setAppKitResume] = useState('');
+  const [appKitHighlights, setAppKitHighlights] = useState('');
+  const [appKitGenerating, setAppKitGenerating] = useState(false);
+  const [appKitStage, setAppKitStage] = useState<'input' | 'results'>('input');
+  const [appKitResumeOutput, setAppKitResumeOutput] = useState('');
+  const [appKitCoverLetterOutput, setAppKitCoverLetterOutput] = useState('');
+  const [appKitFollowUpOutput, setAppKitFollowUpOutput] = useState('');
+  const [appKitInterviewPrepOutput, setAppKitInterviewPrepOutput] = useState('');
+  const [appKitThankYouOutput, setAppKitThankYouOutput] = useState('');
+  const [appKitActiveTab, setAppKitActiveTab] = useState('resume');
+
   const [coreMove, setCoreMove] = useState('');
   const [timeOrientation, setTimeOrientation] = useState('');
   const [whatsMissing, setWhatsMissing] = useState<string[]>([]);
   const [cleanContrast, setCleanContrast] = useState('');
   const [showWhatsMissing, setShowWhatsMissing] = useState(false);
   const [showCleanContrast, setShowCleanContrast] = useState(false);
+  const [accessTier, setAccessTier] = useState<AccessTier | null>(null);
 
   const outputRef = useRef<HTMLDivElement>(null);
+
+  const forgeOnlyActivityIds = new Set([
+    'app-spec',
+    'technical-design-doc',
+    'api-contract',
+    'landing-page-outline',
+    'marketing-pack',
+  ]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchTier = async () => {
+      try {
+        const res = await fetch('/api/user/tier');
+        const data = await res.json();
+        const tier = typeof data?.tier === 'string' ? data.tier.toLowerCase() : 'free';
+        if (!isMounted) return;
+        if (tier === 'anonymous' || tier === 'free' || tier === 'forge' || tier === 'sanctuary') {
+          setAccessTier(tier as AccessTier);
+        } else {
+          setAccessTier('free');
+        }
+      } catch {
+        if (!isMounted) setAccessTier(null);
+      }
+    };
+    fetchTier();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const fallbackTier = useMemo<AccessTier>(() => {
+    if (!clerkLoaded || !isSignedIn) return 'anonymous';
+    const md = (user?.publicMetadata ?? {}) as Record<string, unknown>;
+    const rawTier = md.accessTier as unknown;
+    if (typeof rawTier === 'string') {
+      const v = rawTier.trim().toLowerCase();
+      if (v === 'sanctuary' || v === 'forge' || v === 'free') return v as AccessTier;
+    }
+    return 'free';
+  }, [clerkLoaded, isSignedIn, user?.publicMetadata]);
+
+  const resolvedTier = accessTier ?? fallbackTier;
+  const canAccessForge = resolvedTier === 'forge' || resolvedTier === 'sanctuary';
+  const showForgeUpsell =
+    resolvedTier === 'free' && Boolean(selectedAction && forgeOnlyActivityIds.has(selectedAction.id));
+
+  const workLifeCategory = opsRoom.categories.find((c) => c.id === 'work-life');
+  const workLifeActivities = workLifeCategory?.activities ?? [];
+  const workLifeGroupedActivities = workLifeActivities.filter((activity) => activity.id !== 'career');
+  const defaultWorkLifeId = 'get-unstuck';
+  const isWorkLifeGroupedActivity = (id?: string | null): boolean =>
+    Boolean(id && (id === 'get-unstuck' || workLifeGroupedActivities.some((activity) => activity.id === id)));
+  const workLifeActivityPrompts = workLifeGroupedActivities.reduce<Record<string, string>>((acc, activity) => {
+    const fragment = ACTIVITY_PROMPT_FRAGMENTS[activity.id];
+    if (fragment) acc[activity.id] = fragment;
+    return acc;
+  }, {});
+
+  const moneyCategory = opsRoom.categories.find((c) => c.id === 'money');
+  const moneyActivities = moneyCategory?.activities ?? [];
+  const moneyActivityIds = new Set(moneyActivities.map((activity) => activity.id));
+  const isMoneyActivity = (id?: string | null): boolean => Boolean(id && moneyActivityIds.has(id));
+  const moneyActivityPrompts = moneyActivities.reduce<Record<string, string>>((acc, activity) => {
+    const fragment = ACTIVITY_PROMPT_FRAGMENTS[activity.id];
+    if (fragment) acc[activity.id] = fragment;
+    return acc;
+  }, {});
 
   useEffect(() => {
     setTimeOfDay(getTimeOfDay());
@@ -205,7 +377,7 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
 
     // Map old category names to new ones
     if (v === 'communication') return { category: 'communication' };
-    if (v === 'work-career' || v === 'work') return { category: 'work-life' };
+    if (v === 'work-career' || v === 'work' || v === 'get-unstuck') return { category: 'work-life' };
     if (v === 'money-finance' || v === 'money') return { category: 'money' };
     if (v === 'planning-goals' || v === 'planning') return { category: 'work-life' };
     if (v === 'learning-growth' || v === 'learning') return { category: 'thinking-learning' };
@@ -238,11 +410,25 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
 
   // Handle direct navigation from sidebar (category + activity + option)
   useEffect(() => {
-    if (!initialCategory || !initialActivity) return;
+    if (!initialCategory) return;
     
     const category = opsRoom.categories.find(c => c.id === initialCategory);
     if (!category) return;
+
+    if (initialCategory === 'communication') {
+      setActiveCategory(initialCategory);
+      setSelectedAction(communicationAction);
+      setSelectedDropdownOption(null);
+      setFormFields({});
+      setSimpleInput('');
+      return;
+    }
     
+    if (!initialActivity) {
+      setActiveCategory(initialCategory);
+      return;
+    }
+
     const activity = category.activities.find(a => a.id === initialActivity);
     if (!activity) return;
     
@@ -263,6 +449,15 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
         return;
       }
     }
+    if (initialCategory === 'work-life' && activity.id !== 'career') {
+      const nextId = isWorkLifeGroupedActivity(activity.id) ? activity.id : defaultWorkLifeId;
+      setWorkLifeMode(nextId);
+    }
+
+    if (initialCategory === 'money' && isMoneyActivity(activity.id)) {
+      setMoneyMode(activity.id);
+    }
+
     setSelectedAction(activity);
     
     // Standalone or custom-component → form shows directly (selectedDropdownOption stays null)
@@ -283,18 +478,8 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
   }, [initialCategory, initialActivity, initialOption]);
 
   useEffect(() => {
-    if (activeCategory !== 'work-life') return;
-    if (selectedAction?.id === 'work-life') return;
-    if (selectedAction?.id === 'career') return;
-    setSelectedAction(workLifeAction);
-    setSelectedDropdownOption(null);
-    setFormFields({});
-    setSimpleInput('');
-  }, [activeCategory]);
-
-  useEffect(() => {
     if (activeCategory !== 'thinking-learning') return;
-    if (selectedAction?.id === 'thinking-learning') return;
+    if (selectedAction?.id === 'thinking-orchestrator') return;
     if (selectedAction?.id === 'language-learning') return;
     setSelectedAction(thinkingAction);
     setSelectedDropdownOption(null);
@@ -303,22 +488,40 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
   }, [activeCategory, selectedAction]);
 
   useEffect(() => {
+    if (activeCategory !== 'work-life') return;
+    if (selectedAction?.id === 'worklife-orchestrator') return;
+    setSelectedAction(workLifeAction);
+    setSelectedDropdownOption(null);
+    setFormFields({});
+    setSimpleInput('');
+  }, [activeCategory, selectedAction?.id]);
+
+  useEffect(() => {
     if (activeCategory !== 'money') return;
-    if (selectedAction?.id === 'money') return;
+    if (selectedAction?.id === 'money-orchestrator') return;
     setSelectedAction(moneyAction);
+    setSelectedDropdownOption(null);
+    setFormFields({});
+    setSimpleInput('');
+  }, [activeCategory, selectedAction?.id]);
+
+  useEffect(() => {
+    if (activeCategory !== 'relationships-wellness') return;
+    if (selectedAction?.id === 'wellness-orchestrator') return;
+    setSelectedAction(wellnessAction);
     setSelectedDropdownOption(null);
     setFormFields({});
     setSimpleInput('');
   }, [activeCategory]);
 
   useEffect(() => {
-    if (activeCategory !== 'relationships-wellness') return;
-    if (selectedAction?.id === 'relationships-wellness') return;
-    setSelectedAction(relationshipsAction);
+    if (activeCategory !== 'communication') return;
+    if (selectedAction?.id === 'communication-orchestrator') return;
+    setSelectedAction(communicationAction);
     setSelectedDropdownOption(null);
     setFormFields({});
     setSimpleInput('');
-  }, [activeCategory]);
+  }, [activeCategory, selectedAction?.id]);
 
   useEffect(() => {
     if (activeCategory !== 'create') return;
@@ -341,6 +544,23 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
   const isDark = manualTheme === 'dark' ? true : manualTheme === 'light' ? false : (timeOfDay === 'evening' || timeOfDay === 'night');
   const colors = isDark ? TIME_COLORS.evening : TIME_COLORS[timeOfDay];
   const separatorColor = isDark ? 'rgba(235, 210, 180, 0.12)' : 'rgba(140, 110, 80, 0.12)';
+  const inputBg = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.96)';
+  const inputBorder = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(160, 130, 90, 0.12)';
+  const layerCardStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '16px',
+    borderRadius: 16,
+    background: colors.cardBg,
+    border: `1px solid ${colors.cardBorder}`,
+    marginBottom: 16,
+  };
+  const sectionLabelStyle: React.CSSProperties = {
+    fontSize: 12,
+    fontWeight: 600,
+    letterSpacing: '0.06em',
+    color: colors.textMuted,
+    margin: '0 0 8px 4px',
+  };
 
   const buildSignalLayer = (inputText: string): string => {
     const lower = inputText.toLowerCase();
@@ -455,6 +675,149 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
     return parts.join(' ');
   };
 
+  const resetCommunicationFlow = () => {
+    setCommunicationInput('');
+    setCommunicationBoundaryInput('');
+    setCommunicationRespondIntent('');
+    setCommunicationIncludeBoundary(false);
+    setCommunicationDecodeOutput(null);
+    setCommunicationBoundaryOutput(null);
+    setCommunicationRespondOutput(null);
+    setCommunicationDecodeGenerating(false);
+    setCommunicationBoundaryGenerating(false);
+    setCommunicationRespondGenerating(false);
+    setCommunicationBoundaryNeeded(false);
+    setCommunicationBoundaryMode(false);
+    setCommunicationBoundaryType('boundary-script');
+    setCommunicationBoundaryTone('gentle');
+    setShowCommunicationAnalysis(false);
+    setCommunicationSignalLayer('');
+    setCommunicationCoreMove('');
+    setCommunicationTimeOrientation('');
+    setCommunicationWhatsMissing([]);
+    setCommunicationCleanContrast('');
+    setShowCommunicationWhatsMissing(false);
+    setShowCommunicationCleanContrast(false);
+    setDecodeEntryType('text');
+    setRespondMode('quick');
+    setRespondTone('neutral');
+    setBoundaryMode('boundary-script');
+    setBoundaryTone('gentle');
+    setBoundaryDelivery('');
+  };
+
+  const buildCommunicationLayerContext = (activityLabel: string, modifiers: string[], tone?: string, includeFocus?: boolean) => {
+    const contextTone = tone || 'default';
+    const focusContext = includeFocus ? focusPrompts[focusMode] : '';
+    return [
+      'Domain: Communication',
+      `Activity: ${activityLabel}`,
+      modifiers.length ? `Modifiers: ${modifiers.join('; ')}` : 'Modifiers: none',
+      `Tone: ${contextTone}`,
+      focusContext,
+    ].filter(Boolean).join(' | ');
+  };
+
+  const getCommunicationDecodePlaceholder = () => {
+    const allOptions = [...decodeEntryOptions.primary, ...decodeEntryOptions.secondary];
+    const match = allOptions.find((opt) => opt.id === decodeEntryType);
+    return match?.placeholder || 'Paste the message you want to decode...';
+  };
+
+  const handleCommunicationGenerate = async () => {
+    const input = communicationInput.trim();
+    if (!input) return;
+
+    setCommunicationDecodeGenerating(true);
+    setCommunicationRespondGenerating(true);
+    setCommunicationDecodeOutput(null);
+    setCommunicationRespondOutput(null);
+    setCommunicationBoundaryNeeded(false);
+    setCommunicationSignalLayer('');
+    setCommunicationCoreMove('');
+    setCommunicationTimeOrientation('');
+    setCommunicationWhatsMissing([]);
+    setCommunicationCleanContrast('');
+    setShowCommunicationWhatsMissing(false);
+    setShowCommunicationCleanContrast(false);
+
+    const decodeContext = buildCommunicationLayerContext(
+      'Decode',
+      [],
+      undefined,
+      false
+    );
+    const decodePrompt = [
+      decodeContext,
+      'Provide at most 3 short bullet insights. Each bullet max 12 words. No extra text.',
+    ].filter(Boolean).join(' | ');
+
+    try {
+      const decodeResponse = await fetch('/api/ops/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemPrompt: decodePrompt,
+          userInput: input,
+          mode: generationMode,
+          provider: selectedProvider,
+          taskType: 'decode-message',
+          activityId: 'decode-message',
+        }),
+      });
+
+      const decodeData = await decodeResponse.json();
+      if (!decodeResponse.ok) throw new Error(decodeData.error || 'Generation failed');
+
+      const decodeText = decodeData.content || '';
+      setCommunicationDecodeOutput(decodeText);
+      setCommunicationSignalLayer(buildSignalLayer(input));
+      setCommunicationCoreMove(buildCoreMove(input));
+      setCommunicationTimeOrientation(buildTimeOrientation(input));
+      setCommunicationWhatsMissing(buildWhatsMissing(input));
+      setCommunicationCleanContrast(buildCleanContrast(input));
+
+      const boundaryFlag = buildHandoffFlags(input).includes('supports_boundary_response');
+      setCommunicationBoundaryNeeded(boundaryFlag);
+
+      const respondContext = buildCommunicationLayerContext(
+        'Respond',
+        [],
+        undefined,
+        false
+      );
+      const respondPrompt = [
+        respondContext,
+        'Write a single, send-ready response. No analysis, no alternatives, no formatting.',
+      ].filter(Boolean).join(' | ');
+
+      const respondInput = `Original message:\n${input}\n\nDecode insights:\n${decodeText}`;
+
+      const respondResponse = await fetch('/api/ops/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemPrompt: respondPrompt,
+          userInput: respondInput,
+          mode: generationMode,
+          provider: selectedProvider,
+          taskType: 'respond',
+          activityId: 'respond',
+        }),
+      });
+
+      const respondData = await respondResponse.json();
+      if (!respondResponse.ok) throw new Error(respondData.error || 'Generation failed');
+      setCommunicationRespondOutput(respondData.content);
+    } catch {
+      setCommunicationDecodeOutput('Something went wrong. Please try again.');
+      setCommunicationRespondOutput('Something went wrong. Please try again.');
+    } finally {
+      setCommunicationDecodeGenerating(false);
+      setCommunicationRespondGenerating(false);
+    }
+  };
+
   const isDirectedDecode = (entryType: string) => {
     const disallowed = ['summary', 'document', 'legal'];
     return !disallowed.includes(entryType);
@@ -513,6 +876,71 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
     clarify: 'Ask for clarification neutrally and specifically. No explanations, analysis, intent interpretation, emotional labels, or advice framing. No bullets, headings, emojis, or formatting. Provide a single response only.',
     reframe: 'Reframe the exchange calmly and professionally. No explanations, analysis, intent interpretation, emotional labels, or advice framing. No bullets, headings, emojis, or formatting. Provide a single response only.',
     'confirm-understanding': 'Confirm understanding by reflecting the content neutrally. No explanations, analysis, intent interpretation, emotional labels, or advice framing. No bullets, headings, emojis, or formatting. Provide a single response only.',
+  };
+
+  const respondTonePrompts: Record<string, string> = {
+    neutral: 'Tone: neutral and clear.',
+    warm: 'Tone: warm and human without being overly friendly.',
+    firm: 'Tone: firm and steady without escalation.',
+    professional: 'Tone: professional and precise.',
+  };
+
+  const respondModeOptions = [
+    { id: 'quick', label: 'Quick Reply' },
+    { id: 'follow-up', label: 'Follow Up' },
+    { id: 'acknowledge', label: 'Acknowledge' },
+    { id: 'buy-time', label: 'Buy Time' },
+    { id: 'apology', label: 'Apology' },
+    { id: 'decline', label: 'Decline' },
+    { id: 'set-boundary', label: 'Set Boundary' },
+    { id: 'clarify', label: 'Clarify' },
+    { id: 'reframe', label: 'Reframe' },
+    { id: 'confirm-understanding', label: 'Confirm' },
+  ];
+
+  const respondToneOptions = [
+    { id: 'neutral', label: 'Neutral' },
+    { id: 'warm', label: 'Warm' },
+    { id: 'firm', label: 'Firm' },
+    { id: 'professional', label: 'Professional' },
+  ];
+
+  const boundaryModeOptions = [
+    { id: 'boundary-script', label: 'Boundary Script' },
+    { id: 'tough-conversation', label: 'Tough Conversation' },
+    { id: 'say-no-clearly', label: 'Say No Clearly' },
+  ];
+
+  const boundaryToneOptions = [
+    { id: 'gentle', label: 'Gentle' },
+    { id: 'firm', label: 'Firm' },
+    { id: 'professional', label: 'Professional' },
+    { id: 'personal', label: 'Personal' },
+  ];
+
+  const boundaryDeliveryOptions = [
+    { id: 'short-direct', label: 'Short & Direct' },
+    { id: 'long-thoughtful', label: 'Long & Thoughtful' },
+    { id: 'written-message', label: 'Written Message' },
+    { id: 'spoken-conversation', label: 'Spoken Line' },
+  ];
+
+  const decodeEntryOptions = {
+    primary: [
+      { id: 'email', label: 'Email', placeholder: 'Paste the email you want to decode...' },
+      { id: 'text', label: 'Text', placeholder: 'Paste the text you want to decode...' },
+      { id: 'summary', label: 'Summary', placeholder: 'Paste the content you want summarized...' },
+    ],
+    secondary: [
+      { id: 'promise', label: 'Promise', placeholder: 'Paste the promise you want to decode...' },
+      { id: 'request', label: 'Request', placeholder: 'Paste the request you want to decode...' },
+      { id: 'sales', label: 'Sales', placeholder: 'Paste the sales message you want to decode...' },
+      { id: 'boundary', label: 'Boundary', placeholder: 'Paste the boundary message you want to decode...' },
+      { id: 'legal', label: 'Legal', placeholder: 'Paste the legal notice you want to decode...' },
+      { id: 'work', label: 'Work', placeholder: 'Paste the work message you want to decode...' },
+      { id: 'personal', label: 'Personal', placeholder: 'Paste the personal message you want to decode...' },
+      { id: 'power', label: 'Power', placeholder: 'Paste the message you want to decode...' },
+    ],
   };
 
   const boundaryModePrompts: Record<string, string> = {
@@ -676,7 +1104,7 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
     const activityLabel = selectedDropdownOption?.label || selectedAction?.title || actionId;
     const modifiers: string[] = [];
 
-    if (actionId === 'work-life') {
+    if (isWorkLifeGroupedActivity(actionId)) {
       modifiers.push(`Mode: ${workLifeMode}`);
       if (workLifeTone) modifiers.push(`Modifier: ${workLifeTone}`);
       if (workLifeContext) modifiers.push(`Modifier: ${workLifeContext}`);
@@ -688,7 +1116,7 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
       if (thinkingDepth) modifiers.push(`Modifier: ${thinkingDepth}`);
       if (thinkingSecondaryMode) modifiers.push(`Modifier: ${thinkingSecondaryMode}`);
     }
-    if (actionId === 'money') {
+    if (isMoneyActivity(actionId)) {
       modifiers.push(`Modifier: ${moneyPerspective}`);
       if (moneyScope) modifiers.push(`Modifier: ${moneyScope}`);
       if (moneyContext) modifiers.push(`Modifier: ${moneyContext}`);
@@ -728,22 +1156,10 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
     ].join(' | ') + focusContract + toneContract;
   };
 
-  const workLifeAction: Activity = {
-    id: 'work-life',
-    title: 'Work & Life',
-    description: 'Make decisions, plan clearly, and move forward.',
-    icon: 'clipboard-list',
-    type: 'standalone',
-    placeholder: 'What are you trying to figure out or organize?',
-    systemPrompt: '',
-    disclaimer: '',
-    allowSave: true,
-  };
-
   const thinkingAction: Activity = {
-    id: 'thinking-learning',
-    title: 'Thinking & Learning',
-    description: 'Brainstorm, research, learn, grow',
+    id: 'thinking-orchestrator',
+    title: 'Clear My Head',
+    description: 'Clear thinking. Deep learning. No fluff.',
     icon: 'brain',
     type: 'standalone',
     placeholder: 'What are you trying to think through or understand?',
@@ -752,16 +1168,28 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
     allowSave: true,
   };
 
-  const moneyAction: Activity = {
-    id: 'money',
-    title: 'Money',
-    description: 'Understand your numbers. Make grounded decisions.',
-    icon: 'dollar-sign',
+  const wellnessAction: Activity = {
+    id: 'wellness-orchestrator',
+    title: 'Check In',
+    description: 'For your heart, your head, and your habits.',
+    icon: 'heart',
     type: 'standalone',
-    placeholder: 'What money situation are you trying to understand or decide?',
+    placeholder: "What's on your mind?",
     systemPrompt: '',
     disclaimer: '',
     allowSave: true,
+  };
+
+  const appKitAction = {
+    id: 'appkit-orchestrator',
+    title: 'Application Kit',
+    description: 'Everything you need to land the job',
+    icon: 'briefcase',
+    type: 'standalone',
+    placeholder: 'Build your complete application kit',
+    systemPrompt: '',
+    disclaimer: 'VERA helps you present your best self. Always review and personalize before sending.',
+    allowSave: true
   };
 
   const createSharedAction: Activity = {
@@ -790,11 +1218,47 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
 
   const relationshipsAction: Activity = {
     id: 'relationships-wellness',
-    title: 'Relationships & Wellness',
+    title: 'Life Stuff',
     description: 'Emotional clarity and regulation with calm grounding.',
     icon: 'heart',
     type: 'standalone',
     placeholder: 'What situation are you trying to understand or steady?',
+    systemPrompt: '',
+    disclaimer: '',
+    allowSave: true,
+  };
+
+  const communicationAction: Activity = {
+    id: 'communication-orchestrator',
+    title: 'Communication Flow',
+    description: 'Decode, set boundaries, and respond with focus.',
+    icon: 'message-circle',
+    type: 'standalone',
+    placeholder: 'Paste the message you want to decode...',
+    systemPrompt: '',
+    disclaimer: '',
+    allowSave: true,
+  };
+
+  const workLifeAction: Activity = {
+    id: 'worklife-orchestrator',
+    title: 'Get Unstuck',
+    description: 'Too much in your head? Let\'s sort it out together.',
+    icon: 'clipboard-list',
+    type: 'standalone',
+    placeholder: 'Describe what you need help with...',
+    systemPrompt: '',
+    disclaimer: '',
+    allowSave: true,
+  };
+
+  const moneyAction: Activity = {
+    id: 'money-orchestrator',
+    title: 'Money',
+    description: 'Your pocket CFO who tells it like it is',
+    icon: 'dollar-sign',
+    type: 'standalone',
+    placeholder: 'What\'s going on with your money?',
     systemPrompt: '',
     disclaimer: '',
     allowSave: true,
@@ -856,6 +1320,8 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
     const relationshipActionId = selectedAction?.id === 'relationship-help' ? 'relationship-help' : actionId;
     const hasRelationshipPrompt = !!(relationshipActionId && relationshipModePrompts[relationshipActionId]);
 
+    const activityFragment = ACTIVITY_PROMPT_FRAGMENTS[actionId];
+
     const effectivePrompt = actionId === 'respond'
       ? (respondPrompts[respondMode] || respondPrompts.quick)
       : actionId === 'boundaries'
@@ -864,9 +1330,9 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
           boundaryTonePrompts[boundaryTone] || boundaryTonePrompts.gentle,
           boundaryDelivery ? boundaryDeliveryPrompts[boundaryDelivery] : '',
         ].filter(Boolean).join(' ')
-      : actionId === 'work-life'
+      : isWorkLifeGroupedActivity(actionId)
       ? [
-          workLifeModePrompts[workLifeMode] || workLifeModePrompts.task,
+          activityFragment || workLifeActivityPrompts[actionId] || selectedAction.systemPrompt,
           workLifeTonePrompts[workLifeTone] || workLifeTonePrompts.clear,
           workLifeContext ? workLifeContextPrompts[workLifeContext] : '',
           workLifeSecondaryMode ? workLifeSecondaryPrompts[workLifeSecondaryMode] : '',
@@ -879,9 +1345,9 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
           thinkingDepthPrompts[thinkingDepth] || thinkingDepthPrompts.short,
           thinkingSecondaryMode ? thinkingSecondaryPrompts[thinkingSecondaryMode] : '',
         ].filter(Boolean).join(' ')
-      : actionId === 'money'
+      : isMoneyActivity(actionId)
       ? [
-          moneyModePrompts[moneyMode] || moneyModePrompts['budget-check'],
+          activityFragment || moneyActivityPrompts[actionId] || selectedAction.systemPrompt,
           moneyPerspectivePrompts[moneyPerspective] || moneyPerspectivePrompts.conservative,
           moneyScope ? moneyScopePrompts[moneyScope] : '',
           moneyContext ? moneyContextPrompts[moneyContext] : '',
@@ -1026,7 +1492,7 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
     setBoundaryMode('boundary-script');
     setBoundaryTone('gentle');
     setBoundaryDelivery('');
-    setWorkLifeMode('task');
+    setWorkLifeMode(defaultWorkLifeId);
     setWorkLifeTone('clear');
     setWorkLifeContext('');
     setWorkLifeSecondaryMode('');
@@ -1038,6 +1504,7 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
     setMoneyPerspective('conservative');
     setMoneyScope('');
     setMoneyContext('');
+    resetCommunicationFlow();
   };
 
   const handleBack = () => {
@@ -1054,6 +1521,9 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
       setSelectedDropdownOption(null);
       setSimpleInput('');
       setFormFields({});
+    } else if (selectedAction?.id === 'communication-orchestrator') {
+      resetCommunicationFlow();
+      setSelectedAction(null);
     } else if (selectedAction) {
       setSelectedAction(null);
       setSimpleInput('');
@@ -1092,6 +1562,49 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
   };
 
   const handleSelectAction = (action: Activity) => {
+    if (forgeOnlyActivityIds.has(action.id) && !canAccessForge) {
+      router.push('/forge');
+      return;
+    }
+    if (['decode-message', 'respond', 'boundaries'].includes(action.id)) {
+      setSelectedAction(communicationAction);
+      setSelectedDropdownOption(null);
+      setFormFields({});
+      setSimpleInput('');
+      return;
+    }
+    // Redirect get-unstuck activities to unified orchestrator
+    if (action.id === 'get-unstuck' || isWorkLifeGroupedActivity(action.id)) {
+      setSelectedAction(workLifeAction);
+      setSelectedDropdownOption(null);
+      setFormFields({});
+      setSimpleInput('');
+      return;
+    }
+    // Redirect money-orchestrator activities to unified orchestrator
+    if (action.id === 'money-orchestrator' || action.id === 'money') {
+      setSelectedAction(moneyAction);
+      setSelectedDropdownOption(null);
+      setFormFields({});
+      setSimpleInput('');
+      return;
+    }
+    // Redirect thinking activities to unified orchestrator
+    if (action.id === 'thinking-orchestrator' || action.id === 'thinking-learning' || action.id === 'think-learn') {
+      setSelectedAction(thinkingAction);
+      setSelectedDropdownOption(null);
+      setFormFields({});
+      setSimpleInput('');
+      return;
+    }
+    // Redirect wellness activities to unified orchestrator
+    if (action.id === 'wellness-orchestrator') {
+      setSelectedAction(wellnessAction);
+      setSelectedDropdownOption(null);
+      setFormFields({});
+      setSimpleInput('');
+      return;
+    }
     setSelectedAction(action);
     setSelectedDropdownOption(null);
     setFormFields({});
@@ -1104,11 +1617,14 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
       setBoundaryTone('gentle');
       setBoundaryDelivery('');
     }
-    if (action.id === 'work-life') {
-      setWorkLifeMode('task');
+    if (action.id === 'get-unstuck') {
+      setWorkLifeMode(defaultWorkLifeId);
       setWorkLifeTone('clear');
       setWorkLifeContext('');
       setWorkLifeSecondaryMode('');
+    }
+    if (isWorkLifeGroupedActivity(action.id)) {
+      setWorkLifeMode(action.id);
     }
     if (action.id === 'thinking-learning') {
       setThinkingMode('brainstorm');
@@ -1122,6 +1638,9 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
       setMoneyScope('');
       setMoneyContext('');
       setMoneySecondaryMode('');
+    }
+    if (isMoneyActivity(action.id)) {
+      setMoneyMode(action.id);
     }
     if (action.id === 'relationships-wellness') {
       setRelationshipMode('perspective-shift');
@@ -1153,6 +1672,21 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
     setSelectedDropdownOption(option);
     setFormFields({});
     setSimpleInput('');
+  };
+
+  const getDecodeInsights = (text: string): string[] => {
+    const clean = text.replace(/\r/g, '').trim();
+    if (!clean) return [];
+    const rawLines = clean
+      .split('\n')
+      .map((line) => line.replace(/^[-*•\d.\s]+/, '').trim())
+      .filter(Boolean);
+    if (rawLines.length) return rawLines.slice(0, 3);
+    const sentenceParts = clean
+      .split(/(?<=[.!?])\s+/)
+      .map((line) => line.replace(/^[-*•\d.\s]+/, '').trim())
+      .filter(Boolean);
+    return sentenceParts.slice(0, 3);
   };
 
   const createCategory = opsRoom.categories.find((c) => c.id === 'create');
@@ -1314,7 +1848,4144 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
           )}
 
           {selectedAction && selectedAction.id !== 'language-learning' && !compareOutputs && (
-            selectedAction.type === 'dropdown' && !selectedDropdownOption && selectedAction.id !== 'respond' && selectedAction.id !== 'boundaries' && selectedAction.id !== 'write-email' && selectedAction.id !== 'social-post' && selectedAction.id !== 'career' ? (
+            selectedAction.id === 'communication-orchestrator' ? (
+              <>
+                <div style={{ width: '100%', animation: 'fadeIn 0.4s ease-out', display: 'flex', justifyContent: 'center' }}>
+                  <div style={{ width: '100%', maxWidth: 860, display: 'flex', flexDirection: 'column', gap: 24 }}>
+                    {/* Header */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div style={{ fontSize: 24, fontWeight: 600, color: colors.text }}>
+                        Communication
+                      </div>
+                      <div style={{ fontSize: 14, color: colors.textMuted }}>
+                        Understand what's really being said. Respond with clarity.
+                      </div>
+                    </div>
+
+                    {/* SECTION ONE: DECODE */}
+                    <div style={{
+                      width: '100%',
+                      padding: '18px',
+                      borderRadius: 12,
+                      background: colors.cardBg,
+                      border: `1px solid ${colors.cardBorder}`,
+                    }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        Decode
+                      </div>
+                      <textarea
+                        value={communicationInput}
+                        onChange={(e) => setCommunicationInput(e.target.value)}
+                        placeholder="Paste or say the message you want help with."
+                        rows={5}
+                        className="input-field"
+                        style={{
+                          width: '100%',
+                          padding: '18px 18px',
+                          borderRadius: 12,
+                          border: `1px solid ${inputBorder}`,
+                          background: inputBg,
+                          color: colors.text,
+                          fontSize: 16,
+                          lineHeight: 1.6,
+                          resize: 'vertical',
+                        }}
+                      />
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: 12 }}>
+                        <button
+                          onClick={handleCommunicationGenerate}
+                          disabled={communicationDecodeGenerating || communicationRespondGenerating || !communicationInput.trim()}
+                          style={{
+                            padding: '10px 18px',
+                            borderRadius: 8,
+                            border: 'none',
+                            background: communicationDecodeGenerating || communicationRespondGenerating || !communicationInput.trim()
+                              ? (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(140,110,80,0.2)')
+                              : colors.accent,
+                            color: communicationDecodeGenerating || communicationRespondGenerating || !communicationInput.trim() ? colors.textMuted : 'white',
+                            fontSize: 13,
+                            fontWeight: 600,
+                            cursor: communicationDecodeGenerating || communicationRespondGenerating || !communicationInput.trim() ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          {communicationDecodeGenerating || communicationRespondGenerating ? 'Working...' : 'Generate response'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {communicationBoundaryNeeded && (
+                      <div style={{ fontSize: 12, color: colors.textMuted }}>
+                        A boundary is needed here.
+                      </div>
+                    )}
+
+                    {/* SECTION TWO: ANALYSIS */}
+                    <div style={{
+                      width: '100%',
+                      padding: '18px',
+                      borderRadius: 12,
+                      background: colors.cardBg,
+                      border: `1px solid ${colors.cardBorder}`,
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          Analysis
+                        </div>
+                        <button
+                          onClick={() => setShowCommunicationAnalysis(!showCommunicationAnalysis)}
+                          style={{
+                            padding: '4px 10px',
+                            borderRadius: 6,
+                            border: `1px solid ${colors.cardBorder}`,
+                            background: 'transparent',
+                            color: colors.textMuted,
+                            fontSize: 12,
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {showCommunicationAnalysis ? 'Hide' : 'Show'}
+                        </button>
+                      </div>
+                      {showCommunicationAnalysis && (
+                        <div style={{ marginTop: 12, maxHeight: 400, overflowY: 'auto' }}>
+                          {communicationDecodeOutput ? (
+                            <FormattedOutput content={communicationDecodeOutput} colors={colors} isDark={isDark} />
+                          ) : (
+                            <div style={{ color: colors.textMuted, fontSize: 13 }}>Analysis will appear here.</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* BOUNDARY CALLOUT - appears if analysis mentions boundary-related patterns */}
+                    {communicationDecodeOutput && !communicationBoundaryMode && (() => {
+                      const lower = communicationDecodeOutput.toLowerCase();
+                      return lower.includes('boundary') || lower.includes('pressure/urgency') || lower.includes('guilt language') || lower.includes('manipulation pattern');
+                    })() && (
+                      <div style={{
+                        width: '100%',
+                        padding: '16px 20px',
+                        borderRadius: 12,
+                        background: isDark ? 'rgba(194, 154, 108, 0.12)' : 'rgba(194, 154, 108, 0.15)',
+                        border: `1px solid ${isDark ? 'rgba(194, 154, 108, 0.25)' : 'rgba(194, 154, 108, 0.35)'}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 16,
+                      }}>
+                        <span style={{ fontSize: 14, color: colors.text }}>
+                          This looks like a boundary situation.
+                        </span>
+                        <button
+                          onClick={() => setCommunicationBoundaryMode(true)}
+                          style={{
+                            padding: '8px 16px',
+                            borderRadius: 8,
+                            border: 'none',
+                            background: isDark ? 'rgba(194, 154, 108, 0.25)' : 'rgba(194, 154, 108, 0.3)',
+                            color: colors.text,
+                            fontSize: 13,
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          Need help setting a boundary?
+                        </button>
+                      </div>
+                    )}
+
+                    {/* SECTION: BOUNDARY MODE */}
+                    {communicationBoundaryMode && (
+                      <div style={{
+                        width: '100%',
+                        padding: '18px',
+                        borderRadius: 12,
+                        background: isDark ? 'rgba(194, 154, 108, 0.08)' : 'rgba(194, 154, 108, 0.1)',
+                        border: `1px solid ${isDark ? 'rgba(194, 154, 108, 0.2)' : 'rgba(194, 154, 108, 0.25)'}`,
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            Boundary
+                          </div>
+                          <button
+                            onClick={() => setCommunicationBoundaryMode(false)}
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: 6,
+                              border: `1px solid ${colors.cardBorder}`,
+                              background: 'transparent',
+                              color: colors.textMuted,
+                              fontSize: 12,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                        <div style={{ fontSize: 14, color: colors.text, marginBottom: 16 }}>
+                          Choose how you want to set this boundary
+                        </div>
+
+                        {/* Boundary Type Options */}
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+                          {[
+                            { id: 'boundary-script', label: 'Boundary Script', desc: 'A full script for setting the boundary' },
+                            { id: 'say-no', label: 'Say No Clearly', desc: 'A direct, clear no' },
+                            { id: 'soften-hold', label: 'Soften But Hold', desc: 'Gentle but firm boundary' },
+                          ].map((opt) => (
+                            <button
+                              key={opt.id}
+                              onClick={() => setCommunicationBoundaryType(opt.id)}
+                              style={{
+                                padding: '10px 16px',
+                                borderRadius: 8,
+                                border: communicationBoundaryType === opt.id
+                                  ? `2px solid ${colors.accent}`
+                                  : `1px solid ${colors.cardBorder}`,
+                                background: communicationBoundaryType === opt.id
+                                  ? (isDark ? 'rgba(194, 154, 108, 0.15)' : 'rgba(194, 154, 108, 0.12)')
+                                  : colors.cardBg,
+                                color: colors.text,
+                                fontSize: 13,
+                                fontWeight: 500,
+                                cursor: 'pointer',
+                                flex: '1 1 auto',
+                                minWidth: 120,
+                              }}
+                            >
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Tone Selector */}
+                        <div style={{ marginBottom: 16 }}>
+                          <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 8 }}>Tone</div>
+                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            {['Gentle', 'Firm', 'Professional', 'Personal'].map((tone) => (
+                              <button
+                                key={tone}
+                                onClick={() => setCommunicationBoundaryTone(tone.toLowerCase())}
+                                style={{
+                                  padding: '6px 14px',
+                                  borderRadius: 20,
+                                  border: communicationBoundaryTone === tone.toLowerCase()
+                                    ? `2px solid ${colors.accent}`
+                                    : `1px solid ${colors.cardBorder}`,
+                                  background: communicationBoundaryTone === tone.toLowerCase()
+                                    ? (isDark ? 'rgba(194, 154, 108, 0.15)' : 'rgba(194, 154, 108, 0.12)')
+                                    : 'transparent',
+                                  color: colors.text,
+                                  fontSize: 12,
+                                  fontWeight: 500,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                {tone}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Generate Button */}
+                        <button
+                          onClick={async () => {
+                            setCommunicationBoundaryGenerating(true);
+                            setCommunicationRespondOutput(null);
+                            try {
+                              const boundaryTypeLabels: Record<string, string> = {
+                                'boundary-script': 'Boundary Script',
+                                'say-no': 'Say No Clearly',
+                                'soften-hold': 'Soften But Hold',
+                              };
+                              const selectedType = boundaryTypeLabels[communicationBoundaryType] || 'Boundary Script';
+                              const originalMessage = communicationInput.trim();
+                              
+                              if (!originalMessage) {
+                                console.error('[Boundary] No original message provided');
+                                setCommunicationRespondOutput('Please enter a message first.');
+                                setCommunicationBoundaryGenerating(false);
+                                return;
+                              }
+
+                              const systemPrompt = `You are VERA, helping someone set a boundary in response to a message they received.
+
+Here is the message they received:
+---
+${originalMessage}
+---
+
+${communicationDecodeOutput ? `Analysis of this message:
+---
+${communicationDecodeOutput}
+---
+
+` : ''}The user wants to respond with a boundary. Generate a response based on:
+
+Boundary type: ${selectedType}
+- 'Boundary Script': A complete message that acknowledges the other person while clearly stating the boundary with warmth and firmness.
+- 'Say No Clearly': A brief, direct response that declines without over-explaining or apologizing excessively.
+- 'Soften But Hold': A gentle response that shows care for the relationship while still holding the boundary firmly.
+
+Tone: ${communicationBoundaryTone}
+
+Write ONLY the response they can copy and send. Make it specific to the actual message they received. No analysis, no alternatives, no meta-commentary.`;
+
+                              console.log('[Boundary] originalMessage:', originalMessage);
+                              console.log('[Boundary] systemPrompt:', systemPrompt);
+
+                              const res = await fetch('/api/ops/generate', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  systemPrompt,
+                                  userInput: originalMessage,
+                                  mode: generationMode,
+                                  provider: selectedProvider,
+                                  taskType: 'respond',
+                                  activityId: 'respond',
+                                }),
+                              });
+                              const data = await res.json();
+                              console.log('[Boundary] API response:', data);
+                              if (!res.ok) throw new Error(data.error || 'Generation failed');
+                              setCommunicationRespondOutput(data.content || 'Unable to generate response.');
+                            } catch (err) {
+                              console.error('Boundary generation error:', err);
+                              setCommunicationRespondOutput('Error generating boundary response.');
+                            } finally {
+                              setCommunicationBoundaryGenerating(false);
+                            }
+                          }}
+                          disabled={communicationBoundaryGenerating || !communicationInput.trim()}
+                          style={{
+                            width: '100%',
+                            padding: '12px 20px',
+                            borderRadius: 8,
+                            border: 'none',
+                            background: communicationInput.trim() ? colors.accent : colors.cardBorder,
+                            color: communicationInput.trim() ? '#fff' : colors.textMuted,
+                            fontSize: 14,
+                            fontWeight: 500,
+                            cursor: communicationInput.trim() ? 'pointer' : 'default',
+                          }}
+                        >
+                          {communicationBoundaryGenerating ? 'Generating...' : 'Generate Boundary Response'}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* SECTION THREE: RESPOND */}
+                    <div style={{
+                      width: '100%',
+                      padding: '18px',
+                      borderRadius: 12,
+                      background: colors.cardBg,
+                      border: `1px solid ${colors.cardBorder}`,
+                    }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        Respond
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>
+                          A response you can send
+                        </div>
+                        <button
+                          onClick={() => {
+                            handleCopy(communicationRespondOutput || '');
+                            setShowClosingMessage(true);
+                            setTimeout(() => setShowClosingMessage(false), 3000);
+                          }}
+                          disabled={!communicationRespondOutput}
+                          style={{
+                            padding: '6px 10px',
+                            borderRadius: 8,
+                            border: `1px solid ${colors.cardBorder}`,
+                            background: colors.cardBg,
+                            cursor: communicationRespondOutput ? 'pointer' : 'default',
+                            fontSize: 12,
+                            fontWeight: 500,
+                            color: communicationRespondOutput ? colors.text : colors.textMuted,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                          }}
+                        >
+                          <OpsIcon type="copy" color={colors.accent} />
+                          Copy
+                        </button>
+                      </div>
+                      <div className="output-area" style={{
+                        padding: '20px',
+                        background: colors.cardBg,
+                        border: `1px solid ${colors.cardBorder}`,
+                        borderRadius: 10,
+                        minHeight: 120,
+                        maxHeight: '45vh',
+                        overflowY: 'auto',
+                        color: colors.text,
+                        fontSize: 14,
+                        lineHeight: 1.6,
+                      }}>
+                        {communicationRespondGenerating && !communicationRespondOutput ? (
+                          <div style={{ color: colors.textMuted, fontSize: 13 }}>Generating...</div>
+                        ) : communicationRespondOutput ? (
+                          <FormattedOutput content={communicationRespondOutput} colors={colors} isDark={isDark} />
+                        ) : (
+                          <div style={{ color: colors.textMuted, fontSize: 13 }}>Response will appear here.</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* ACTION BUTTONS */}
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      gap: 12,
+                      marginTop: 8,
+                    }}>
+                      <button
+                        onClick={() => {
+                          setCommunicationInput('');
+                          setCommunicationDecodeOutput(null);
+                          setCommunicationRespondOutput(null);
+                          setShowCommunicationAnalysis(false);
+                        }}
+                        style={{
+                          padding: '10px 20px',
+                          borderRadius: 8,
+                          border: `1px solid ${isDark ? 'rgb(156 163 175)' : 'rgb(209 213 219)'}`,
+                          background: 'transparent',
+                          color: isDark ? 'rgb(209 213 219)' : 'rgb(75 85 99)',
+                          fontSize: 14,
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = 'rgb(251 191 36)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = isDark ? 'rgb(156 163 175)' : 'rgb(209 213 219)';
+                        }}
+                      >
+                        Start Over
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (communicationRespondOutput) {
+                            try {
+                              await navigator.clipboard.writeText(communicationRespondOutput);
+                              setShowClosingMessage(true);
+                              setTimeout(() => setShowClosingMessage(false), 3000);
+                            } catch (err) {
+                              console.error('Failed to copy:', err);
+                            }
+                          }
+                        }}
+                        disabled={!communicationRespondOutput}
+                        style={{
+                          padding: '10px 20px',
+                          borderRadius: 8,
+                          border: 'none',
+                          background: communicationRespondOutput ? 'rgb(217 119 6)' : (isDark ? 'rgb(55 65 81)' : 'rgb(229 231 235)'),
+                          color: communicationRespondOutput ? 'white' : (isDark ? 'rgb(156 163 175)' : 'rgb(107 114 128)'),
+                          fontSize: 14,
+                          fontWeight: 500,
+                          cursor: communicationRespondOutput ? 'pointer' : 'default',
+                          boxShadow: communicationRespondOutput ? '0 2px 4px rgba(0, 0, 0, 0.1)' : 'none',
+                          transition: 'all 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (communicationRespondOutput) {
+                            e.currentTarget.style.background = 'rgb(180 83 9)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (communicationRespondOutput) {
+                            e.currentTarget.style.background = 'rgb(217 119 6)';
+                          }
+                        }}
+                      >
+                        Copy Response
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (!communicationRespondOutput) return;
+                          const title = 'Understand & Respond - ' + (communicationInput.trim().slice(0, 50) || 'Response');
+                          const saved: SavedOutput = {
+                            id: `${Date.now()}`,
+                            space: selectedSpace || 'General',
+                            timestamp: new Date().toISOString(),
+                            activityId: 'communication-orchestrator',
+                            text: `${title}\n\n${communicationRespondOutput.trim()}`,
+                          };
+                          try {
+                            const key = 'vera.savedOutputs.v1';
+                            const existingRaw = localStorage.getItem(key);
+                            const existing: SavedOutput[] = existingRaw ? JSON.parse(existingRaw) : [];
+                            existing.unshift(saved);
+                            localStorage.setItem(key, JSON.stringify(existing));
+                            setSaveState('saved');
+                            setTimeout(() => setSaveState('idle'), 2000);
+                          } catch (err) {
+                            console.error('Save error:', err);
+                            setSaveState('error');
+                            setTimeout(() => setSaveState('idle'), 2000);
+                          }
+                        }}
+                        disabled={!communicationRespondOutput}
+                        style={{
+                          padding: '10px 20px',
+                          borderRadius: 8,
+                          border: '1px solid rgb(245 158 11)',
+                          background: saveState === 'saved' ? 'rgb(245 158 11)' : 'transparent',
+                          color: saveState === 'saved' ? 'white' : 'rgb(245 158 11)',
+                          fontSize: 14,
+                          fontWeight: 500,
+                          cursor: communicationRespondOutput ? 'pointer' : 'default',
+                          opacity: communicationRespondOutput ? 1 : 0.5,
+                          transition: 'all 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (communicationRespondOutput && saveState === 'idle') {
+                            e.currentTarget.style.background = 'rgba(245, 158, 11, 0.1)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (communicationRespondOutput && saveState === 'idle') {
+                            e.currentTarget.style.background = 'transparent';
+                          }
+                        }}
+                      >
+                        {saveState === 'saved' ? 'Saved!' : saveState === 'error' ? 'Error' : 'Save'}
+                      </button>
+                      <button
+                        onClick={() => router.push('/sanctuary')}
+                        style={{
+                          padding: '10px 20px',
+                          borderRadius: 8,
+                          border: '1px solid rgb(251 191 36)',
+                          background: 'transparent',
+                          color: 'rgb(251 191 36)',
+                          fontSize: 14,
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'rgba(251, 191, 36, 0.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'transparent';
+                        }}
+                      >
+                        Talk to VERA
+                      </button>
+                    </div>
+
+                    {/* DISCLAIMER */}
+                    <div style={{
+                      textAlign: 'center',
+                      marginTop: 24,
+                      fontSize: 11,
+                      color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(60,50,45,0.4)',
+                      lineHeight: 1.5,
+                    }}>
+                      VERA is a decision-support tool, not a substitute for professional advice. Trust your own judgment and seek professional help when needed.
+                    </div>
+
+                    {/* CLOSING MESSAGE */}
+                    {showClosingMessage && (
+                      <div style={{
+                        textAlign: 'center',
+                        marginTop: 20,
+                        fontSize: 14,
+                        fontStyle: 'italic',
+                        color: colors.accent,
+                        opacity: 1,
+                        animation: 'fadeIn 0.5s ease-out',
+                      }}>
+                        You've got this. Trust yourself.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            ) : selectedAction.id === 'worklife-orchestrator' ? (
+              <>
+                <div style={{ width: '100%', animation: 'fadeIn 0.4s ease-out', display: 'flex', justifyContent: 'center' }}>
+                  <div style={{ width: '100%', maxWidth: 860, display: 'flex', flexDirection: 'column', gap: 24 }}>
+                    {/* Header */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div style={{ fontSize: 24, fontWeight: 600, color: colors.text }}>
+                        Get Unstuck
+                      </div>
+                      <div style={{ fontSize: 14, color: colors.textMuted }}>
+                        Too much in your head? Let's sort it out together.
+                      </div>
+                    </div>
+
+                    {/* SECTION ONE: INPUT */}
+                    <div style={{
+                      width: '100%',
+                      padding: '18px',
+                      borderRadius: 12,
+                      background: colors.cardBg,
+                      border: `1px solid ${colors.cardBorder}`,
+                    }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        What's Going On
+                      </div>
+                      <textarea
+                        value={workLifeInput}
+                        onChange={(e) => setWorkLifeInput(e.target.value)}
+                        placeholder="I have too much to do... / I can't decide... / I have a meeting coming up..."
+                        rows={5}
+                        className="input-field"
+                        disabled={workLifeStage !== 'input'}
+                        style={{
+                          width: '100%',
+                          padding: '18px 18px',
+                          borderRadius: 12,
+                          border: `1px solid ${inputBorder}`,
+                          background: inputBg,
+                          color: colors.text,
+                          fontSize: 16,
+                          lineHeight: 1.6,
+                          resize: 'vertical',
+                          opacity: workLifeStage !== 'input' ? 0.7 : 1,
+                        }}
+                      />
+                      {workLifeStage === 'input' && (
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: 12 }}>
+                          <button
+                            onClick={async () => {
+                              const input = workLifeInput.trim();
+                              if (!input) return;
+
+                              setWorkLifeGenerating(true);
+
+                              const clarifyPrompt = `You are VERA. Someone just shared a work or life challenge. Before giving advice, you need to understand what's REALLY going on.
+
+Your job: Ask ONE clarifying question that gets to the root of their struggle — not the task, but the feeling or pattern underneath.
+
+Examples of good clarifying questions:
+- 'Is the freeze coming from not knowing what to do, or from knowing exactly what to do but not wanting to face it?'
+- 'Are you overwhelmed by how much there is, or by the fear of not doing it perfectly?'
+- 'Is this about the task itself, or about what might happen (or not happen) when it's done?'
+
+Format your response as JSON:
+{
+  "question": "Your clarifying question here",
+  "options": ["Option 1", "Option 2", "Option 3 (optional)"],
+  "insight": "One sentence about what you're sensing beneath their words"
+}
+
+Only return the JSON, nothing else.`;
+
+                              try {
+                                const clarifyResponse = await fetch('/api/ops/generate', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    systemPrompt: clarifyPrompt,
+                                    userInput: input,
+                                    mode: generationMode,
+                                    provider: selectedProvider,
+                                    taskType: 'worklife-clarify',
+                                    activityId: 'worklife-clarify',
+                                  }),
+                                });
+
+                                const clarifyData = await clarifyResponse.json();
+                                if (!clarifyResponse.ok) throw new Error(clarifyData.error || 'Generation failed');
+
+                                const clarifyText = clarifyData.content || '';
+                                try {
+                                  const parsed = JSON.parse(clarifyText);
+                                  setWorkLifeClarifyQuestion(parsed.question || '');
+                                  setWorkLifeClarifyOptions(parsed.options || []);
+                                  setWorkLifeClarifyInsight(parsed.insight || '');
+                                  setWorkLifeStage('clarify');
+                                } catch {
+                                  // If JSON parsing fails, use fallback
+                                  setWorkLifeClarifyQuestion('What feels most true about why you\'re stuck?');
+                                  setWorkLifeClarifyOptions(['I don\'t know where to start', 'I\'m afraid of doing it wrong', 'I\'m avoiding something deeper']);
+                                  setWorkLifeClarifyInsight('');
+                                  setWorkLifeStage('clarify');
+                                }
+                              } catch (err) {
+                                console.error('Work & Life clarify error:', err);
+                                // Fallback to direct result if clarify fails
+                                setWorkLifeStage('result');
+                              } finally {
+                                setWorkLifeGenerating(false);
+                              }
+                            }}
+                            disabled={workLifeGenerating || !workLifeInput.trim()}
+                            style={{
+                              padding: '10px 18px',
+                              borderRadius: 8,
+                              border: 'none',
+                              background: workLifeGenerating || !workLifeInput.trim()
+                                ? (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(140,110,80,0.2)')
+                                : colors.accent,
+                              color: workLifeGenerating || !workLifeInput.trim() ? colors.textMuted : 'white',
+                              fontSize: 13,
+                              fontWeight: 600,
+                              cursor: workLifeGenerating || !workLifeInput.trim() ? 'not-allowed' : 'pointer',
+                            }}
+                          >
+                            {workLifeGenerating ? 'Working...' : 'Help me with this'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* SECTION TWO: CLARIFY */}
+                    {workLifeStage === 'clarify' && (
+                      <div style={{
+                        width: '100%',
+                        padding: '18px',
+                        borderRadius: 12,
+                        background: isDark ? 'rgba(194, 154, 108, 0.08)' : 'rgba(194, 154, 108, 0.1)',
+                        border: `1px solid ${isDark ? 'rgba(194, 154, 108, 0.2)' : 'rgba(194, 154, 108, 0.25)'}`,
+                      }}>
+                        {workLifeClarifyInsight && (
+                          <div style={{ fontSize: 13, color: colors.textMuted, marginBottom: 16, fontStyle: 'italic' }}>
+                            {workLifeClarifyInsight}
+                          </div>
+                        )}
+                        <div style={{ fontSize: 16, color: colors.text, marginBottom: 16, fontWeight: 500 }}>
+                          {workLifeClarifyQuestion}
+                        </div>
+                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+                          {workLifeClarifyOptions.map((option, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                setWorkLifeUserChoice(option);
+                                setWorkLifeCustomAnswer('');
+                              }}
+                              style={{
+                                padding: '10px 16px',
+                                borderRadius: 8,
+                                border: workLifeUserChoice === option
+                                  ? `2px solid ${colors.accent}`
+                                  : `1px solid ${colors.cardBorder}`,
+                                background: workLifeUserChoice === option
+                                  ? (isDark ? 'rgba(194, 154, 108, 0.15)' : 'rgba(194, 154, 108, 0.12)')
+                                  : colors.cardBg,
+                                color: colors.text,
+                                fontSize: 14,
+                                cursor: 'pointer',
+                                flex: '1 1 auto',
+                                minWidth: 140,
+                              }}
+                            >
+                              {option}
+                            </button>
+                          ))}
+                        </div>
+                        <div style={{ marginBottom: 16 }}>
+                          <input
+                            type="text"
+                            value={workLifeCustomAnswer}
+                            onChange={(e) => {
+                              setWorkLifeCustomAnswer(e.target.value);
+                              if (e.target.value.trim()) setWorkLifeUserChoice('');
+                            }}
+                            placeholder="Or tell me in your own words..."
+                            style={{
+                              width: '100%',
+                              padding: '12px 16px',
+                              borderRadius: 8,
+                              border: `1px solid ${inputBorder}`,
+                              background: inputBg,
+                              color: colors.text,
+                              fontSize: 14,
+                            }}
+                          />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                          <button
+                            onClick={async () => {
+                              const choice = workLifeCustomAnswer.trim() || workLifeUserChoice;
+                              if (!choice) return;
+
+                              setWorkLifeUserChoice(choice);
+                              setWorkLifeGenerating(true);
+                              setWorkLifeStage('result');
+                              setWorkLifeAnalysisOutput(null);
+                              setWorkLifeActionOutput(null);
+
+                              const combinedInput = `${workLifeInput.trim()}\n\nWhen asked "${workLifeClarifyQuestion}", they answered: "${choice}"`;
+
+                              const analysisPrompt = `You are VERA — a wise, calm guide who helps people get unstuck with work and life challenges. Someone is sharing what's overwhelming them. They've also answered a clarifying question about what's really going on.
+
+Respond with ALL sections below. Use the exact headers:
+
+**What I'm hearing:**
+One sentence. Reflect back what they're dealing with — show them you understand. Incorporate their clarifying answer.
+
+**Why you might be stuck:**
+2-3 sentences. Name the nervous system pattern humanly. Is it overwhelm? Decision fatigue? Fear of getting it wrong? Avoidance? Normalize it. Example: 'When everything feels equally urgent, your brain can't prioritize — so it freezes. That's not laziness. That's overwhelm.'
+
+**What's actually true:**
+2-3 sentences. Ground them in reality. Cut through the catastrophizing. Example: 'You don't have to do everything today. You have to do ONE thing. The rest can wait.'
+
+**What might help:**
+1-2 sentences. A gentle internal check-in or permission. Example: 'What would feel like a win today, even if it's small?'
+
+Tone: Warm, wise, human. Never clinical. Never a lecture.`;
+
+                              try {
+                                // FIRST CALL: Analysis
+                                const analysisResponse = await fetch('/api/ops/generate', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    systemPrompt: analysisPrompt,
+                                    userInput: combinedInput,
+                                    mode: generationMode,
+                                    provider: selectedProvider,
+                                    taskType: 'worklife-analysis',
+                                    activityId: 'worklife-analysis',
+                                  }),
+                                });
+
+                                const analysisData = await analysisResponse.json();
+                                if (!analysisResponse.ok) throw new Error(analysisData.error || 'Generation failed');
+
+                                const analysisText = analysisData.content || '';
+                                setWorkLifeAnalysisOutput(analysisText);
+
+                                // SECOND CALL: Action
+                                const actionPrompt = `You are VERA. Someone just shared what's overwhelming them about work or life, and they clarified what's really going on. Your job is to give them ONE specific, concrete, doable action — not vague advice.
+
+Rules:
+- Be SPECIFIC. Not 'write down your tasks' but 'Open a notes app right now and type the first 3 things that come to mind when you think about what's stressing you.'
+- Be IMMEDIATE. Something they can do in the next 5 minutes.
+- Be SMALL. The smaller the better. Momentum matters more than magnitude.
+- NEVER tell them to 'prioritize' or 'organize' — that's the problem, not the solution.
+- Use their clarifying answer to tailor the action to what's really blocking them.
+
+Format:
+
+**Do this right now:**
+[One specific action they can take in the next 5 minutes. Be concrete — include exactly what to do, not concepts.]
+
+**Why this works:**
+[One sentence — connect it to breaking the freeze/overwhelm and their specific blocker]
+
+**Then, if you want:**
+[One optional follow-up step, or offer to help them go deeper: 'Tell me what those 3 things are and I'll help you pick which one to tackle first.']
+
+Tone: Direct, warm, actionable. Like a friend who cuts through the noise and tells you exactly what to do next.`;
+
+                                const actionInput = `${combinedInput}\n\nContext from analysis:\n${analysisText}`;
+
+                                const actionResponse = await fetch('/api/ops/generate', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    systemPrompt: actionPrompt,
+                                    userInput: actionInput,
+                                    mode: generationMode,
+                                    provider: selectedProvider,
+                                    taskType: 'worklife-action',
+                                    activityId: 'worklife-action',
+                                  }),
+                                });
+
+                                const actionData = await actionResponse.json();
+                                if (!actionResponse.ok) throw new Error(actionData.error || 'Generation failed');
+
+                                setWorkLifeActionOutput(actionData.content || '');
+                              } catch (err) {
+                                console.error('Work & Life generation error:', err);
+                                setWorkLifeAnalysisOutput('Something went wrong. Please try again.');
+                                setWorkLifeActionOutput('Something went wrong. Please try again.');
+                              } finally {
+                                setWorkLifeGenerating(false);
+                              }
+                            }}
+                            disabled={workLifeGenerating || (!workLifeUserChoice && !workLifeCustomAnswer.trim())}
+                            style={{
+                              padding: '10px 18px',
+                              borderRadius: 8,
+                              border: 'none',
+                              background: (!workLifeUserChoice && !workLifeCustomAnswer.trim())
+                                ? (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(140,110,80,0.2)')
+                                : colors.accent,
+                              color: (!workLifeUserChoice && !workLifeCustomAnswer.trim()) ? colors.textMuted : 'white',
+                              fontSize: 13,
+                              fontWeight: 600,
+                              cursor: (!workLifeUserChoice && !workLifeCustomAnswer.trim()) ? 'not-allowed' : 'pointer',
+                            }}
+                          >
+                            {workLifeGenerating ? 'Working...' : 'Continue'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SECTION THREE: ANALYSIS (collapsible) - only in result stage */}
+                    {workLifeStage === 'result' && workLifeAnalysisOutput && (
+                      <div style={{
+                        width: '100%',
+                        padding: '18px',
+                        borderRadius: 12,
+                        background: colors.cardBg,
+                        border: `1px solid ${colors.cardBorder}`,
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: showWorkLifeAnalysis ? 12 : 0 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            Analysis
+                          </div>
+                          <button
+                            onClick={() => setShowWorkLifeAnalysis(!showWorkLifeAnalysis)}
+                            style={{
+                              padding: '4px 10px',
+                              borderRadius: 6,
+                              border: `1px solid ${colors.cardBorder}`,
+                              background: 'transparent',
+                              color: colors.textMuted,
+                              fontSize: 12,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {showWorkLifeAnalysis ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                        {showWorkLifeAnalysis && (
+                          <div className="output-area" style={{
+                            padding: '16px',
+                            background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)',
+                            borderRadius: 10,
+                            color: colors.text,
+                            fontSize: 14,
+                            lineHeight: 1.6,
+                            maxHeight: 350,
+                            overflowY: 'auto',
+                          }}>
+                            <FormattedOutput content={workLifeAnalysisOutput} colors={colors} isDark={isDark} />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* SECTION FOUR: YOUR NEXT STEP - only in result stage */}
+                    {workLifeStage === 'result' && (
+                      <div style={{
+                        width: '100%',
+                        padding: '18px',
+                        borderRadius: 12,
+                        background: colors.cardBg,
+                        border: `1px solid ${colors.cardBorder}`,
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            Your Next Step
+                          </div>
+                          <button
+                            onClick={() => {
+                              handleCopy(workLifeActionOutput || '');
+                            }}
+                            disabled={!workLifeActionOutput}
+                            style={{
+                              padding: '6px 10px',
+                              borderRadius: 8,
+                              border: `1px solid ${colors.cardBorder}`,
+                              background: colors.cardBg,
+                              cursor: workLifeActionOutput ? 'pointer' : 'default',
+                              fontSize: 12,
+                              fontWeight: 500,
+                              color: workLifeActionOutput ? colors.text : colors.textMuted,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6,
+                            }}
+                          >
+                            <OpsIcon type="copy" color={colors.accent} />
+                            Copy
+                          </button>
+                        </div>
+                        <div className="output-area" style={{
+                          padding: '20px',
+                          background: colors.cardBg,
+                          border: `1px solid ${colors.cardBorder}`,
+                          borderRadius: 10,
+                          minHeight: 120,
+                          maxHeight: 300,
+                          overflowY: 'auto',
+                          color: colors.text,
+                          fontSize: 14,
+                          lineHeight: 1.6,
+                        }}>
+                          {workLifeGenerating && !workLifeActionOutput ? (
+                            <div style={{ color: colors.textMuted, fontSize: 13 }}>Generating...</div>
+                          ) : workLifeActionOutput ? (
+                            <FormattedOutput content={workLifeActionOutput} colors={colors} isDark={isDark} />
+                          ) : (
+                            <div style={{ color: colors.textMuted, fontSize: 13 }}>Your next step will appear here.</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SECTION FIVE: GO DEEPER - only in result stage */}
+                    {workLifeStage === 'result' && !workLifeGenerating && workLifeActionOutput && workLifeDumpStage === 'initial' && (
+                      <div style={{
+                        width: '100%',
+                        padding: '18px',
+                        borderRadius: 12,
+                        background: isDark ? 'rgba(194, 154, 108, 0.08)' : 'rgba(194, 154, 108, 0.06)',
+                        border: `1px solid ${isDark ? 'rgba(194, 154, 108, 0.2)' : 'rgba(194, 154, 108, 0.15)'}`,
+                      }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: colors.accent, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 10 }}>
+                          Go Deeper
+                        </div>
+                        <div style={{ fontSize: 14, color: colors.text, marginBottom: 16, lineHeight: 1.6 }}>
+                          Want me to actually help? Dump your entire task list here — every email, errand, deadline, &quot;should do&quot;, and mental note. I&apos;ll sort it for you.
+                        </div>
+                        <textarea
+                          value={workLifeDumpInput}
+                          onChange={(e) => setWorkLifeDumpInput(e.target.value)}
+                          placeholder="Respond to Sarah's email, finish Q3 report, pick up dry cleaning, call mom back, schedule dentist, review that proposal, buy birthday gift, pay bills, update LinkedIn, fix leaky faucet..."
+                          style={{
+                            width: '100%',
+                            minHeight: 140,
+                            padding: '14px',
+                            borderRadius: 10,
+                            border: `1px solid ${inputBorder}`,
+                            background: inputBg,
+                            color: colors.text,
+                            fontSize: 14,
+                            lineHeight: 1.6,
+                            resize: 'vertical',
+                          }}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+                          <button
+                            onClick={async () => {
+                              if (!workLifeDumpInput.trim()) return;
+                              setWorkLifeSortedGenerating(true);
+                              setWorkLifeSortedOutput(null);
+
+                              const sortPrompt = `You are VERA. Someone just dumped their overwhelming list of tasks/worries. Your job is to ACTUALLY SORT IT for them — not give generic advice.
+
+Look at their specific items and categorize them:
+
+**What I see:**
+Count the items. Group any that are actually part of the same project. Call out what you notice.
+
+**Not yours to do right now:**
+Any items that are waiting on someone else, or aren't actually actionable today. If none, say "Everything here is on you — no waiting on others."
+
+**Quick wins (under 5 min):**
+Small tasks they can knock out fast to build momentum. Be specific — use their words.
+
+**The real one:**
+Identify the ONE thing that's probably causing the most mental weight — name it specifically from their list.
+
+**Your move:**
+Tell them exactly what to do first. Be specific: "Do [specific item] right now. It'll take [X] minutes. Then come back and we'll tackle [the real one]."
+
+Be SPECIFIC to their actual list. Use their exact words. Name their items. Don't be generic.`;
+
+                              console.log('Sorting list:', workLifeDumpInput);
+                              try {
+                                const res = await fetch('/api/ops/generate', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    activityId: 'worklife-sorted',
+                                    systemPrompt: sortPrompt,
+                                    userInput: workLifeDumpInput.trim(),
+                                    selectedModel: 'claude-3-5-sonnet-20241022',
+                                    space: selectedSpace,
+                                  }),
+                                });
+                                console.log('Sort API response:', res);
+                                
+                                if (!res.ok) {
+                                  console.error('Sort API error - status:', res.status);
+                                  setWorkLifeSortedOutput(`API error: ${res.status}. Try again.`);
+                                  setWorkLifeDumpStage('sorted');
+                                  return;
+                                }
+                                
+                                const data = await res.json();
+                                console.log('Sort parsed data:', data);
+                                
+                                // Extract content from response - check various possible fields
+                                const sortedContent = data.content || data.response || data.result || data.text || '';
+                                
+                                if (sortedContent) {
+                                  setWorkLifeSortedOutput(sortedContent);
+                                  setWorkLifeDumpStage('sorted');
+                                } else {
+                                  console.error('Sort API - no content found. Full data:', data);
+                                  setWorkLifeSortedOutput('No response received. Please try again.');
+                                  setWorkLifeDumpStage('sorted');
+                                }
+                              } catch (err) {
+                                console.error('Sort error:', err);
+                                setWorkLifeSortedOutput(`Error: ${err instanceof Error ? err.message : 'Unknown error'}. Try again.`);
+                                setWorkLifeDumpStage('sorted');
+                              } finally {
+                                setWorkLifeSortedGenerating(false);
+                              }
+                            }}
+                            disabled={!workLifeDumpInput.trim() || workLifeSortedGenerating}
+                            style={{
+                              padding: '10px 18px',
+                              borderRadius: 8,
+                              border: 'none',
+                              background: (!workLifeDumpInput.trim() || workLifeSortedGenerating)
+                                ? (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(140,110,80,0.2)')
+                                : colors.accent,
+                              color: (!workLifeDumpInput.trim() || workLifeSortedGenerating) ? colors.textMuted : 'white',
+                              fontSize: 13,
+                              fontWeight: 600,
+                              cursor: (!workLifeDumpInput.trim() || workLifeSortedGenerating) ? 'not-allowed' : 'pointer',
+                            }}
+                          >
+                            {workLifeSortedGenerating ? 'Sorting...' : 'Sort this for me'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SECTION SIX: SORTED OUTPUT - only after sorting */}
+                    {workLifeStage === 'result' && workLifeDumpStage === 'sorted' && workLifeSortedOutput && (
+                      <div style={{
+                        width: '100%',
+                        padding: '18px',
+                        borderRadius: 12,
+                        background: colors.cardBg,
+                        border: `1px solid ${colors.cardBorder}`,
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: colors.accent, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            Here&apos;s What I See
+                          </div>
+                          <button
+                            onClick={() => handleCopy(workLifeSortedOutput || '')}
+                            style={{
+                              padding: '6px 10px',
+                              borderRadius: 8,
+                              border: `1px solid ${colors.cardBorder}`,
+                              background: colors.cardBg,
+                              cursor: 'pointer',
+                              fontSize: 12,
+                              fontWeight: 500,
+                              color: colors.text,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6,
+                            }}
+                          >
+                            <OpsIcon type="copy" color={colors.accent} />
+                            Copy
+                          </button>
+                        </div>
+                        <div className="output-area" style={{
+                          padding: '20px',
+                          background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)',
+                          borderRadius: 10,
+                          color: colors.text,
+                          fontSize: 14,
+                          lineHeight: 1.7,
+                          maxHeight: 450,
+                          overflowY: 'auto',
+                        }}>
+                          <FormattedOutput content={workLifeSortedOutput} colors={colors} isDark={isDark} />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ACTION BUTTONS - only in result stage */}
+                    {workLifeStage === 'result' && (
+                      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+                        <button
+                          onClick={() => {
+                            setWorkLifeInput('');
+                            setWorkLifeAnalysisOutput(null);
+                            setWorkLifeActionOutput(null);
+                            setShowWorkLifeAnalysis(false);
+                            setWorkLifeStage('input');
+                            setWorkLifeClarifyQuestion('');
+                            setWorkLifeClarifyOptions([]);
+                            setWorkLifeClarifyInsight('');
+                            setWorkLifeUserChoice('');
+                            setWorkLifeCustomAnswer('');
+                            setWorkLifeDumpStage('initial');
+                            setWorkLifeDumpInput('');
+                            setWorkLifeSortedOutput(null);
+                          }}
+                          style={{
+                            padding: '10px 20px',
+                            borderRadius: 8,
+                            border: `1px solid ${isDark ? 'rgb(156 163 175)' : 'rgb(209 213 219)'}`,
+                            background: 'transparent',
+                            color: isDark ? 'rgb(209 213 219)' : 'rgb(75 85 99)',
+                            fontSize: 14,
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = 'rgb(251 191 36)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = isDark ? 'rgb(156 163 175)' : 'rgb(209 213 219)';
+                          }}
+                        >
+                          Start Over
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (workLifeActionOutput) {
+                              try {
+                                await navigator.clipboard.writeText(workLifeActionOutput);
+                              } catch (err) {
+                                console.error('Failed to copy:', err);
+                              }
+                            }
+                          }}
+                          disabled={!workLifeActionOutput}
+                          style={{
+                            padding: '10px 20px',
+                            borderRadius: 8,
+                            border: 'none',
+                            background: workLifeActionOutput ? 'rgb(217 119 6)' : (isDark ? 'rgb(55 65 81)' : 'rgb(229 231 235)'),
+                            color: workLifeActionOutput ? 'white' : (isDark ? 'rgb(156 163 175)' : 'rgb(107 114 128)'),
+                            fontSize: 14,
+                            fontWeight: 500,
+                            cursor: workLifeActionOutput ? 'pointer' : 'default',
+                            boxShadow: workLifeActionOutput ? '0 2px 4px rgba(0, 0, 0, 0.1)' : 'none',
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (workLifeActionOutput) {
+                              e.currentTarget.style.background = 'rgb(180 83 9)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (workLifeActionOutput) {
+                              e.currentTarget.style.background = 'rgb(217 119 6)';
+                            }
+                          }}
+                        >
+                          Copy Response
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (!workLifeActionOutput) return;
+                            const title = 'Work & Life - ' + (workLifeInput.trim().slice(0, 50) || 'Next Step');
+                            const saved: SavedOutput = {
+                              id: `${Date.now()}`,
+                              space: selectedSpace || 'General',
+                              timestamp: new Date().toISOString(),
+                              activityId: 'worklife-orchestrator',
+                              text: `${title}\n\n${workLifeActionOutput.trim()}`,
+                            };
+                            try {
+                              const key = 'vera.savedOutputs.v1';
+                              const existingRaw = localStorage.getItem(key);
+                              const existing: SavedOutput[] = existingRaw ? JSON.parse(existingRaw) : [];
+                              existing.unshift(saved);
+                              localStorage.setItem(key, JSON.stringify(existing));
+                              setSaveState('saved');
+                              setTimeout(() => setSaveState('idle'), 2000);
+                            } catch (err) {
+                              console.error('Save error:', err);
+                              setSaveState('error');
+                              setTimeout(() => setSaveState('idle'), 2000);
+                            }
+                          }}
+                          disabled={!workLifeActionOutput}
+                          style={{
+                            padding: '10px 20px',
+                            borderRadius: 8,
+                            border: '1px solid rgb(245 158 11)',
+                            background: saveState === 'saved' ? 'rgb(245 158 11)' : 'transparent',
+                            color: saveState === 'saved' ? 'white' : 'rgb(245 158 11)',
+                            fontSize: 14,
+                            fontWeight: 500,
+                            cursor: workLifeActionOutput ? 'pointer' : 'default',
+                            opacity: workLifeActionOutput ? 1 : 0.5,
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (workLifeActionOutput && saveState === 'idle') {
+                              e.currentTarget.style.background = 'rgba(245, 158, 11, 0.1)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (workLifeActionOutput && saveState === 'idle') {
+                              e.currentTarget.style.background = 'transparent';
+                            }
+                          }}
+                        >
+                          {saveState === 'saved' ? 'Saved!' : saveState === 'error' ? 'Error' : 'Save'}
+                        </button>
+                        <button
+                          onClick={() => router.push('/sanctuary')}
+                          style={{
+                            padding: '10px 20px',
+                            borderRadius: 8,
+                            border: '1px solid rgb(251 191 36)',
+                            background: 'transparent',
+                            color: 'rgb(251 191 36)',
+                            fontSize: 14,
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(251, 191, 36, 0.1)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'transparent';
+                          }}
+                        >
+                          Talk to VERA
+                        </button>
+                      </div>
+                    )}
+
+                    {/* DISCLAIMER */}
+                    <div style={{
+                      textAlign: 'center',
+                      marginTop: 24,
+                      fontSize: 11,
+                      color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(60,50,45,0.4)',
+                      lineHeight: 1.5,
+                    }}>
+                      VERA is a decision-support tool, not a substitute for professional advice. Trust your own judgment and seek professional help when needed.
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : selectedAction.id === 'money-orchestrator' ? (
+              <>
+                <div style={{ width: '100%', animation: 'fadeIn 0.4s ease-out', display: 'flex', justifyContent: 'center' }}>
+                  <div style={{ width: '100%', maxWidth: 860, display: 'flex', flexDirection: 'column', gap: 24 }}>
+                    {/* Header */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div style={{ fontSize: 24, fontWeight: 600, color: colors.text }}>
+                        Money
+                      </div>
+                      <div style={{ fontSize: 14, color: colors.textMuted }}>
+                        Your pocket CFO. No judgment, just truth.
+                      </div>
+                    </div>
+
+                    {/* SECTION ONE: INPUT */}
+                    <div style={{
+                      width: '100%',
+                      padding: '18px',
+                      borderRadius: 12,
+                      background: colors.cardBg,
+                      border: `1px solid ${colors.cardBorder}`,
+                    }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        What&apos;s Going On With Your Money
+                      </div>
+                      <textarea
+                        value={moneyInput}
+                        onChange={(e) => setMoneyInput(e.target.value)}
+                        placeholder="I never have money left at the end of the month... / I don't know where it all goes... / I need to save but can't..."
+                        rows={5}
+                        className="input-field"
+                        disabled={moneyAnalysisOutput !== null}
+                        style={{
+                          width: '100%',
+                          padding: '18px 18px',
+                          borderRadius: 12,
+                          border: `1px solid ${inputBorder}`,
+                          background: inputBg,
+                          color: colors.text,
+                          fontSize: 16,
+                          lineHeight: 1.6,
+                          resize: 'vertical',
+                          opacity: moneyAnalysisOutput !== null ? 0.7 : 1,
+                        }}
+                      />
+                      {!moneyAnalysisOutput && (
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: 12 }}>
+                          <button
+                            onClick={async () => {
+                              const input = moneyInput.trim();
+                              if (!input) return;
+
+                              setMoneyGenerating(true);
+                              setMoneyAnalysisOutput(null);
+                              setMoneyActionOutput(null);
+
+                              const moneyPrompt = `You are VERA — a brilliant, sharp-tongued CFO who lives in someone's pocket. Think: your smartest friend who's amazing with money, has zero patience for bullshit, but genuinely wants you to win.
+
+Your style:
+- Blunt but never cruel
+- Funny but always accurate  
+- You see the patterns they're blind to
+- You call out the money lies people tell themselves ('I deserve this' / 'It was on sale' / 'I'll start next month')
+- You're like a financial therapist who also happens to be hilarious
+
+When someone shares their money situation, respond with:
+
+**Okay, here's what I'm hearing:**
+One sentence. Reflect it back — show you actually listened. Add a tiny bit of knowing humor if appropriate.
+
+**The real talk:**
+2-3 sentences. What's ACTUALLY going on. Is it a spending problem? Income problem? Avoidance problem? 'Treat yourself' culture problem? An 'I don't want to look at it' problem? Name it directly. Don't be mean, but don't pretend it's fine when it's not.
+
+**Where your money is probably sneaking out:**
+Get specific. Based on what they shared, name the likely leaks:
+- Subscriptions they forgot exist
+- The 'small' daily purchases ($7 coffee × 30 days = $210/month)
+- Emotional spending patterns (stress = shopping, boredom = ordering food)
+- The 'I'll figure it out later' tax (late fees, interest, avoided bills)
+Connect it to THEIR situation, not generic advice.
+
+**The math you're avoiding:**
+If relevant, do some quick math that makes it real. 'That $50/week on takeout? That's $2,600/year. That's a vacation. That's an emergency fund. That's options.'
+
+**Your one move (do this today):**
+ONE specific action. Not 'create a budget.' Something like:
+- 'Open your bank app. Look at last week's transactions. Highlight every purchase that wasn't planned. Count them. That's your number.'
+- 'Text yourself the 3 subscriptions you haven't used in 30 days. Cancel them before you close this page.'
+- 'Check your credit card statement. Find the recurring charges. I bet there's at least $30/month you forgot about.'
+
+End with something encouraging but real — you believe in them, but they have to actually do the thing.
+
+Tone: Like a CFO friend who's three drinks in at dinner and finally tells you what they've been thinking about your finances. Sharp, funny, loving, true.`;
+
+                              try {
+                                // FIRST CALL: Analysis (the main CFO response)
+                                const analysisResponse = await fetch('/api/ops/generate', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    systemPrompt: moneyPrompt,
+                                    userInput: input,
+                                    mode: generationMode,
+                                    provider: selectedProvider,
+                                    taskType: 'money-analysis',
+                                    activityId: 'money-analysis',
+                                  }),
+                                });
+
+                                const analysisData = await analysisResponse.json();
+                                if (!analysisResponse.ok) throw new Error(analysisData.error || 'Generation failed');
+
+                                const analysisText = analysisData.content || '';
+                                setMoneyAnalysisOutput(analysisText);
+
+                                // SECOND CALL: Action plan
+                                const actionPrompt = `You are VERA, a sharp CFO friend. Based on the money situation shared, give them a concrete 7-day money reset plan.
+
+Format:
+
+**Your 7-Day Money Reset:**
+
+**Day 1-2: The Audit**
+[Specific task to understand their current state - be concrete about what to look at]
+
+**Day 3-4: The Cuts**
+[What to cancel, pause, or reduce - be specific based on their situation]
+
+**Day 5-6: The Setup**
+[One automation or system to put in place - specific and actionable]
+
+**Day 7: The Rule**
+[One simple rule they can follow going forward that fits their life]
+
+**The number to know:**
+[Calculate or estimate one key number for them - how much they could save, their real daily spend budget, etc.]
+
+Keep it real, keep it doable. This isn't about becoming a finance guru - it's about taking control.`;
+
+                                const actionInput = `${input}\n\nContext from analysis:\n${analysisText}`;
+
+                                const actionResponse = await fetch('/api/ops/generate', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    systemPrompt: actionPrompt,
+                                    userInput: actionInput,
+                                    mode: generationMode,
+                                    provider: selectedProvider,
+                                    taskType: 'money-action',
+                                    activityId: 'money-action',
+                                  }),
+                                });
+
+                                const actionData = await actionResponse.json();
+                                if (!actionResponse.ok) throw new Error(actionData.error || 'Generation failed');
+
+                                setMoneyActionOutput(actionData.content || '');
+                              } catch (err) {
+                                console.error('Money generation error:', err);
+                                setMoneyAnalysisOutput('Something went wrong. Please try again.');
+                                setMoneyActionOutput('Something went wrong. Please try again.');
+                              } finally {
+                                setMoneyGenerating(false);
+                              }
+                            }}
+                            disabled={moneyGenerating || !moneyInput.trim()}
+                            style={{
+                              padding: '10px 18px',
+                              borderRadius: 8,
+                              border: 'none',
+                              background: moneyGenerating || !moneyInput.trim()
+                                ? (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(140,110,80,0.2)')
+                                : colors.accent,
+                              color: moneyGenerating || !moneyInput.trim() ? colors.textMuted : 'white',
+                              fontSize: 13,
+                              fontWeight: 600,
+                              cursor: moneyGenerating || !moneyInput.trim() ? 'not-allowed' : 'pointer',
+                            }}
+                          >
+                            {moneyGenerating ? 'Working...' : 'Show me the truth'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* SECTION TWO: ANALYSIS (collapsible) */}
+                    {moneyAnalysisOutput && (
+                      <div style={{
+                        width: '100%',
+                        padding: '18px',
+                        borderRadius: 12,
+                        background: colors.cardBg,
+                        border: `1px solid ${colors.cardBorder}`,
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: showMoneyAnalysis ? 12 : 0 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            Analysis
+                          </div>
+                          <button
+                            onClick={() => setShowMoneyAnalysis(!showMoneyAnalysis)}
+                            style={{
+                              padding: '4px 10px',
+                              borderRadius: 6,
+                              border: `1px solid ${colors.cardBorder}`,
+                              background: 'transparent',
+                              color: colors.textMuted,
+                              fontSize: 12,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {showMoneyAnalysis ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                        {showMoneyAnalysis && (
+                          <div className="output-area" style={{
+                            padding: '16px',
+                            background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)',
+                            borderRadius: 10,
+                            color: colors.text,
+                            fontSize: 14,
+                            lineHeight: 1.6,
+                            maxHeight: 350,
+                            overflowY: 'auto',
+                          }}>
+                            <FormattedOutput content={moneyAnalysisOutput} colors={colors} isDark={isDark} />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* SECTION THREE: YOUR ACTION PLAN */}
+                    {moneyAnalysisOutput && (
+                      <div style={{
+                        width: '100%',
+                        padding: '18px',
+                        borderRadius: 12,
+                        background: colors.cardBg,
+                        border: `1px solid ${colors.cardBorder}`,
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            Your Action Plan
+                          </div>
+                          <button
+                            onClick={() => {
+                              handleCopy(moneyActionOutput || '');
+                            }}
+                            disabled={!moneyActionOutput}
+                            style={{
+                              padding: '6px 10px',
+                              borderRadius: 8,
+                              border: `1px solid ${colors.cardBorder}`,
+                              background: colors.cardBg,
+                              cursor: moneyActionOutput ? 'pointer' : 'default',
+                              fontSize: 12,
+                              fontWeight: 500,
+                              color: moneyActionOutput ? colors.text : colors.textMuted,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6,
+                            }}
+                          >
+                            <OpsIcon type="copy" color={colors.accent} />
+                            Copy
+                          </button>
+                        </div>
+                        <div className="output-area" style={{
+                          padding: '20px',
+                          background: colors.cardBg,
+                          border: `1px solid ${colors.cardBorder}`,
+                          borderRadius: 10,
+                          minHeight: 120,
+                          maxHeight: 350,
+                          overflowY: 'auto',
+                          color: colors.text,
+                          fontSize: 14,
+                          lineHeight: 1.6,
+                        }}>
+                          {moneyGenerating && !moneyActionOutput ? (
+                            <div style={{ color: colors.textMuted, fontSize: 13 }}>Generating...</div>
+                          ) : moneyActionOutput ? (
+                            <FormattedOutput content={moneyActionOutput} colors={colors} isDark={isDark} />
+                          ) : (
+                            <div style={{ color: colors.textMuted, fontSize: 13 }}>Your action plan will appear here.</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SECTION FOUR: GO DEEPER - only after initial response */}
+                    {moneyAnalysisOutput && !moneyGenerating && moneyActionOutput && !moneySortedOutput && (
+                      <div style={{
+                        width: '100%',
+                        padding: '18px',
+                        borderRadius: 12,
+                        background: isDark ? 'rgba(194, 154, 108, 0.08)' : 'rgba(194, 154, 108, 0.06)',
+                        border: `1px solid ${isDark ? 'rgba(194, 154, 108, 0.2)' : 'rgba(194, 154, 108, 0.15)'}`,
+                      }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: colors.accent, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 10 }}>
+                          Go Deeper
+                        </div>
+                        <div style={{ fontSize: 14, color: colors.text, marginBottom: 16, lineHeight: 1.6 }}>
+                          Want me to actually look at it? Dump your recent spending here — last week of purchases, subscriptions, whatever you&apos;ve got. I&apos;ll find the leaks.
+                        </div>
+                        <textarea
+                          value={moneyDumpInput}
+                          onChange={(e) => setMoneyDumpInput(e.target.value)}
+                          placeholder="Coffee $7, DoorDash $34, Amazon $23, Netflix $15..."
+                          style={{
+                            width: '100%',
+                            minHeight: 140,
+                            padding: '14px',
+                            borderRadius: 10,
+                            border: `1px solid ${inputBorder}`,
+                            background: inputBg,
+                            color: colors.text,
+                            fontSize: 14,
+                            lineHeight: 1.6,
+                            resize: 'vertical',
+                          }}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+                          <button
+                            onClick={async () => {
+                              if (!moneyDumpInput.trim()) return;
+                              setMoneySorting(true);
+                              setMoneySortedOutput(null);
+
+                              const leakPrompt = `You are VERA — a brilliant CFO analyzing someone's actual spending. They just dumped their recent transactions. Your job is to find the leaks and call them out — with humor but also real insight.
+
+Look at their specific purchases and respond:
+
+**What I see:**
+Count the transactions. Total the amount if you can. Note any patterns.
+
+**The sneaky ones:**
+Identify the spending that's probably happening on autopilot — subscriptions, repeat purchases, convenience spending. Be specific, use their actual items.
+
+**The pattern:**
+Name the behavior pattern you see. Is it emotional spending? Convenience addiction? Subscription creep? 'Treat yourself' culture? Be direct.
+
+**The math:**
+Do quick math to make it real. 'That $7 coffee × 5 days × 4 weeks = $140/month = $1,680/year. That's a vacation.'
+
+**Your one move:**
+One specific thing to cancel, cut, or change TODAY. Make it concrete.
+
+Be specific to THEIR spending. Use their words. Call out their actual purchases. Be funny but accurate.`;
+
+                              const userMessage = `My money situation: ${moneyInput}\n\nMy recent spending:\n${moneyDumpInput}`;
+
+                              try {
+                                const res = await fetch('/api/ops/generate', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    activityId: 'money-analysis',
+                                    systemPrompt: leakPrompt,
+                                    userInput: userMessage,
+                                    mode: generationMode,
+                                    provider: selectedProvider,
+                                  }),
+                                });
+
+                                if (!res.ok) {
+                                  console.error('Money leak API error - status:', res.status);
+                                  setMoneySortedOutput(`API error: ${res.status}. Try again.`);
+                                  return;
+                                }
+
+                                const data = await res.json();
+                                const sortedContent = data.content || data.response || data.result || data.text || '';
+
+                                if (sortedContent) {
+                                  setMoneySortedOutput(sortedContent);
+                                } else {
+                                  console.error('Money leak API - no content found. Full data:', data);
+                                  setMoneySortedOutput('No response received. Please try again.');
+                                }
+                              } catch (err) {
+                                console.error('Money leak error:', err);
+                                setMoneySortedOutput(`Error: ${err instanceof Error ? err.message : 'Unknown error'}. Try again.`);
+                              } finally {
+                                setMoneySorting(false);
+                              }
+                            }}
+                            disabled={!moneyDumpInput.trim() || moneySorting}
+                            style={{
+                              padding: '10px 18px',
+                              borderRadius: 8,
+                              border: 'none',
+                              background: (!moneyDumpInput.trim() || moneySorting)
+                                ? (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(140,110,80,0.2)')
+                                : colors.accent,
+                              color: (!moneyDumpInput.trim() || moneySorting) ? colors.textMuted : 'white',
+                              fontSize: 13,
+                              fontWeight: 600,
+                              cursor: (!moneyDumpInput.trim() || moneySorting) ? 'not-allowed' : 'pointer',
+                            }}
+                          >
+                            {moneySorting ? 'Finding leaks...' : 'Find the leaks'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SECTION FIVE: HERE'S WHAT I SEE - only after leak analysis */}
+                    {moneySortedOutput && (
+                      <div style={{
+                        width: '100%',
+                        padding: '18px',
+                        borderRadius: 12,
+                        background: colors.cardBg,
+                        border: `1px solid ${colors.cardBorder}`,
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: colors.accent, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            Here&apos;s What I See
+                          </div>
+                          <button
+                            onClick={() => handleCopy(moneySortedOutput || '')}
+                            style={{
+                              padding: '6px 10px',
+                              borderRadius: 8,
+                              border: `1px solid ${colors.cardBorder}`,
+                              background: colors.cardBg,
+                              cursor: 'pointer',
+                              fontSize: 12,
+                              fontWeight: 500,
+                              color: colors.text,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6,
+                            }}
+                          >
+                            <OpsIcon type="copy" color={colors.accent} />
+                            Copy
+                          </button>
+                        </div>
+                        <div className="output-area" style={{
+                          padding: '20px',
+                          background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)',
+                          borderRadius: 10,
+                          color: colors.text,
+                          fontSize: 14,
+                          lineHeight: 1.7,
+                          maxHeight: 450,
+                          overflowY: 'auto',
+                        }}>
+                          <FormattedOutput content={moneySortedOutput} colors={colors} isDark={isDark} />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ACTION BUTTONS */}
+                    {moneyAnalysisOutput && (
+                      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+                        <button
+                          onClick={() => {
+                            setMoneyInput('');
+                            setMoneyAnalysisOutput(null);
+                            setMoneyActionOutput(null);
+                            setShowMoneyAnalysis(false);
+                            setMoneyDumpInput('');
+                            setMoneySortedOutput(null);
+                          }}
+                          style={{
+                            padding: '10px 20px',
+                            borderRadius: 8,
+                            border: `1px solid ${isDark ? 'rgb(156 163 175)' : 'rgb(209 213 219)'}`,
+                            background: 'transparent',
+                            color: isDark ? 'rgb(209 213 219)' : 'rgb(75 85 99)',
+                            fontSize: 14,
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = 'rgb(251 191 36)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = isDark ? 'rgb(156 163 175)' : 'rgb(209 213 219)';
+                          }}
+                        >
+                          Start Over
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (moneyActionOutput) {
+                              try {
+                                await navigator.clipboard.writeText(moneyActionOutput);
+                              } catch (err) {
+                                console.error('Failed to copy:', err);
+                              }
+                            }
+                          }}
+                          disabled={!moneyActionOutput}
+                          style={{
+                            padding: '10px 20px',
+                            borderRadius: 8,
+                            border: 'none',
+                            background: moneyActionOutput ? 'rgb(217 119 6)' : (isDark ? 'rgb(55 65 81)' : 'rgb(229 231 235)'),
+                            color: moneyActionOutput ? 'white' : (isDark ? 'rgb(156 163 175)' : 'rgb(107 114 128)'),
+                            fontSize: 14,
+                            fontWeight: 500,
+                            cursor: moneyActionOutput ? 'pointer' : 'default',
+                            boxShadow: moneyActionOutput ? '0 2px 4px rgba(0, 0, 0, 0.1)' : 'none',
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (moneyActionOutput) {
+                              e.currentTarget.style.background = 'rgb(180 83 9)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (moneyActionOutput) {
+                              e.currentTarget.style.background = 'rgb(217 119 6)';
+                            }
+                          }}
+                        >
+                          Copy Response
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (!moneyActionOutput) return;
+                            const title = 'Money - ' + (moneyInput.trim().slice(0, 50) || 'Action Plan');
+                            const saved: SavedOutput = {
+                              id: `${Date.now()}`,
+                              space: selectedSpace || 'General',
+                              timestamp: new Date().toISOString(),
+                              activityId: 'money-orchestrator',
+                              text: `${title}\n\n${moneyActionOutput.trim()}`,
+                            };
+                            try {
+                              const key = 'vera.savedOutputs.v1';
+                              const existingRaw = localStorage.getItem(key);
+                              const existing: SavedOutput[] = existingRaw ? JSON.parse(existingRaw) : [];
+                              existing.unshift(saved);
+                              localStorage.setItem(key, JSON.stringify(existing));
+                              setSaveState('saved');
+                              setTimeout(() => setSaveState('idle'), 2000);
+                            } catch (err) {
+                              console.error('Save error:', err);
+                              setSaveState('error');
+                              setTimeout(() => setSaveState('idle'), 2000);
+                            }
+                          }}
+                          disabled={!moneyActionOutput}
+                          style={{
+                            padding: '10px 20px',
+                            borderRadius: 8,
+                            border: '1px solid rgb(245 158 11)',
+                            background: saveState === 'saved' ? 'rgb(245 158 11)' : 'transparent',
+                            color: saveState === 'saved' ? 'white' : 'rgb(245 158 11)',
+                            fontSize: 14,
+                            fontWeight: 500,
+                            cursor: moneyActionOutput ? 'pointer' : 'default',
+                            opacity: moneyActionOutput ? 1 : 0.5,
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (moneyActionOutput && saveState === 'idle') {
+                              e.currentTarget.style.background = 'rgba(245, 158, 11, 0.1)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (moneyActionOutput && saveState === 'idle') {
+                              e.currentTarget.style.background = 'transparent';
+                            }
+                          }}
+                        >
+                          {saveState === 'saved' ? 'Saved!' : saveState === 'error' ? 'Error' : 'Save'}
+                        </button>
+                        <button
+                          onClick={() => router.push('/sanctuary')}
+                          style={{
+                            padding: '10px 20px',
+                            borderRadius: 8,
+                            border: '1px solid rgb(251 191 36)',
+                            background: 'transparent',
+                            color: 'rgb(251 191 36)',
+                            fontSize: 14,
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(251, 191, 36, 0.1)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'transparent';
+                          }}
+                        >
+                          Talk to VERA
+                        </button>
+                      </div>
+                    )}
+
+                    {/* DISCLAIMER */}
+                    <div style={{
+                      textAlign: 'center',
+                      marginTop: 24,
+                      fontSize: 11,
+                      color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(60,50,45,0.4)',
+                      lineHeight: 1.5,
+                    }}>
+                      VERA is not a financial advisor. This is for educational purposes only. Consult a professional for major financial decisions.
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : selectedAction.id === 'thinking-orchestrator' ? (
+              <>
+                <div style={{ width: '100%', animation: 'fadeIn 0.4s ease-out', display: 'flex', justifyContent: 'center' }}>
+                  <div style={{ width: '100%', maxWidth: 860, display: 'flex', flexDirection: 'column', gap: 24 }}>
+                    {/* Header */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div style={{ fontSize: 24, fontWeight: 600, color: colors.text }}>
+                        Clear My Head
+                      </div>
+                      <div style={{ fontSize: 14, color: colors.textMuted }}>
+                        Clear your head. See all the angles. Make it click.
+                      </div>
+                    </div>
+
+                    {/* SECTION ONE: INPUT */}
+                    <div style={{
+                      width: '100%',
+                      padding: '18px',
+                      borderRadius: 12,
+                      background: colors.cardBg,
+                      border: `1px solid ${colors.cardBorder}`,
+                    }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        What&apos;s On Your Mind
+                      </div>
+                      <textarea
+                        value={thinkingInput}
+                        onChange={(e) => setThinkingInput(e.target.value)}
+                        placeholder="I need to make a decision about... / I'm trying to understand... / I can't figure out..."
+                        rows={5}
+                        className="input-field"
+                        disabled={thinkingStage !== 'input'}
+                        style={{
+                          width: '100%',
+                          padding: '18px 18px',
+                          borderRadius: 12,
+                          border: `1px solid ${inputBorder}`,
+                          background: inputBg,
+                          color: colors.text,
+                          fontSize: 16,
+                          lineHeight: 1.6,
+                          resize: 'vertical',
+                          opacity: thinkingStage !== 'input' ? 0.7 : 1,
+                        }}
+                      />
+                      {thinkingStage === 'input' && (
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: 12 }}>
+                          <button
+                            onClick={async () => {
+                              const input = thinkingInput.trim();
+                              if (!input) return;
+
+                              console.log('[thinking-orchestrator] Help me think: start', { hasInput: !!input, provider: selectedProvider, mode: generationMode });
+                              setThinkingGenerating(true);
+
+                              const detectPrompt = `You are VERA — a calm, brilliant mind who helps people think clearly and learn deeply. Someone just shared what's on their mind.
+
+First, determine: Are they trying to THINK something through (decision, problem, weighing options) or LEARN something (understand a concept, study, grasp an idea)?
+
+Respond with JSON only:
+{
+  "mode": "thinking" or "learning",
+  "insight": "One sentence about what you sense they really need",
+  "question": "A clarifying question to understand better",
+  "options": ["Option 1", "Option 2", "Option 3 (optional)"]
+}
+
+Examples:
+- "I can't decide if I should take this job" → mode: "thinking"
+- "I don't understand how blockchain works" → mode: "learning"
+- "I'm stuck on this problem at work" → could be either, ask to clarify`;
+
+                              try {
+                                const detectResponse = await fetch('/api/ops/generate', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    systemPrompt: detectPrompt,
+                                    userInput: input,
+                                    mode: generationMode,
+                                    provider: selectedProvider,
+                                    taskType: 'thinking-detect',
+                                    activityId: 'thinking-detect',
+                                  }),
+                                });
+
+                                console.log('[thinking-orchestrator] Help me think: response', { ok: detectResponse.ok, status: detectResponse.status });
+
+                                let detectData: any;
+                                try {
+                                  detectData = await detectResponse.json();
+                                } catch (jsonErr) {
+                                  console.error('[thinking-orchestrator] Help me think: response.json() failed', jsonErr);
+                                  const rawText = await detectResponse.text().catch(() => '');
+                                  detectData = { content: rawText };
+                                }
+
+                                if (!detectResponse.ok) {
+                                  throw new Error(detectData?.error || 'Generation failed');
+                                }
+
+                                // Check if data.content exists and try to parse it as JSON
+                                const raw = (detectData?.content || detectData?.response || '').toString();
+                                let parsedContent: any;
+                                try {
+                                  // Remove any markdown code blocks if present
+                                  const cleanContent = raw.replace(/```json\n?|\n?```/g, '').trim();
+                                  parsedContent = JSON.parse(cleanContent);
+                                } catch (parseError) {
+                                  console.error('[thinking-orchestrator] Help me think: Failed to parse JSON', parseError, { raw });
+                                  // Handle as plain text if JSON parsing fails
+                                  parsedContent = { question: raw, options: [], insight: '' };
+                                }
+
+                                console.log('[thinking-orchestrator] Help me think: parsedContent', parsedContent);
+
+                                setThinkingDetectedMode(parsedContent?.mode || 'thinking');
+                                setThinkingClarifyQuestion(parsedContent?.question || (raw ? raw : 'What would help you most right now?'));
+                                setThinkingClarifyOptions(Array.isArray(parsedContent?.options) ? parsedContent.options : []);
+                                setThinkingClarifyInsight(parsedContent?.insight || '');
+                                setThinkingStage('clarify');
+                              } catch (err) {
+                                console.error('[thinking-orchestrator] Help me think: API error', err);
+                                setThinkingStage('result');
+                              } finally {
+                                setThinkingGenerating(false);
+                              }
+                            }}
+                            disabled={thinkingGenerating || !thinkingInput.trim()}
+                            style={{
+                              padding: '10px 18px',
+                              borderRadius: 8,
+                              border: 'none',
+                              background: thinkingGenerating || !thinkingInput.trim()
+                                ? (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(140,110,80,0.2)')
+                                : colors.accent,
+                              color: thinkingGenerating || !thinkingInput.trim() ? colors.textMuted : 'white',
+                              fontSize: 13,
+                              fontWeight: 600,
+                              cursor: thinkingGenerating || !thinkingInput.trim() ? 'not-allowed' : 'pointer',
+                            }}
+                          >
+                            {thinkingGenerating ? 'Working...' : 'Help me think'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* SECTION TWO: CLARIFY */}
+                    {thinkingStage === 'clarify' && (
+                      <div style={{
+                        width: '100%',
+                        padding: '18px',
+                        borderRadius: 12,
+                        background: isDark ? 'rgba(194, 154, 108, 0.08)' : 'rgba(194, 154, 108, 0.1)',
+                        border: `1px solid ${isDark ? 'rgba(194, 154, 108, 0.2)' : 'rgba(194, 154, 108, 0.25)'}`,
+                      }}>
+                        {thinkingClarifyInsight && (
+                          <div style={{ fontSize: 13, color: colors.textMuted, marginBottom: 16, fontStyle: 'italic' }}>
+                            {thinkingClarifyInsight}
+                          </div>
+                        )}
+                        <div style={{ fontSize: 16, color: colors.text, marginBottom: 16, fontWeight: 500 }}>
+                          {thinkingClarifyQuestion}
+                        </div>
+                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+                          {thinkingClarifyOptions.map((option, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                setThinkingUserChoice(option);
+                                setThinkingCustomAnswer('');
+                              }}
+                              style={{
+                                padding: '10px 16px',
+                                borderRadius: 8,
+                                border: thinkingUserChoice === option
+                                  ? `2px solid ${colors.accent}`
+                                  : `1px solid ${colors.cardBorder}`,
+                                background: thinkingUserChoice === option
+                                  ? (isDark ? 'rgba(194, 154, 108, 0.15)' : 'rgba(194, 154, 108, 0.12)')
+                                  : colors.cardBg,
+                                color: colors.text,
+                                fontSize: 14,
+                                cursor: 'pointer',
+                                flex: '1 1 auto',
+                                minWidth: 140,
+                              }}
+                            >
+                              {option}
+                            </button>
+                          ))}
+                        </div>
+                        <div style={{ marginBottom: 16 }}>
+                          <input
+                            type="text"
+                            value={thinkingCustomAnswer}
+                            onChange={(e) => {
+                              setThinkingCustomAnswer(e.target.value);
+                              if (e.target.value.trim()) setThinkingUserChoice('');
+                            }}
+                            placeholder="Or tell me in your own words..."
+                            style={{
+                              width: '100%',
+                              padding: '12px 16px',
+                              borderRadius: 8,
+                              border: `1px solid ${inputBorder}`,
+                              background: inputBg,
+                              color: colors.text,
+                              fontSize: 14,
+                            }}
+                          />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                          <button
+                            onClick={async () => {
+                              const choice = thinkingCustomAnswer.trim() || thinkingUserChoice;
+                              if (!choice) return;
+
+                              console.log('[thinking-orchestrator] Continue: start', { detectedMode: thinkingDetectedMode, hasChoice: !!choice });
+                              setThinkingUserChoice(choice);
+                              setThinkingGenerating(true);
+                              setThinkingStage('result');
+                              setThinkingAnalysisOutput(null);
+                              setThinkingActionOutput(null);
+                              setThinkingDumpInput('');
+                              setThinkingSortedOutput('');
+
+                              const combinedInput = `${thinkingInput.trim()}\n\nWhen asked "${thinkingClarifyQuestion}", they answered: "${choice}"`;
+
+                              // Determine which prompt to use based on detected mode
+                              const isLearning = thinkingDetectedMode === 'learning' || choice.toLowerCase().includes('understand') || choice.toLowerCase().includes('learn');
+
+                              const thinkingModePrompt = `You are VERA — a strategic thinker with a chess player's mind. Calm, clear, sees 10 moves ahead. Someone needs help thinking through something.
+
+**What I'm hearing:**
+One sentence. Reflect back the core of what they're wrestling with.
+
+**The angles you might not be seeing:**
+2-3 perspectives or factors they may have overlooked. Not obvious stuff — the things that are easy to miss when you're in it.
+
+**The real question:**
+Often the stated question isn't the actual question. Name what this might really be about.
+
+**A way to think about it:**
+A framework, analogy, or way of looking at this that creates clarity. Not advice — a lens.
+
+**If you had to decide right now:**
+What would you lean toward and why? Not telling them what to do — showing them what their gut might already know.
+
+Tone: Calm, clear, insightful. Like a brilliant friend who makes you think better.`;
+
+                              const learningModePrompt = `You are VERA — a brilliant tutor who makes complex things click. Patient but doesn't waste time. Actually excited about helping people understand.
+
+**What you're trying to understand:**
+One sentence. Reflect back what they want to learn.
+
+**The simple version:**
+Explain it like they're smart but new to this. No jargon. Use an analogy if it helps.
+
+**Why it matters:**
+Connect it to something real. Why should they care? What does this unlock?
+
+**The key insight:**
+The one thing that, once you get it, everything else makes sense.
+
+**Want to go deeper?**
+Offer to explain a specific part in more detail, give examples, or test their understanding.
+
+Tone: Clear, engaging, zero condescension. Like the best teacher you ever had.`;
+
+                              const analysisPrompt = isLearning ? learningModePrompt : thinkingModePrompt;
+
+                              try {
+                                // FIRST CALL: Analysis
+                                const analysisResponse = await fetch('/api/ops/generate', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    systemPrompt: analysisPrompt,
+                                    userInput: combinedInput,
+                                    mode: generationMode,
+                                    provider: selectedProvider,
+                                    taskType: 'thinking-analysis',
+                                    activityId: 'thinking-analysis',
+                                  }),
+                                });
+
+                                let analysisData: any = null;
+                                try {
+                                  analysisData = await analysisResponse.json();
+                                } catch (jsonErr) {
+                                  console.error('[thinking-orchestrator] Continue: analysis response.json() failed', jsonErr);
+                                  analysisData = { content: '' };
+                                }
+                                if (!analysisResponse.ok) throw new Error(analysisData?.error || 'Generation failed');
+
+                                const analysisText = analysisData?.content || '';
+                                setThinkingAnalysisOutput(analysisText);
+
+                                // SECOND CALL: Action / Next Step
+                                const actionPrompt = isLearning
+                                  ? `You are VERA. Someone is trying to learn something. Based on the analysis, give them a concrete learning path.
+
+**Your next step:**
+One specific thing to do right now to deepen understanding. Be concrete — a resource, an exercise, a question to explore.
+
+**The test:**
+How will they know they really get it? Give them a way to check their understanding.
+
+**If you want to go further:**
+One path for going deeper once they've got the basics.
+
+Tone: Encouraging, clear, actionable.`
+                                  : `You are VERA. Someone is thinking through a decision or problem. Based on the analysis, help them move forward.
+
+**Your next step:**
+One specific thing to do right now to get unstuck. Not "think about it more" — something concrete.
+
+**The check-in:**
+How will they know if they're on the right track? Give them a signal to watch for.
+
+**A question to sit with:**
+Leave them with something to reflect on. Not advice — a question that opens up clarity.
+
+Tone: Calm, empowering, grounded.`;
+
+                                const actionInput = `${combinedInput}\n\nContext from analysis:\n${analysisText}`;
+
+                                const actionResponse = await fetch('/api/ops/generate', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    systemPrompt: actionPrompt,
+                                    userInput: actionInput,
+                                    mode: generationMode,
+                                    provider: selectedProvider,
+                                    taskType: 'thinking-action',
+                                    activityId: 'thinking-action',
+                                  }),
+                                });
+
+                                let actionData: any = null;
+                                try {
+                                  actionData = await actionResponse.json();
+                                } catch (jsonErr) {
+                                  console.error('[thinking-orchestrator] Continue: action response.json() failed', jsonErr);
+                                  actionData = { content: '' };
+                                }
+                                if (!actionResponse.ok) throw new Error(actionData?.error || 'Generation failed');
+
+                                setThinkingActionOutput(actionData?.content || '');
+                              } catch (err) {
+                                console.error('[thinking-orchestrator] Continue: generation error', err);
+                                setThinkingAnalysisOutput('Something went wrong. Please try again.');
+                                setThinkingActionOutput('Something went wrong. Please try again.');
+                              } finally {
+                                setThinkingGenerating(false);
+                              }
+                            }}
+                            disabled={thinkingGenerating || (!thinkingUserChoice && !thinkingCustomAnswer.trim())}
+                            style={{
+                              padding: '10px 18px',
+                              borderRadius: 8,
+                              border: 'none',
+                              background: (!thinkingUserChoice && !thinkingCustomAnswer.trim())
+                                ? (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(140,110,80,0.2)')
+                                : colors.accent,
+                              color: (!thinkingUserChoice && !thinkingCustomAnswer.trim()) ? colors.textMuted : 'white',
+                              fontSize: 13,
+                              fontWeight: 600,
+                              cursor: (!thinkingUserChoice && !thinkingCustomAnswer.trim()) ? 'not-allowed' : 'pointer',
+                            }}
+                          >
+                            {thinkingGenerating ? 'Working...' : 'Continue'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SECTION THREE: ANALYSIS (collapsible) - only in result stage */}
+                    {thinkingStage === 'result' && thinkingAnalysisOutput && (
+                      <div style={{
+                        width: '100%',
+                        padding: '18px',
+                        borderRadius: 12,
+                        background: colors.cardBg,
+                        border: `1px solid ${colors.cardBorder}`,
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: showThinkingAnalysis ? 12 : 0 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            {thinkingDetectedMode === 'learning' ? 'The Breakdown' : 'The Analysis'}
+                          </div>
+                          <button
+                            onClick={() => setShowThinkingAnalysis(!showThinkingAnalysis)}
+                            style={{
+                              padding: '4px 10px',
+                              borderRadius: 6,
+                              border: `1px solid ${colors.cardBorder}`,
+                              background: 'transparent',
+                              color: colors.textMuted,
+                              fontSize: 12,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {showThinkingAnalysis ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                        {showThinkingAnalysis && (
+                          <div className="output-area" style={{
+                            padding: '16px',
+                            background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)',
+                            borderRadius: 10,
+                            color: colors.text,
+                            fontSize: 14,
+                            lineHeight: 1.6,
+                            maxHeight: 350,
+                            overflowY: 'auto',
+                          }}>
+                            <FormattedOutput content={thinkingAnalysisOutput} colors={colors} isDark={isDark} />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* SECTION FOUR: YOUR NEXT STEP - only in result stage */}
+                    {thinkingStage === 'result' && (
+                      <div style={{
+                        width: '100%',
+                        padding: '18px',
+                        borderRadius: 12,
+                        background: colors.cardBg,
+                        border: `1px solid ${colors.cardBorder}`,
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            {thinkingDetectedMode === 'learning' ? 'Your Learning Path' : 'Your Next Move'}
+                          </div>
+                          <button
+                            onClick={() => {
+                              handleCopy(thinkingActionOutput || '');
+                            }}
+                            disabled={!thinkingActionOutput}
+                            style={{
+                              padding: '6px 10px',
+                              borderRadius: 8,
+                              border: `1px solid ${colors.cardBorder}`,
+                              background: colors.cardBg,
+                              cursor: thinkingActionOutput ? 'pointer' : 'default',
+                              fontSize: 12,
+                              fontWeight: 500,
+                              color: thinkingActionOutput ? colors.text : colors.textMuted,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6,
+                            }}
+                          >
+                            <OpsIcon type="copy" color={colors.accent} />
+                            Copy
+                          </button>
+                        </div>
+                        <div className="output-area" style={{
+                          padding: '20px',
+                          background: colors.cardBg,
+                          border: `1px solid ${colors.cardBorder}`,
+                          borderRadius: 10,
+                          minHeight: 120,
+                          maxHeight: 300,
+                          overflowY: 'auto',
+                          color: colors.text,
+                          fontSize: 14,
+                          lineHeight: 1.6,
+                        }}>
+                          {thinkingGenerating && !thinkingActionOutput ? (
+                            <div style={{ color: colors.textMuted, fontSize: 13 }}>Generating...</div>
+                          ) : thinkingActionOutput ? (
+                            <FormattedOutput content={thinkingActionOutput} colors={colors} isDark={isDark} />
+                          ) : (
+                            <div style={{ color: colors.textMuted, fontSize: 13 }}>Your next step will appear here.</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SECTION FIVE: GO DEEPER - only after both analysis and action outputs are ready */}
+                    {thinkingStage === 'result' && thinkingAnalysisOutput && thinkingActionOutput && (
+                      <div style={{
+                        width: '100%',
+                        padding: '18px',
+                        borderRadius: 12,
+                        background: colors.cardBg,
+                        border: `1px solid ${colors.cardBorder}`,
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            GO DEEPER
+                          </div>
+                          <button
+                            onClick={() => {
+                              handleCopy(thinkingSortedOutput || '');
+                            }}
+                            disabled={!thinkingSortedOutput}
+                            style={{
+                              padding: '6px 10px',
+                              borderRadius: 8,
+                              border: `1px solid ${colors.cardBorder}`,
+                              background: colors.cardBg,
+                              cursor: thinkingSortedOutput ? 'pointer' : 'default',
+                              fontSize: 12,
+                              fontWeight: 500,
+                              color: thinkingSortedOutput ? colors.text : colors.textMuted,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6,
+                            }}
+                          >
+                            <OpsIcon type="copy" color={colors.accent} />
+                            Copy
+                          </button>
+                        </div>
+
+                        <div style={{ color: colors.text, fontSize: 14, lineHeight: 1.6, marginBottom: 12 }}>
+                          {thinkingDetectedMode === 'learning'
+                            ? "Want to go deeper? Tell me what's still fuzzy or what specific part you want to understand better."
+                            : "Want to really think this through? Dump all the factors here — the pros, cons, fears, hopes, what-ifs. Everything that's weighing on this. I'll help you see the pattern."}
+                        </div>
+
+                        <textarea
+                          value={thinkingDumpInput}
+                          onChange={(e) => setThinkingDumpInput(e.target.value)}
+                          placeholder={
+                            thinkingDetectedMode === 'learning'
+                              ? "I still don't get the part about... / Can you explain more about..."
+                              : "On one hand... but then... and I'm worried about... but I also want..."
+                          }
+                          rows={5}
+                          style={{
+                            width: '100%',
+                            padding: '14px 16px',
+                            borderRadius: 10,
+                            border: `1px solid ${inputBorder}`,
+                            background: inputBg,
+                            color: colors.text,
+                            fontSize: 14,
+                            lineHeight: 1.6,
+                            resize: 'vertical',
+                            marginBottom: 12,
+                          }}
+                        />
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
+                          <button
+                            onClick={async () => {
+                              const dump = thinkingDumpInput.trim();
+                              if (!dump) return;
+
+                              setThinkingSorting(true);
+                              setThinkingSortedOutput('');
+
+                              const deeperPrompt = thinkingDetectedMode === 'learning'
+                                ? `You are VERA — a brilliant tutor going deeper on a topic. They want to understand something better.
+
+**Let me clarify:**
+Address their specific confusion directly.
+
+**The key concept:**
+Explain the core idea they're missing or struggling with.
+
+**An analogy:**
+Use a relatable comparison to make it click.
+
+**Try this:**
+Give them a way to test their understanding or apply what they learned.
+
+**Still fuzzy?**
+Offer to go even deeper on a specific part.
+
+Be specific to their question. Make it click.`
+                                : `You are VERA — a strategic mind helping someone think through a decision. They just dumped all their considerations, fears, and factors.
+
+**The core tension:**
+Name the real conflict underneath all of this. What are they actually torn between? (Usually it's not the obvious thing)
+
+**What I notice:**
+Patterns in their thinking. Are they fear-driven? Overthinking? Missing something obvious? Being too logical and ignoring gut? Too emotional and ignoring reality?
+
+**The question you're avoiding:**
+There's usually one question they don't want to face. Name it gently.
+
+**A reframe:**
+Offer a different way to look at this that might unlock clarity.
+
+**If I had to push you:**
+What does their gut already know? Reflect it back to them.
+
+Be specific to what they shared. Use their words.`;
+
+                              const deeperUserMessage = `${thinkingInput}\n\nTheir clarification: ${thinkingUserChoice}\n\nGoing deeper:\n${dump}`;
+
+                              try {
+                                const deeperResponse = await fetch('/api/ops/generate', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    systemPrompt: deeperPrompt,
+                                    userInput: deeperUserMessage,
+                                    mode: generationMode,
+                                    provider: selectedProvider,
+                                    taskType: 'thinking-analysis',
+                                    activityId: 'thinking-analysis',
+                                  }),
+                                });
+
+                                const deeperData = await deeperResponse.json();
+                                if (!deeperResponse.ok) throw new Error(deeperData.error || 'Generation failed');
+
+                                setThinkingSortedOutput(deeperData.content || '');
+                              } catch (err) {
+                                console.error('Thinking go deeper error:', err);
+                                setThinkingSortedOutput('Something went wrong. Please try again.');
+                              } finally {
+                                setThinkingSorting(false);
+                              }
+                            }}
+                            disabled={thinkingSorting || !thinkingDumpInput.trim()}
+                            style={{
+                              padding: '10px 18px',
+                              borderRadius: 8,
+                              border: 'none',
+                              background: thinkingSorting || !thinkingDumpInput.trim()
+                                ? (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(140,110,80,0.2)')
+                                : colors.accent,
+                              color: thinkingSorting || !thinkingDumpInput.trim() ? colors.textMuted : 'white',
+                              fontSize: 13,
+                              fontWeight: 600,
+                              cursor: thinkingSorting || !thinkingDumpInput.trim() ? 'not-allowed' : 'pointer',
+                            }}
+                          >
+                            {thinkingSorting ? 'Working...' : 'Go deeper'}
+                          </button>
+                        </div>
+
+                        {thinkingSortedOutput && (
+                          <div style={{
+                            width: '100%',
+                            padding: '16px',
+                            borderRadius: 10,
+                            background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)',
+                            border: `1px solid ${colors.cardBorder}`,
+                          }}>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 10 }}>
+                              HERE'S WHAT I SEE
+                            </div>
+                            <div className="output-area" style={{
+                              color: colors.text,
+                              fontSize: 14,
+                              lineHeight: 1.6,
+                              maxHeight: 320,
+                              overflowY: 'auto',
+                            }}>
+                              <FormattedOutput content={thinkingSortedOutput} colors={colors} isDark={isDark} />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ACTION BUTTONS - only in result stage */}
+                    {thinkingStage === 'result' && (
+                      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+                        <button
+                          onClick={() => {
+                            setThinkingInput('');
+                            setThinkingAnalysisOutput(null);
+                            setThinkingActionOutput(null);
+                            setThinkingDumpInput('');
+                            setThinkingSortedOutput('');
+                            setThinkingSorting(false);
+                            setShowThinkingAnalysis(false);
+                            setThinkingStage('input');
+                            setThinkingClarifyQuestion('');
+                            setThinkingClarifyOptions([]);
+                            setThinkingClarifyInsight('');
+                            setThinkingUserChoice('');
+                            setThinkingCustomAnswer('');
+                            setThinkingDetectedMode(null);
+                          }}
+                          style={{
+                            padding: '10px 20px',
+                            borderRadius: 8,
+                            border: `1px solid ${isDark ? 'rgb(156 163 175)' : 'rgb(209 213 219)'}`,
+                            background: 'transparent',
+                            color: isDark ? 'rgb(209 213 219)' : 'rgb(75 85 99)',
+                            fontSize: 14,
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = 'rgb(251 191 36)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = isDark ? 'rgb(156 163 175)' : 'rgb(209 213 219)';
+                          }}
+                        >
+                          Start Over
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (thinkingActionOutput) {
+                              try {
+                                await navigator.clipboard.writeText(thinkingActionOutput);
+                              } catch (err) {
+                                console.error('Failed to copy:', err);
+                              }
+                            }
+                          }}
+                          disabled={!thinkingActionOutput}
+                          style={{
+                            padding: '10px 20px',
+                            borderRadius: 8,
+                            border: 'none',
+                            background: thinkingActionOutput ? colors.accent : colors.cardBorder,
+                            color: thinkingActionOutput ? '#fff' : colors.textMuted,
+                            fontSize: 14,
+                            fontWeight: 500,
+                            cursor: thinkingActionOutput ? 'pointer' : 'default',
+                          }}
+                        >
+                          Copy Response
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (!thinkingActionOutput) return;
+                            const title = 'Clear My Head - ' + (thinkingInput.trim().slice(0, 50) || 'Next Step');
+                            const saved: SavedOutput = {
+                              id: `${Date.now()}`,
+                              space: selectedSpace || 'General',
+                              timestamp: new Date().toISOString(),
+                              activityId: 'thinking-orchestrator',
+                              text: `${title}\n\n${thinkingActionOutput.trim()}`,
+                            };
+                            try {
+                              const key = 'vera.savedOutputs.v1';
+                              const existingRaw = localStorage.getItem(key);
+                              const existing: SavedOutput[] = existingRaw ? JSON.parse(existingRaw) : [];
+                              existing.unshift(saved);
+                              localStorage.setItem(key, JSON.stringify(existing));
+                              setSaveState('saved');
+                              setTimeout(() => setSaveState('idle'), 2000);
+                            } catch (err) {
+                              console.error('Save error:', err);
+                              setSaveState('error');
+                              setTimeout(() => setSaveState('idle'), 2000);
+                            }
+                          }}
+                          disabled={!thinkingActionOutput}
+                          style={{
+                            padding: '10px 20px',
+                            borderRadius: 8,
+                            border: '1px solid rgb(245 158 11)',
+                            background: saveState === 'saved' ? 'rgb(245 158 11)' : 'transparent',
+                            color: saveState === 'saved' ? 'white' : 'rgb(245 158 11)',
+                            fontSize: 14,
+                            fontWeight: 500,
+                            cursor: thinkingActionOutput ? 'pointer' : 'default',
+                            opacity: thinkingActionOutput ? 1 : 0.5,
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (thinkingActionOutput && saveState === 'idle') {
+                              e.currentTarget.style.background = 'rgba(245, 158, 11, 0.1)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (thinkingActionOutput && saveState === 'idle') {
+                              e.currentTarget.style.background = 'transparent';
+                            }
+                          }}
+                        >
+                          {saveState === 'saved' ? 'Saved!' : saveState === 'error' ? 'Error' : 'Save'}
+                        </button>
+                        <button
+                          onClick={() => router.push('/sanctuary')}
+                          style={{
+                            padding: '10px 20px',
+                            borderRadius: 8,
+                            border: '1px solid rgb(251 191 36)',
+                            background: 'transparent',
+                            color: 'rgb(251 191 36)',
+                            fontSize: 14,
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(251, 191, 36, 0.1)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'transparent';
+                          }}
+                        >
+                          Talk to VERA
+                        </button>
+                      </div>
+                    )}
+
+                    {/* DISCLAIMER */}
+                    <div style={{
+                      textAlign: 'center',
+                      marginTop: 24,
+                      fontSize: 11,
+                      color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(60,50,45,0.4)',
+                      lineHeight: 1.5,
+                    }}>
+                      VERA is a thinking partner, not a substitute for professional expertise. Trust your own judgment.
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : selectedAction.id === 'wellness-orchestrator' ? (
+              <>
+                <div style={{ width: '100%', animation: 'fadeIn 0.4s ease-out', display: 'flex', justifyContent: 'center' }}>
+                  <div style={{ width: '100%', maxWidth: 860, display: 'flex', flexDirection: 'column', gap: 24 }}>
+                    {/* Header */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div style={{ fontSize: 24, fontWeight: 600, color: colors.text }}>
+                        Check In
+                      </div>
+                      <div style={{ fontSize: 14, color: colors.textMuted }}>
+                        For your heart, your head, and your habits.
+                      </div>
+                    </div>
+
+                    {/* SECTION ONE: INPUT */}
+                    <div style={{
+                      width: '100%',
+                      padding: '18px',
+                      borderRadius: 12,
+                      background: colors.cardBg,
+                      border: `1px solid ${colors.cardBorder}`,
+                    }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 12 }}>
+                        What's Going On
+                      </div>
+                      <textarea
+                        value={wellnessInput}
+                        onChange={(e) => setWellnessInput(e.target.value)}
+                        placeholder="I keep fighting with... / I can't get myself to... / I'm feeling... / I need to talk about..."
+                        rows={5}
+                        className="input-field"
+                        disabled={wellnessGenerating}
+                        style={{
+                          width: '100%',
+                          padding: '18px 18px',
+                          borderRadius: 12,
+                          border: `1px solid ${inputBorder}`,
+                          background: inputBg,
+                          color: colors.text,
+                          fontSize: 16,
+                          lineHeight: 1.6,
+                          resize: 'vertical',
+                          opacity: wellnessGenerating ? 0.7 : 1,
+                        }}
+                      />
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: 12 }}>
+                        <button
+                          onClick={async () => {
+                            if (!wellnessInput.trim()) return;
+                            setWellnessGenerating(true);
+                            
+                            try {
+                              const response = await fetch('/api/ops/generate', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  systemPrompt: `You are VERA — that Aquarius friend who saw this coming. Someone's checking in about life stuff.
+
+They said: ${wellnessInput.trim()}
+
+First, figure out if this is RELATIONSHIP (about a person/conflict/dynamic) or SELF-CARE (about habits/stress/taking care of themselves).
+
+Respond in EXACTLY this format:
+
+MODE: relationship OR self-care
+INSIGHT: [One knowing sentence — you've seen this before]
+QUESTION: [A specific clarifying question]
+OPTION1: [Specific to their situation]
+OPTION2: [Specific to their situation]
+OPTION3: [Something else / broader option]
+
+Be warm but real. Aquarius friend energy — you love them but you're not going to pretend you didn't see this coming.`,
+                                  userInput: wellnessInput,
+                                  mode: generationMode,
+                                  provider: selectedProvider,
+                                  taskType: 'respond',
+                                  activityId: 'respond',
+                                })
+                              });
+                              
+                              const data = await response.json();
+                              console.log('Raw API response:', data);
+                              console.log('Content:', data.content || data.response);
+                              
+                              const content = data.content || data.response || '';
+                              
+                              try {
+                                const modeMatch = content.match(/MODE:\s*(relationship|self-care)/i);
+                                const insightMatch = content.match(/INSIGHT:\s*([^\n]+)/i);
+                                const questionMatch = content.match(/QUESTION:\s*([^\n]+)/i);
+                                const option1Match = content.match(/OPTION1:\s*([^\n]+)/i);
+                                const option2Match = content.match(/OPTION2:\s*([^\n]+)/i);
+                                const option3Match = content.match(/OPTION3:\s*([^\n]+)/i);
+                                
+                                const mode = modeMatch ? modeMatch[1].toLowerCase() : 'relationship';
+                                const insight = insightMatch ? insightMatch[1].trim() : '';
+                                const question = questionMatch ? questionMatch[1].trim() : 'Tell me more about what\'s going on.';
+                                const options = [
+                                  option1Match ? option1Match[1].trim() : 'Tell me more',
+                                  option2Match ? option2Match[1].trim() : 'Help me process this',
+                                  option3Match ? option3Match[1].trim() : 'I need practical advice'
+                                ].filter(Boolean);
+                                
+                                setWellnessMode(mode);
+                                setWellnessClarifyQuestion(insight ? insight + '\n\n' + question : question);
+                                setWellnessClarifyOptions(options);
+                                setWellnessClarifyInsight(insight);
+                                setWellnessStage('clarify');
+                              } catch (parseError) {
+                                console.error('Structured text parse error:', parseError);
+                                console.error('Failed to parse content:', content);
+                                // Fallback: show the raw content
+                                setWellnessClarifyQuestion(content || 'What\'s the heart of what\'s going on?');
+                                setWellnessClarifyOptions(['Tell me more', 'Help me process this', 'I need practical advice']);
+                                setWellnessMode('self-care');
+                                setWellnessClarifyInsight('');
+                                setWellnessStage('clarify');
+                              }
+                            } catch (error) {
+                              console.error('API error:', error);
+                              // Fallback to clarify stage with basic options
+                              setWellnessClarifyQuestion('What\'s the heart of what\'s going on?');
+                              setWellnessClarifyOptions(['Tell me more', 'Help me process this', 'I need practical advice']);
+                              setWellnessMode('self-care');
+                              setWellnessClarifyInsight('');
+                              setWellnessStage('clarify');
+                            } finally {
+                              setWellnessGenerating(false);
+                            }
+                          }}
+                          disabled={wellnessGenerating || !wellnessInput.trim()}
+                          style={{
+                            padding: '10px 18px',
+                            borderRadius: 8,
+                            border: 'none',
+                            background: wellnessGenerating || !wellnessInput.trim()
+                              ? (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(140,110,80,0.2)')
+                              : colors.accent,
+                            color: wellnessGenerating || !wellnessInput.trim() ? colors.textMuted : 'white',
+                            fontSize: 13,
+                            fontWeight: 600,
+                            cursor: wellnessGenerating || !wellnessInput.trim() ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          {wellnessGenerating ? 'Working...' : 'Talk to me'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* SECTION TWO: CLARIFY */}
+                    {wellnessStage === 'clarify' && (
+                      <div style={{
+                        width: '100%',
+                        padding: '18px',
+                        borderRadius: 12,
+                        background: isDark ? 'rgba(194, 154, 108, 0.08)' : 'rgba(194, 154, 108, 0.1)',
+                        border: `1px solid ${isDark ? 'rgba(194, 154, 108, 0.2)' : 'rgba(194, 154, 108, 0.25)'}`,
+                      }}>
+                        {wellnessClarifyInsight && (
+                          <div style={{ 
+                            fontSize: 14, 
+                            color: colors.textMuted, 
+                            marginBottom: 12, 
+                            fontStyle: 'italic',
+                            lineHeight: 1.4 
+                          }}>
+                            {wellnessClarifyInsight}
+                          </div>
+                        )}
+                        <div style={{ fontSize: 16, color: colors.text, marginBottom: 16, fontWeight: 600 }}>
+                          {wellnessClarifyQuestion}
+                        </div>
+                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+                          {wellnessClarifyOptions.map((option, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                setWellnessUserChoice(option);
+                                setWellnessGenerating(true);
+                                setWellnessAnalysisOutput(null);
+                                setWellnessActionOutput(null);
+
+                                const isRelationship = wellnessMode === 'relationship';
+                                const analysisPrompt = isRelationship
+                                  ? `You are VERA — that Aquarius friend who's seen this pattern in their life before.
+
+They're dealing with: ${wellnessInput.trim()}
+They clarified: ${option}
+
+Give them the ANALYSIS only (the action comes separately):
+
+**What I see:**
+One sentence — reflect back what's actually happening, not what they're telling themselves.
+
+**The pattern:**
+2-3 sentences. You've watched them do this. Name the dynamic — is it the same type of conflict? The same dance? Call it out with love.
+
+**The part you might not want to see:**
+Gently name what they might be contributing. Not blame — just reality.
+
+Be warm but honest. Aquarius friend after two glasses of wine.`
+                                  : `You are VERA — that friend who has their life together but doesn't judge you for struggling.
+
+They're dealing with: ${wellnessInput.trim()}
+They clarified: ${option}
+
+Give them the ANALYSIS only:
+
+**What I see:**
+One sentence — what's actually going on, not the excuse.
+
+**Why this keeps happening:**
+2-3 sentences. Not the surface reason. The real one — perfectionism? Self-worth? Exhaustion?
+
+**The lie you're telling yourself:**
+Call out the unhelpful story. 'I should be able to...' / 'Everyone else can...' Be funny about it.
+
+Be real but kind. No toxic positivity.`;
+
+                                const userMessage = `${wellnessInput.trim()}\n\nWhen asked "${wellnessClarifyQuestion}", they answered: "${option}"`;
+
+                                (async () => {
+                                  try {
+                                    // ANALYSIS CALL
+                                    const analysisResponse = await fetch('/api/ops/generate', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        systemPrompt: analysisPrompt,
+                                        userInput: userMessage,
+                                        mode: generationMode,
+                                        provider: selectedProvider,
+                                        taskType: 'respond',
+                                        activityId: 'respond',
+                                      }),
+                                    });
+
+                                    let analysisData: any;
+                                    try {
+                                      analysisData = await analysisResponse.json();
+                                    } catch {
+                                      analysisData = { content: '' };
+                                    }
+                                    if (!analysisResponse.ok) throw new Error(analysisData?.error || 'Generation failed');
+
+                                    setWellnessAnalysisOutput(analysisData?.content || '');
+
+                                    // ACTION CALL
+                                    const actionPrompt = isRelationship
+                                      ? `You are VERA. Based on the relationship situation, give ONE specific next step.
+
+**Your one move:**
+Something specific and doable. Not 'communicate better' — a real action they can take this week.
+
+**Why this might help:**
+One sentence connecting it to breaking the pattern.
+
+**And hey:**
+End with something loving. You're tough because you care.
+
+Be direct. Be specific. Aquarius friend energy.`
+                                      : `You are VERA. Based on their self-care struggle, give ONE specific next step.
+
+**Your one move:**
+The smallest possible version. Make it embarrassingly easy.
+
+**Why this might actually work:**
+One sentence — why this is different from their usual all-or-nothing approach.
+
+**Permission slip:**
+Give them permission to be human. To start small. To not be perfect.
+
+No guilt. No toxic positivity. Just real.`;
+
+                                    const actionResponse = await fetch('/api/ops/generate', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        systemPrompt: actionPrompt,
+                                        userInput: userMessage + '\n\nContext:\n' + (analysisData?.content || ''),
+                                        mode: generationMode,
+                                        provider: selectedProvider,
+                                        taskType: 'respond',
+                                        activityId: 'respond',
+                                      }),
+                                    });
+
+                                    let actionData: any;
+                                    try {
+                                      actionData = await actionResponse.json();
+                                    } catch {
+                                      actionData = { content: '' };
+                                    }
+                                    if (!actionResponse.ok) throw new Error(actionData?.error || 'Generation failed');
+
+                                    setWellnessActionOutput(actionData?.content || '');
+                                    setWellnessStage('result');
+                                  } catch (err) {
+                                    console.error('Wellness generation error:', err);
+                                    setWellnessAnalysisOutput('Something went wrong. Please try again.');
+                                    setWellnessActionOutput('Something went wrong. Please try again.');
+                                    setWellnessStage('result');
+                                  } finally {
+                                    setWellnessGenerating(false);
+                                  }
+                                })();
+                              }}
+                              style={{
+                                padding: '10px 16px',
+                                borderRadius: 8,
+                                border: wellnessUserChoice === option
+                                  ? `2px solid ${colors.accent}`
+                                  : `1px solid ${colors.cardBorder}`,
+                                background: wellnessUserChoice === option
+                                  ? (isDark ? 'rgba(194, 154, 108, 0.15)' : 'rgba(194, 154, 108, 0.12)')
+                                  : colors.cardBg,
+                                color: colors.text,
+                                fontSize: 14,
+                                cursor: 'pointer',
+                                flex: '1 1 auto',
+                                minWidth: 140,
+                              }}
+                            >
+                              {option}
+                            </button>
+                          ))}
+                        </div>
+                        
+                        <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${isDark ? 'rgba(194, 154, 108, 0.2)' : 'rgba(194, 154, 108, 0.25)'}` }}>
+                          <div style={{ fontSize: 14, color: colors.textMuted, marginBottom: 10 }}>
+                            Or tell me in your own words...
+                          </div>
+                          <textarea
+                            value={wellnessCustomAnswer}
+                            onChange={(e) => setWellnessCustomAnswer(e.target.value)}
+                            placeholder="What's really going on..."
+                            rows={3}
+                            style={{
+                              width: '100%',
+                              padding: '12px',
+                              borderRadius: 8,
+                              border: `1px solid ${colors.cardBorder}`,
+                              background: colors.cardBg,
+                              color: colors.text,
+                              fontSize: 14,
+                              lineHeight: 1.5,
+                              resize: 'vertical',
+                              marginBottom: 12,
+                            }}
+                          />
+                          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <button
+                              onClick={() => {
+                                const customAnswer = wellnessCustomAnswer.trim();
+                                if (!customAnswer) return;
+                                
+                                setWellnessUserChoice(customAnswer);
+                                setWellnessGenerating(true);
+                                setWellnessAnalysisOutput(null);
+                                setWellnessActionOutput(null);
+
+                                const isRelationship = wellnessMode === 'relationship';
+                                const combinedInput = `${wellnessInput.trim()}\n\nWhen asked "${wellnessClarifyQuestion}", they answered: "${customAnswer}"`;
+                                
+                                const analysisPrompt = isRelationship
+                                  ? `You are VERA — that Aquarius friend who's seen this pattern in their life before.
+
+They're dealing with: ${wellnessInput.trim()}
+They clarified: ${customAnswer}
+
+Give them the ANALYSIS only (the action comes separately):
+
+**What I see:**
+One sentence — reflect back what's actually happening, not what they're telling themselves.
+
+**The pattern:**
+2-3 sentences. You've watched them do this. Name the dynamic — is it the same type of conflict? The same dance? Call it out with love.
+
+**The part you might not want to see:**
+Gently name what they might be contributing. Not blame — just reality.
+
+Be warm but honest. Aquarius friend after two glasses of wine.`
+                                  : `You are VERA — that friend who has their life together but doesn't judge you for struggling.
+
+They're dealing with: ${wellnessInput.trim()}
+They clarified: ${customAnswer}
+
+Give them the ANALYSIS only:
+
+**What I see:**
+One sentence — what's actually going on, not the excuse.
+
+**Why this keeps happening:**
+2-3 sentences. Not the surface reason. The real one — perfectionism? Self-worth? Exhaustion?
+
+**The lie you're telling yourself:**
+Call out the unhelpful story. 'I should be able to...' / 'Everyone else can...' Be funny about it.
+
+Be real but kind. No toxic positivity.`;
+
+                                (async () => {
+                                  try {
+                                    // ANALYSIS CALL
+                                    const analysisResponse = await fetch('/api/ops/generate', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        systemPrompt: analysisPrompt,
+                                        userInput: combinedInput,
+                                        mode: generationMode,
+                                        provider: selectedProvider,
+                                        taskType: 'respond',
+                                        activityId: 'respond',
+                                      }),
+                                    });
+
+                                    const analysisData = await analysisResponse.json();
+                                    if (!analysisResponse.ok) throw new Error(analysisData?.error || 'Generation failed');
+
+                                    setWellnessAnalysisOutput(analysisData?.content || '');
+
+                                    // ACTION CALL
+                                    const actionPrompt = isRelationship
+                                      ? `You are VERA. Based on the relationship situation, give ONE specific next step.
+
+**Your one move:**
+Something specific and doable. Not 'communicate better' — a real action they can take this week.
+
+**Why this might help:**
+One sentence connecting it to breaking the pattern.
+
+**And hey:**
+End with something loving. You're tough because you care.
+
+Be direct. Be specific. Aquarius friend energy.`
+                                      : `You are VERA. Based on their self-care struggle, give ONE specific next step.
+
+**Your one move:**
+The smallest possible version. Make it embarrassingly easy.
+
+**Why this might actually work:**
+One sentence — why this is different from their usual all-or-nothing approach.
+
+**Permission slip:**
+Give them permission to be human. To start small. To not be perfect.
+
+No guilt. No toxic positivity. Just real.`;
+
+                                    const actionResponse = await fetch('/api/ops/generate', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        systemPrompt: actionPrompt,
+                                        userInput: combinedInput + '\n\nContext:\n' + (analysisData?.content || ''),
+                                        mode: generationMode,
+                                        provider: selectedProvider,
+                                        taskType: 'respond',
+                                        activityId: 'respond',
+                                      }),
+                                    });
+
+                                    const actionData = await actionResponse.json();
+                                    if (!actionResponse.ok) throw new Error(actionData?.error || 'Generation failed');
+
+                                    setWellnessActionOutput(actionData?.content || '');
+                                    setWellnessStage('result');
+                                  } catch (err) {
+                                    console.error('Wellness generation error:', err);
+                                    setWellnessAnalysisOutput('Something went wrong. Please try again.');
+                                    setWellnessActionOutput('Something went wrong. Please try again.');
+                                    setWellnessStage('result');
+                                  } finally {
+                                    setWellnessGenerating(false);
+                                  }
+                                })();
+                              }}
+                              disabled={wellnessGenerating || !wellnessCustomAnswer.trim()}
+                              style={{
+                                padding: '8px 16px',
+                                borderRadius: 6,
+                                border: 'none',
+                                background: wellnessGenerating || !wellnessCustomAnswer.trim() 
+                                  ? colors.cardBorder 
+                                  : colors.accent,
+                                color: wellnessGenerating || !wellnessCustomAnswer.trim() 
+                                  ? colors.textMuted 
+                                  : 'white',
+                                fontSize: 13,
+                                fontWeight: 500,
+                                cursor: wellnessGenerating || !wellnessCustomAnswer.trim() 
+                                  ? 'not-allowed' 
+                                  : 'pointer',
+                              }}
+                            >
+                              {wellnessGenerating ? 'Working...' : 'Continue'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SECTION THREE: ANALYSIS */}
+                    {wellnessStage === 'result' && wellnessAnalysisOutput && (
+                      <div style={{
+                        width: '100%',
+                        padding: '18px',
+                        borderRadius: 12,
+                        background: colors.cardBg,
+                        border: `1px solid ${colors.cardBorder}`,
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            What I See
+                          </div>
+                          <button
+                            onClick={() => setShowWellnessAnalysis(!showWellnessAnalysis)}
+                            style={{
+                              padding: '4px 10px',
+                              borderRadius: 6,
+                              border: `1px solid ${colors.cardBorder}`,
+                              background: 'transparent',
+                              color: colors.textMuted,
+                              fontSize: 12,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {showWellnessAnalysis ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                        {showWellnessAnalysis && (
+                          <div className="output-area" style={{
+                            padding: '16px',
+                            background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)',
+                            borderRadius: 10,
+                            color: colors.text,
+                            fontSize: 14,
+                            lineHeight: 1.6,
+                            maxHeight: 350,
+                            overflowY: 'auto',
+                          }}>
+                            <FormattedOutput content={wellnessAnalysisOutput} colors={colors} isDark={isDark} />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* SECTION FOUR: ACTION */}
+                    {wellnessStage === 'result' && wellnessActionOutput && (
+                      <div style={{
+                        width: '100%',
+                        padding: '18px',
+                        borderRadius: 12,
+                        background: colors.cardBg,
+                        border: `1px solid ${colors.cardBorder}`,
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            Your Next Step
+                          </div>
+                          <button
+                            onClick={() => handleCopy(wellnessActionOutput || '')}
+                            disabled={!wellnessActionOutput}
+                            style={{
+                              padding: '6px 10px',
+                              borderRadius: 8,
+                              border: `1px solid ${colors.cardBorder}`,
+                              background: colors.cardBg,
+                              cursor: wellnessActionOutput ? 'pointer' : 'default',
+                              fontSize: 12,
+                              fontWeight: 500,
+                              color: wellnessActionOutput ? colors.text : colors.textMuted,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6,
+                            }}
+                          >
+                            <OpsIcon type="copy" color={colors.accent} />
+                            Copy
+                          </button>
+                        </div>
+                        <div className="output-area" style={{
+                          padding: '20px',
+                          background: colors.cardBg,
+                          border: `1px solid ${colors.cardBorder}`,
+                          borderRadius: 10,
+                          minHeight: 120,
+                          maxHeight: 300,
+                          overflowY: 'auto',
+                          color: colors.text,
+                          fontSize: 14,
+                          lineHeight: 1.6,
+                        }}>
+                          {wellnessGenerating && !wellnessActionOutput ? (
+                            <div style={{ color: colors.textMuted, fontSize: 13 }}>Generating...</div>
+                          ) : wellnessActionOutput ? (
+                            <FormattedOutput content={wellnessActionOutput} colors={colors} isDark={isDark} />
+                          ) : (
+                            <div style={{ color: colors.textMuted, fontSize: 13 }}>Your next step will appear here.</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SECTION FIVE: GO DEEPER */}
+                    {wellnessAnalysisOutput && wellnessActionOutput && (
+                      <div style={{
+                        width: '100%',
+                        padding: '18px',
+                        borderRadius: 12,
+                        background: isDark ? 'rgba(194, 154, 108, 0.08)' : 'rgba(194, 154, 108, 0.1)',
+                        border: `1px solid ${isDark ? 'rgba(194, 154, 108, 0.2)' : 'rgba(194, 154, 108, 0.25)'}`,
+                      }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 12 }}>
+                          GO DEEPER
+                        </div>
+                        <div style={{ fontSize: 14, color: colors.text, marginBottom: 14, lineHeight: 1.5 }}>
+                          {wellnessMode === 'relationship'
+                            ? "Want me to really go there? Tell me the whole story — the history, the patterns, the thing you haven't said out loud yet. I'll help you see what's actually going on."
+                            : "Want to figure out why this keeps happening? Tell me what you've tried, what failed, and what you're really avoiding. No judgment, I promise."}
+                        </div>
+                        <textarea
+                          value={wellnessDumpInput}
+                          onChange={(e) => setWellnessDumpInput(e.target.value)}
+                          placeholder={wellnessMode === 'relationship'
+                            ? "It started when... and this isn't the first time... and I haven't told anyone but..."
+                            : "I've tried... but I always... and honestly I think it's because..."}
+                          rows={4}
+                          className="input-field"
+                          disabled={wellnessSorting}
+                          style={{
+                            width: '100%',
+                            padding: '18px 18px',
+                            borderRadius: 12,
+                            border: `1px solid ${inputBorder}`,
+                            background: inputBg,
+                            color: colors.text,
+                            fontSize: 14,
+                            lineHeight: 1.6,
+                            resize: 'vertical',
+                            marginBottom: 12,
+                            opacity: wellnessSorting ? 0.7 : 1,
+                          }}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                          <button
+                            onClick={async () => {
+                              const dumpText = wellnessDumpInput.trim();
+                              if (!dumpText) return;
+
+                              setWellnessSorting(true);
+
+                              const deeperPrompt = wellnessMode === 'relationship'
+                                ? `You are VERA — like that Aquarius friend who's seen this movie before. They just told you the full story. Time to lovingly help them see the pattern.
+
+**The pattern I see:**
+Name the recurring theme. This isn't the first time, is it?
+
+**What you keep choosing (and why):**
+Gently name what they might be getting out of this pattern, even if it's painful.
+
+**The question you're avoiding:**
+There's something they don't want to ask themselves. Name it.
+
+**What would actually change this:**
+The real thing that would break the pattern — even if it's hard to hear.
+
+**I say this with love:**
+End with genuine care. You're being honest because you want better for them.
+
+Be specific to their story. Use their words.`
+                                : `You are VERA — getting real about why their self-care keeps falling apart. They told you the history. Time to find the actual block.
+
+**The pattern:**
+What keeps happening? Name the cycle.
+
+**What's really in the way:**
+Not time. Not motivation. The real thing.
+
+**The smallest possible version:**
+What's the tiniest step that they could actually do? Make it almost embarrassingly small.
+
+**A system, not a goal:**
+Give them something sustainable, not aspirational.
+
+**You're not broken:**
+End with reassurance. They're human, not hopeless.
+
+Be specific. Use their words.`;
+
+                              try {
+                                const deeperResponse = await fetch('/api/ops/generate', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    systemPrompt: deeperPrompt,
+                                    userInput: `${wellnessInput.trim()}\n\nThey told me: "${dumpText}"`,
+                                    mode: generationMode,
+                                    provider: selectedProvider,
+                                    taskType: 'respond',
+                                    activityId: 'respond',
+                                  }),
+                                });
+
+                                let deeperData: any;
+                                try {
+                                  deeperData = await deeperResponse.json();
+                                } catch {
+                                  deeperData = { content: '' };
+                                }
+                                if (!deeperResponse.ok) throw new Error(deeperData?.error || 'Generation failed');
+
+                                setWellnessSortedOutput(deeperData?.content || '');
+                              } catch (err) {
+                                console.error('Wellness deeper error:', err);
+                                setWellnessSortedOutput('Something went wrong. Please try again.');
+                              } finally {
+                                setWellnessSorting(false);
+                              }
+                            }}
+                            disabled={wellnessSorting || !wellnessDumpInput.trim()}
+                            style={{
+                              padding: '10px 18px',
+                              borderRadius: 8,
+                              border: 'none',
+                              background: wellnessSorting || !wellnessDumpInput.trim()
+                                ? (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(140,110,80,0.2)')
+                                : colors.accent,
+                              color: wellnessSorting || !wellnessDumpInput.trim() ? colors.textMuted : 'white',
+                              fontSize: 13,
+                              fontWeight: 600,
+                              cursor: wellnessSorting || !wellnessDumpInput.trim() ? 'not-allowed' : 'pointer',
+                            }}
+                          >
+                            {wellnessSorting ? 'Working...' : wellnessMode === 'relationship' ? 'Help me see it clearly' : 'Help me figure this out'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SECTION SIX: GO DEEPER RESULT */}
+                    {wellnessSortedOutput && (
+                      <div style={{
+                        width: '100%',
+                        padding: '18px',
+                        borderRadius: 12,
+                        background: colors.cardBg,
+                        border: `1px solid ${colors.cardBorder}`,
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            Here's What I See
+                          </div>
+                          <button
+                            onClick={() => handleCopy(wellnessSortedOutput || '')}
+                            disabled={!wellnessSortedOutput}
+                            style={{
+                              padding: '6px 10px',
+                              borderRadius: 8,
+                              border: `1px solid ${colors.cardBorder}`,
+                              background: colors.cardBg,
+                              cursor: wellnessSortedOutput ? 'pointer' : 'default',
+                              fontSize: 12,
+                              fontWeight: 500,
+                              color: wellnessSortedOutput ? colors.text : colors.textMuted,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6,
+                            }}
+                          >
+                            <OpsIcon type="copy" color={colors.accent} />
+                            Copy
+                          </button>
+                        </div>
+                        <div className="output-area" style={{
+                          padding: '20px',
+                          background: colors.cardBg,
+                          border: `1px solid ${colors.cardBorder}`,
+                          borderRadius: 10,
+                          minHeight: 150,
+                          maxHeight: 400,
+                          overflowY: 'auto',
+                          color: colors.text,
+                          fontSize: 14,
+                          lineHeight: 1.6,
+                        }}>
+                          <FormattedOutput content={wellnessSortedOutput} colors={colors} isDark={isDark} />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ACTION BUTTONS */}
+                    {wellnessStage === 'result' && wellnessActionOutput && (
+                      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+                        <button
+                          onClick={() => {
+                            setWellnessInput('');
+                            setWellnessAnalysisOutput(null);
+                            setWellnessActionOutput(null);
+                            setShowWellnessAnalysis(false);
+                            setWellnessMode(null);
+                            setWellnessUserChoice('');
+                            setWellnessClarifyQuestion('');
+                            setWellnessClarifyOptions([]);
+                            setWellnessStage('input');
+                            setWellnessClarifyInsight('');
+                            setWellnessCustomAnswer('');
+                          }}
+                          style={{
+                            padding: '10px 20px',
+                            borderRadius: 8,
+                            border: `1px solid ${isDark ? 'rgb(156 163 175)' : 'rgb(209 213 219)'}`,
+                            background: 'transparent',
+                            color: isDark ? 'rgb(209 213 219)' : 'rgb(75 85 99)',
+                            fontSize: 14,
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = 'rgb(251 191 36)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = isDark ? 'rgb(156 163 175)' : 'rgb(209 213 219)';
+                          }}
+                        >
+                          Start Over
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (wellnessActionOutput) {
+                              try {
+                                await navigator.clipboard.writeText(wellnessActionOutput);
+                              } catch (err) {
+                                console.error('Failed to copy:', err);
+                              }
+                            }
+                          }}
+                          disabled={!wellnessActionOutput}
+                          style={{
+                            padding: '10px 20px',
+                            borderRadius: 8,
+                            border: 'none',
+                            background: wellnessActionOutput ? colors.accent : colors.cardBorder,
+                            color: wellnessActionOutput ? '#fff' : colors.textMuted,
+                            fontSize: 14,
+                            fontWeight: 500,
+                            cursor: wellnessActionOutput ? 'pointer' : 'default',
+                          }}
+                        >
+                          Copy Response
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (!wellnessActionOutput) return;
+                            const title = 'Check In - ' + (wellnessInput.trim().slice(0, 50) || 'Next Step');
+                            const saved: SavedOutput = {
+                              id: `${Date.now()}`,
+                              space: selectedSpace || 'General',
+                              timestamp: new Date().toISOString(),
+                              activityId: 'wellness-orchestrator',
+                              text: `${title}\n\n${wellnessActionOutput.trim()}`,
+                            };
+                            try {
+                              const key = 'vera.savedOutputs.v1';
+                              const existingRaw = localStorage.getItem(key);
+                              const existing: SavedOutput[] = existingRaw ? JSON.parse(existingRaw) : [];
+                              existing.unshift(saved);
+                              localStorage.setItem(key, JSON.stringify(existing));
+                              setSaveState('saved');
+                              setTimeout(() => setSaveState('idle'), 2000);
+                            } catch (err) {
+                              console.error('Save error:', err);
+                              setSaveState('error');
+                              setTimeout(() => setSaveState('idle'), 2000);
+                            }
+                          }}
+                          disabled={!wellnessActionOutput}
+                          style={{
+                            padding: '10px 20px',
+                            borderRadius: 8,
+                            border: '1px solid rgb(245 158 11)',
+                            background: saveState === 'saved' ? 'rgb(245 158 11)' : 'transparent',
+                            color: saveState === 'saved' ? 'white' : 'rgb(245 158 11)',
+                            fontSize: 14,
+                            fontWeight: 500,
+                            cursor: wellnessActionOutput ? 'pointer' : 'default',
+                            opacity: wellnessActionOutput ? 1 : 0.5,
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (wellnessActionOutput && saveState === 'idle') {
+                              e.currentTarget.style.background = 'rgba(245, 158, 11, 0.1)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (wellnessActionOutput && saveState === 'idle') {
+                              e.currentTarget.style.background = 'transparent';
+                            }
+                          }}
+                        >
+                          {saveState === 'saved' ? 'Saved!' : saveState === 'error' ? 'Error' : 'Save'}
+                        </button>
+                        <button
+                          onClick={() => router.push('/sanctuary')}
+                          style={{
+                            padding: '10px 20px',
+                            borderRadius: 8,
+                            border: '1px solid rgb(251 191 36)',
+                            background: 'transparent',
+                            color: 'rgb(251 191 36)',
+                            fontSize: 14,
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(251, 191, 36, 0.1)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'transparent';
+                          }}
+                        >
+                          Talk to VERA
+                        </button>
+                      </div>
+                    )}
+
+                    {/* DISCLAIMER */}
+                    <div style={{
+                      textAlign: 'center',
+                      marginTop: 24,
+                      fontSize: 11,
+                      color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(60,50,45,0.4)',
+                      lineHeight: 1.5,
+                    }}>
+                      VERA is not a therapist. For serious mental health concerns, please reach out to a professional.
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : selectedAction?.id === 'appkit-orchestrator' ? (
+              <>
+                <div style={{ width: '100%', animation: 'fadeIn 0.4s ease-out', display: 'flex', justifyContent: 'center' }}>
+                  <div style={{ width: '100%', maxWidth: 860, display: 'flex', flexDirection: 'column', gap: 24 }}>
+                    {/* Header */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div style={{ fontSize: 24, fontWeight: 600, color: colors.text }}>
+                        Application Kit
+                      </div>
+                      <div style={{ fontSize: 14, color: colors.textMuted }}>
+                        Paste the job. Paste your resume. Get everything you need to land it.
+                      </div>
+                    </div>
+
+                {appKitStage === 'input' && (
+                  <>
+                    {/* JOB DESCRIPTION INPUT */}
+                    <div style={{
+                      width: '100%',
+                      padding: '18px',
+                      borderRadius: 12,
+                      background: colors.cardBg,
+                      border: `1px solid ${colors.cardBorder}`,
+                    }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        THE JOB
+                      </div>
+                      <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>Paste the full job description</p>
+                      <textarea
+                        value={appKitJobDescription}
+                        onChange={(e) => setAppKitJobDescription(e.target.value)}
+                        placeholder="Copy and paste the entire job posting here..."
+                        rows={8}
+                        className="input-field"
+                        style={{
+                          width: '100%',
+                          padding: '18px 18px',
+                          borderRadius: 12,
+                          border: `1px solid ${colors.cardBorder}`,
+                          background: colors.cardBg,
+                          color: colors.text,
+                          fontSize: 16,
+                          lineHeight: 1.6,
+                          resize: 'vertical',
+                        }}
+                      />
+                    </div>
+
+                    {/* RESUME INPUT */}
+                    <div style={{
+                      width: '100%',
+                      padding: '18px',
+                      borderRadius: 12,
+                      background: colors.cardBg,
+                      border: `1px solid ${colors.cardBorder}`,
+                    }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        YOUR BACKGROUND
+                      </div>
+                      <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>Paste your current resume or describe your experience</p>
+                      <textarea
+                        value={appKitResume}
+                        onChange={(e) => setAppKitResume(e.target.value)}
+                        placeholder="Your resume, work history, skills, achievements..."
+                        rows={8}
+                        className="input-field"
+                        style={{
+                          width: '100%',
+                          padding: '18px 18px',
+                          borderRadius: 12,
+                          border: `1px solid ${colors.cardBorder}`,
+                          background: colors.cardBg,
+                          color: colors.text,
+                          fontSize: 16,
+                          lineHeight: 1.6,
+                          resize: 'vertical',
+                        }}
+                      />
+                    </div>
+
+                    {/* OPTIONAL HIGHLIGHTS */}
+                    <div style={{
+                      width: '100%',
+                      padding: '18px',
+                      borderRadius: 12,
+                      background: colors.cardBg,
+                      border: `1px solid ${colors.cardBorder}`,
+                    }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        ANYTHING ELSE? (Optional)
+                      </div>
+                      <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>Career change? Gaps to explain? Specific things to highlight?</p>
+                      <textarea
+                        value={appKitHighlights}
+                        onChange={(e) => setAppKitHighlights(e.target.value)}
+                        placeholder="I'm transitioning from... / I want to emphasize... / I have a gap because..."
+                        rows={4}
+                        className="input-field"
+                        style={{
+                          width: '100%',
+                          padding: '18px 18px',
+                          borderRadius: 12,
+                          border: `1px solid ${colors.cardBorder}`,
+                          background: colors.cardBg,
+                          color: colors.text,
+                          fontSize: 16,
+                          lineHeight: 1.6,
+                          resize: 'vertical',
+                        }}
+                      />
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: 12 }}>
+                        <button
+                          onClick={async () => {
+                            if (!appKitJobDescription.trim() || !appKitResume.trim()) return;
+                            setAppKitGenerating(true);
+
+                            const context = `
+JOB DESCRIPTION:
+${appKitJobDescription}
+
+CANDIDATE BACKGROUND:
+${appKitResume}
+
+${appKitHighlights ? `ADDITIONAL CONTEXT:\n${appKitHighlights}` : ''}
+                            `.trim();
+
+                        try {
+                          // Generate all 5 outputs
+                          const [resumeRes, coverRes, followUpRes, interviewRes, thankYouRes] = await Promise.all([
+                            // RESUME
+                            fetch('/api/ops/generate', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                activityId: 'respond',
+                                systemPrompt: `You are VERA — a recruiting insider who's reviewed 10,000 resumes. You know what gets interviews and what gets trashed.
+
+Create a TAILORED RESUME for this specific job. Rules:
+- Match keywords from the job description NATURALLY (not keyword stuffing)
+- Every bullet = Achievement + Action + Impact (numbers when possible)
+- Lead with most relevant experience for THIS role
+- Remove fluff, generic statements, and anything that doesn't serve THIS application
+- ATS-friendly: simple formatting, standard section headers
+- Keep it to 1-2 pages max
+
+Format it cleanly. Output ONLY the resume content, ready to copy into a document.`,
+                                userMessage: context
+                              })
+                            }),
+                            // COVER LETTER
+                            fetch('/api/ops/generate', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                activityId: 'respond',
+                                systemPrompt: `You are VERA — a hiring manager who's read 10,000 cover letters. You can spot a template in 2 seconds.
+
+Write a COVER LETTER that actually stands out. Rules:
+- First line CANNOT be "I'm excited to apply..." — hook them immediately
+- Show you understand THEIR needs, not just what you want
+- One specific example proving you can do this job
+- 3 paragraphs max — respect their time
+- Clear closing with confidence (not desperation)
+- Sound human, not corporate
+
+Output ONLY the cover letter, ready to send.`,
+                                userMessage: context
+                              })
+                            }),
+                            // FOLLOW-UP EMAIL
+                            fetch('/api/ops/generate', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                activityId: 'respond',
+                                systemPrompt: `You are VERA. Write a FOLLOW-UP EMAIL to send 3-5 days after applying if they haven't heard back.
+
+Rules:
+- Subject line that gets opened (not "Following up on my application")
+- 3-4 sentences MAX
+- Add value — don't just "check in"
+- Reference something specific about the role or company
+- Professional but human
+- Clear call to action
+
+Output ONLY the email, ready to send.`,
+                                userMessage: context
+                              })
+                            }),
+                            // INTERVIEW PREP
+                            fetch('/api/ops/generate', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                activityId: 'respond',
+                                systemPrompt: `You are VERA — an interview coach who knows exactly what this company will ask based on the job description.
+
+Create an INTERVIEW PREP guide:
+
+**5 Questions They'll Likely Ask:**
+For each question:
+- The question
+- Why they're asking it
+- How to answer using THIS candidate's background
+- A sample answer outline
+
+**3 Smart Questions to Ask Them:**
+Questions that show you've done your homework and are evaluating THEM too.
+
+**Your Key Talking Points:**
+The 3 things this candidate should emphasize in every answer to stand out.
+
+**The "Tell Me About Yourself" Answer:**
+A 60-second version tailored to this specific role.
+
+Be specific to THIS job and THIS candidate's background.`,
+                                userMessage: context
+                              })
+                            }),
+                            // THANK YOU NOTE
+                            fetch('/api/ops/generate', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                activityId: 'respond',
+                                systemPrompt: `You are VERA. Write a THANK YOU EMAIL to send within 24 hours after an interview.
+
+Rules:
+- Send within 24 hours
+- Reference [SPECIFIC TOPIC FROM INTERVIEW] — leave this as a placeholder they'll fill in
+- Reiterate enthusiasm without sounding desperate
+- Brief: 4-5 sentences
+- End with confidence
+
+Output ONLY the email template.`,
+                                userMessage: context
+                              })
+                            })
+                          ]);
+
+                          const [resumeData, coverData, followUpData, interviewData, thankYouData] = await Promise.all([
+                            resumeRes.json(),
+                            coverRes.json(),
+                            followUpRes.json(),
+                            interviewRes.json(),
+                            thankYouRes.json()
+                          ]);
+
+                          setAppKitResumeOutput(resumeData.content || resumeData.response || '');
+                          setAppKitCoverLetterOutput(coverData.content || coverData.response || '');
+                          setAppKitFollowUpOutput(followUpData.content || followUpData.response || '');
+                          setAppKitInterviewPrepOutput(interviewData.content || interviewData.response || '');
+                          setAppKitThankYouOutput(thankYouData.content || thankYouData.response || '');
+                          setAppKitStage('results');
+                        } catch (error) {
+                          console.error('Error generating kit:', error);
+                        } finally {
+                          setAppKitGenerating(false);
+                        }
+                      }}
+                      disabled={appKitGenerating || !appKitJobDescription.trim() || !appKitResume.trim()}
+                      style={{
+                        padding: '10px 18px',
+                        borderRadius: 8,
+                        border: 'none',
+                        background: appKitGenerating || !appKitJobDescription.trim() || !appKitResume.trim()
+                          ? (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(140,110,80,0.2)')
+                          : colors.accent,
+                        color: appKitGenerating || !appKitJobDescription.trim() || !appKitResume.trim() ? colors.textMuted : 'white',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: appKitGenerating || !appKitJobDescription.trim() || !appKitResume.trim() ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      {appKitGenerating ? 'Building Your Kit...' : 'Build My Application Kit'}
+                    </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {appKitStage === 'results' && (
+                  <>
+                    {/* Header */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div style={{ fontSize: 24, fontWeight: 600, color: colors.text }}>
+                        Application Kit
+                      </div>
+                      <div style={{ fontSize: 14, color: colors.textMuted }}>
+                        Your complete job application toolkit is ready.
+                      </div>
+                    </div>
+                  
+                    {/* TABS */}
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+                      {[
+                        { id: 'resume', label: 'Resume' },
+                        { id: 'cover', label: 'Cover Letter' },
+                        { id: 'followup', label: 'Follow-Up Email' },
+                        { id: 'interview', label: 'Interview Prep' },
+                        { id: 'thankyou', label: 'Thank You Note' }
+                      ].map((tab) => (
+                        <button
+                          key={tab.id}
+                          onClick={() => setAppKitActiveTab(tab.id)}
+                          style={{
+                            padding: '8px 16px',
+                            borderRadius: 8,
+                            fontWeight: 500,
+                            transition: 'all 0.2s ease',
+                            background: appKitActiveTab === tab.id ? colors.accent : colors.cardBg,
+                            color: appKitActiveTab === tab.id ? '#fff' : colors.text,
+                            border: `1px solid ${appKitActiveTab === tab.id ? colors.accent : colors.cardBorder}`,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* TAB CONTENT */}
+                    <div style={{ background: colors.cardBg, borderRadius: 16, padding: 24, border: `1px solid ${colors.cardBorder}`, marginBottom: 24 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                        <h2 style={{ fontSize: 18, fontWeight: 500, color: colors.text, margin: 0 }}>
+                          {appKitActiveTab === 'resume' && 'Tailored Resume'}
+                          {appKitActiveTab === 'cover' && 'Cover Letter'}
+                          {appKitActiveTab === 'followup' && 'Follow-Up Email'}
+                          {appKitActiveTab === 'interview' && 'Interview Prep'}
+                          {appKitActiveTab === 'thankyou' && 'Thank You Note'}
+                        </h2>
+                        <button
+                          onClick={() => {
+                            const content = 
+                              appKitActiveTab === 'resume' ? appKitResumeOutput :
+                              appKitActiveTab === 'cover' ? appKitCoverLetterOutput :
+                              appKitActiveTab === 'followup' ? appKitFollowUpOutput :
+                              appKitActiveTab === 'interview' ? appKitInterviewPrepOutput :
+                              appKitThankYouOutput;
+                            navigator.clipboard.writeText(content);
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            padding: '6px 12px',
+                            fontSize: 13,
+                            border: `1px solid ${colors.cardBorder}`,
+                            borderRadius: 8,
+                            background: 'transparent',
+                            color: colors.text,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Copy
+                        </button>
+                      </div>
+                      
+                      <div style={{ maxWidth: 'none' }}>
+                        <FormattedOutput 
+                          content={
+                            appKitActiveTab === 'resume' ? appKitResumeOutput :
+                            appKitActiveTab === 'cover' ? appKitCoverLetterOutput :
+                            appKitActiveTab === 'followup' ? appKitFollowUpOutput :
+                            appKitActiveTab === 'interview' ? appKitInterviewPrepOutput :
+                            appKitThankYouOutput
+                          }
+                          colors={colors}
+                          isDark={isDark}
+                        />
+                      </div>
+                    </div>
+
+                    {/* BOTTOM BUTTONS */}
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 24 }}>
+                      <button
+                        onClick={() => {
+                          setAppKitStage('input');
+                          setAppKitJobDescription('');
+                          setAppKitResume('');
+                          setAppKitHighlights('');
+                          setAppKitResumeOutput('');
+                          setAppKitCoverLetterOutput('');
+                          setAppKitFollowUpOutput('');
+                          setAppKitInterviewPrepOutput('');
+                          setAppKitThankYouOutput('');
+                          setAppKitActiveTab('resume');
+                        }}
+                        style={{
+                          padding: '8px 24px',
+                          border: `1px solid ${isDark ? 'rgb(156 163 175)' : 'rgb(209 213 219)'}`,
+                          borderRadius: 8,
+                          background: 'transparent',
+                          color: isDark ? 'rgb(209 213 219)' : 'rgb(75 85 99)',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = 'rgb(251 191 36)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = isDark ? 'rgb(156 163 175)' : 'rgb(209 213 219)';
+                        }}
+                      >
+                        Start Over
+                      </button>
+                      <button
+                        onClick={() => {
+                          // Save functionality
+                          alert('Kit saved!');
+                        }}
+                        style={{
+                          padding: '8px 24px',
+                          border: '1px solid rgb(245 158 11)',
+                          color: 'rgb(245 158 11)',
+                          borderRadius: 8,
+                          background: 'transparent',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'rgba(245, 158, 11, 0.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'transparent';
+                        }}
+                      >
+                        Save Kit
+                      </button>
+                    </div>
+
+                    {/* DISCLAIMER */}
+                    <p style={{ textAlign: 'center', fontSize: 13, color: colors.textMuted }}>
+                      VERA helps you present your best self. Always review and personalize before sending.
+                    </p>
+                  </>
+                )}
+                  </div>
+                </div>
+              </>
+            ) : selectedAction.type === 'dropdown' && !selectedDropdownOption && selectedAction.id !== 'respond' && selectedAction.id !== 'boundaries' && selectedAction.id !== 'write-email' && selectedAction.id !== 'social-post' && selectedAction.id !== 'career' ? (
               <div style={{ width: '100%', maxWidth: 600, animation: 'fadeIn 0.4s ease-out' }}>
                 <div style={{ textAlign: 'center', marginBottom: 24 }}>
                   <h2 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 28, fontWeight: 300, color: colors.text, marginBottom: 8 }}>
@@ -1409,7 +6080,17 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
                 boundaryDelivery={boundaryDelivery}
                 onBoundaryDeliveryChange={setBoundaryDelivery}
                 workLifeMode={workLifeMode}
-                onWorkLifeModeChange={setWorkLifeMode}
+                onWorkLifeModeChange={(modeId) => {
+                  setWorkLifeMode(modeId);
+                  const activity = workLifeGroupedActivities.find((item) => item.id === modeId);
+                  if (activity) {
+                    setSelectedAction(activity);
+                    setSelectedDropdownOption(null);
+                    setFormFields({});
+                    setSimpleInput('');
+                  }
+                }}
+                workLifeActivities={workLifeGroupedActivities}
                 workLifeTone={workLifeTone}
                 onWorkLifeToneChange={setWorkLifeTone}
                 workLifeContext={workLifeContext}
@@ -1425,7 +6106,17 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
                 thinkingSecondaryMode={thinkingSecondaryMode}
                 onThinkingSecondaryModeChange={setThinkingSecondaryMode}
                 moneyMode={moneyMode}
-                onMoneyModeChange={setMoneyMode}
+                onMoneyModeChange={(modeId) => {
+                  setMoneyMode(modeId);
+                  const activity = moneyActivities.find((item) => item.id === modeId);
+                  if (activity) {
+                    setSelectedAction(activity);
+                    setSelectedDropdownOption(null);
+                    setFormFields({});
+                    setSimpleInput('');
+                  }
+                }}
+                moneyActivities={moneyActivities}
                 moneyPerspective={moneyPerspective}
                 onMoneyPerspectiveChange={setMoneyPerspective}
                 moneyScope={moneyScope}
@@ -1463,7 +6154,7 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
             )
           )}
 
-          {(isGenerating || output) && !compareOutputs && selectedAction?.id !== 'language-learning' && !(selectedAction?.id === 'career' && selectedDropdownOption?.id === 'application-kit') && (
+          {(isGenerating || output) && !compareOutputs && selectedAction?.id !== 'language-learning' && selectedAction?.id !== 'communication-orchestrator' && selectedAction?.id !== 'worklife-orchestrator' && !(selectedAction?.id === 'career' && selectedDropdownOption?.id === 'application-kit') && (
             <div ref={outputRef} style={{ width: '100%', maxWidth: 700, marginTop: 24, animation: 'fadeIn 0.4s ease-out' }}>
               <div style={{ height: 1, background: separatorColor, marginBottom: 16 }} />
 
@@ -1491,7 +6182,12 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
                       overflowY: 'auto',
                       boxShadow: isDark ? 'none' : '0 2px 12px rgba(0, 0, 0, 0.08)' 
                     }}>
-                      <FormattedOutput content={output || ''} colors={colors} isDark={isDark} />
+                      <FormattedOutput
+                        content={output || ''}
+                        colors={colors}
+                        isDark={isDark}
+                        showSignatureBadge={selectedAction?.id === 'decode-message'}
+                      />
                     </div>
                     {selectedAction?.id === 'decode-message' && coreMove && (
                       <div style={{ marginTop: 16 }}>
@@ -1724,7 +6420,12 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
                       flex: 1,
                       boxShadow: isDark ? 'none' : '0 2px 8px rgba(0, 0, 0, 0.06)' 
                     }}>
-                      <FormattedOutput content={content} colors={colors} isDark={isDark} />
+                      <FormattedOutput
+                        content={content}
+                        colors={colors}
+                        isDark={isDark}
+                        showSignatureBadge={selectedAction?.id === 'decode-message'}
+                      />
                     </div>
                   </div>
                 ))}

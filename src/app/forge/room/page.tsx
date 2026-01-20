@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function ForgeRoomPage() {
   const { userId } = await auth();
   if (!userId) {
-    redirect("/login");
+    redirect("/forge");
   }
 
   const access = await getUserAccessState(userId);

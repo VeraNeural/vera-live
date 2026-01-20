@@ -1,0 +1,46 @@
+# VERA Competitive Differentiation
+
+## Unique Features
+
+### Clarifying Questions
+- **How It Works**:
+  - Found in `src/lib/ops/components/DynamicForm.tsx`.
+  - Uses dropdown options to refine user input.
+
+### Personas
+- **How It Works**:
+  - Found in `src/lib/ops/providers/router.ts`.
+  - Example persona: `'persona': 'claude'`.
+
+### "Go Deeper" Pattern
+- **How It Works**:
+  - Found in `src/lib/ops/components/DynamicForm.tsx`.
+  - Uses `allowedThinkingModes` and `personaInput` to refine user input.
+
+## Differentiation from ChatGPT
+- **Focus on Emotional Intelligence**:
+  - Integrates Hume AI for emotional analysis.
+- **Activity-Based Design**:
+  - Structured around activities like Journal, Zen, Studio, etc.
+
+## Differentiation from Calm/Headspace
+- **Interactive Features**:
+  - Includes voice and chat interactions.
+- **Customizable Personas**:
+  - Tailored user experiences through personas.
+
+## Differentiation from Therapy Apps
+- **AI-Driven Insights**:
+  - Provides AI-generated emotional and activity insights.
+- **Scalable**:
+  - Designed for broad user bases, not limited to one-on-one therapy.
+
+## Why VERA Cannot Be Easily Copied
+- **Proprietary Patterns**:
+  - Clarifying questions, personas, and "Go Deeper" pattern.
+- **Unique Integrations**:
+  - Combines OpenAI, Hume AI, and Supabase in a seamless way.
+
+---
+
+This document highlights VERA's competitive differentiation, including unique features, comparisons with other platforms, and proprietary patterns that make it difficult to replicate.

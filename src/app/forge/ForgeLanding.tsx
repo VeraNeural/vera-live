@@ -11,6 +11,38 @@ export default function ForgeLanding() {
   const searchParams = useSearchParams();
   const canceled = searchParams.get("canceled");
 
+  const whoItsFor = [
+    "Builders and founders shipping real products",
+    "Developers who want deterministic specs and APIs",
+    "Operators who need repeatable, governed output",
+  ];
+
+  const whatYouGet = [
+    "Structured specs and PRDs",
+    "Technical design docs and API contracts",
+    "Landing page outlines and marketing drafts",
+    "Deterministic flow that stays consistent",
+  ];
+
+  const comparison = [
+    {
+      title: "Forge",
+      points: [
+        "Structured outputs with clear contracts",
+        "Repeatable, deterministic delivery",
+        "Governed flow across artifacts",
+      ],
+    },
+    {
+      title: "ChatGPT / Claude / Grok",
+      points: [
+        "Freeform answers, variable structure",
+        "Low repeatability across sessions",
+        "No governance between artifacts",
+      ],
+    },
+  ];
+
   async function handleUpgrade() {
     setLoading(true);
     setError("");
@@ -19,6 +51,11 @@ export default function ForgeLanding() {
       const res = await fetch("/api/stripe/forge-checkout", {
         method: "POST",
       });
+
+      if (res.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
 
       const data = await res.json();
 
@@ -131,6 +168,50 @@ export default function ForgeLanding() {
 
         <div
           style={{
+            width: "100%",
+            maxWidth: 720,
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: 16,
+            marginBottom: 32,
+          }}
+        >
+          <div
+            style={{
+              padding: 16,
+              borderRadius: 12,
+              background: "#14141a",
+              border: "1px solid #27272a",
+            }}
+          >
+            <div style={{ fontSize: 12, color: "#f59e0b", marginBottom: 8, letterSpacing: "0.12em" }}>
+              WHAT IT IS
+            </div>
+            <div style={{ fontSize: 14, color: "#e4e4e7", lineHeight: 1.7 }}>
+              Structured build + ship environment for deterministic specs, plans, and execution artifacts.
+            </div>
+          </div>
+          <div
+            style={{
+              padding: 16,
+              borderRadius: 12,
+              background: "#14141a",
+              border: "1px solid #27272a",
+            }}
+          >
+            <div style={{ fontSize: 12, color: "#f59e0b", marginBottom: 8, letterSpacing: "0.12em" }}>
+              WHO IT'S FOR
+            </div>
+            <div style={{ fontSize: 14, color: "#e4e4e7", lineHeight: 1.7 }}>
+              {whoItsFor.map((item) => (
+                <div key={item}>{item}</div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
             display: "flex",
             flexDirection: "column",
             gap: 12,
@@ -184,11 +265,64 @@ export default function ForgeLanding() {
 
         <div
           style={{
+            width: "100%",
+            maxWidth: 720,
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: 16,
+            marginBottom: 32,
+          }}
+        >
+          <div
+            style={{
+              padding: 16,
+              borderRadius: 12,
+              background: "#14141a",
+              border: "1px solid #27272a",
+            }}
+          >
+            <div style={{ fontSize: 12, color: "#f59e0b", marginBottom: 8, letterSpacing: "0.12em" }}>
+              WHAT YOU GET
+            </div>
+            <div style={{ fontSize: 14, color: "#e4e4e7", lineHeight: 1.7 }}>
+              {whatYouGet.map((item) => (
+                <div key={item}>{item}</div>
+              ))}
+            </div>
+          </div>
+          <div
+            style={{
+              padding: 16,
+              borderRadius: 12,
+              background: "#14141a",
+              border: "1px solid #27272a",
+            }}
+          >
+            <div style={{ fontSize: 12, color: "#f59e0b", marginBottom: 8, letterSpacing: "0.12em" }}>
+              COMPARISON
+            </div>
+            <div style={{ display: "grid", gap: 12 }}>
+              {comparison.map((block) => (
+                <div key={block.title} style={{ padding: 12, borderRadius: 10, background: "#101015", border: "1px solid #24242a" }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#e4e4e7", marginBottom: 6 }}>{block.title}</div>
+                  <div style={{ fontSize: 13, color: "#a1a1aa", lineHeight: 1.6 }}>
+                    {block.points.map((point) => (
+                      <div key={point}>{point}</div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
             marginBottom: 24,
             textAlign: "center",
           }}
         >
-          <span style={{ fontSize: 48, fontWeight: 700 }}>$24</span>
+          <span style={{ fontSize: 48, fontWeight: 700 }}>$29</span>
           <span style={{ fontSize: 18, color: "#71717a" }}>/month</span>
         </div>
 

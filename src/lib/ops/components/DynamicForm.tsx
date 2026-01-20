@@ -55,6 +55,8 @@ interface DynamicFormProps {
   onBoundaryDeliveryChange?: (deliveryId: string) => void;
   workLifeMode?: string;
   onWorkLifeModeChange?: (modeId: string) => void;
+  workLifeActivities?: Array<{ id: string; title: string; label?: string }>;
+  moneyActivities?: Array<{ id: string; title: string; label?: string }>;
   workLifeTone?: string;
   onWorkLifeToneChange?: (toneId: string) => void;
   workLifeContext?: string;
@@ -121,6 +123,8 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
   onBoundaryDeliveryChange,
   workLifeMode,
   onWorkLifeModeChange,
+  workLifeActivities,
+  moneyActivities,
   workLifeTone,
   onWorkLifeToneChange,
   workLifeContext,
@@ -281,17 +285,28 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
     { id: 'confirm-understanding', label: 'Confirm understanding' },
   ];
 
-  const [activeMode, setActiveMode] = useState<
-    'task' | 'decision' | 'planning' | 'career' | 'prioritization' | 'time' | 'overwhelm' | 'project'
-  >('task');
-  const showWorkLifeTone = action.id === 'work-life' && (activeMode === 'decision' || activeMode === 'planning');
+  const isWorkLifeActivity = Boolean(
+    (workLifeActivities && workLifeActivities.some((activity) => activity.id === action.id)) ||
+      action.id === 'work-life'
+  );
+  const isMoneyActivity = Boolean(
+    (moneyActivities && moneyActivities.some((activity) => activity.id === action.id)) || action.id === 'money'
+  );
+
+  const [activeMode, setActiveMode] = useState<string>('task-breakdown');
+  const showWorkLifeTone = isWorkLifeActivity && (activeMode === 'decision-helper' || activeMode === 'planning');
   const [showMoreModes, setShowMoreModes] = useState(false);
-  const workLifePrimaryModes = [
-    { id: 'task', label: 'Task Breakdown' },
-    { id: 'decision', label: 'Decision Helper' },
-    { id: 'planning', label: 'Planning' },
-    { id: 'career', label: 'Career' },
-  ];
+  const workLifePrimaryModes = (workLifeActivities?.length
+    ? workLifeActivities.map((activity) => ({
+        id: activity.id,
+        label: activity.label || activity.title,
+      }))
+    : [
+        { id: 'task-breakdown', label: 'Task Breakdown' },
+        { id: 'decision-helper', label: 'Decision Helper' },
+        { id: 'planning', label: 'Planning' },
+      ]
+  );
   const workLifeToneModes = [
     { id: 'clear', label: 'Clear' },
     { id: 'strategic', label: 'Strategic' },
@@ -306,12 +321,18 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
   ];
 
   const [showMoreMoneyModes, setShowMoreMoneyModes] = useState(false);
-  const moneyPrimaryModes = [
-    { id: 'budget-check', label: 'Budget Check' },
-    { id: 'savings-goal', label: 'Savings Goal' },
-    { id: 'decision-helper', label: 'Decision Helper' },
-    { id: 'money-conversations', label: 'Money Conversations' },
-  ];
+  const moneyPrimaryModes = moneyActivities?.length
+    ? moneyActivities.map((activity) => ({
+        id: activity.id,
+        label: activity.label || activity.title,
+      }))
+    : [
+        { id: 'budget-check', label: 'Budget Check' },
+        { id: 'savings-goal', label: 'Savings Goal' },
+        { id: 'investment-basics', label: 'Investment Basics' },
+        { id: 'expense-review', label: 'Expense Review' },
+        { id: 'money-conversations', label: 'Money Conversations' },
+      ];
   const moneyPerspectiveModes = [
     { id: 'conservative', label: 'Conservative' },
     { id: 'balanced', label: 'Balanced' },
@@ -462,6 +483,13 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
   }, [action.id, decodeEntry, onDecodeEntryChange]);
 
   React.useEffect(() => {
+    if (!isWorkLifeActivity) return;
+    if (!workLifeMode) return;
+    if (workLifeMode === activeMode) return;
+    setActiveMode(workLifeMode);
+  }, [isWorkLifeActivity, workLifeMode, activeMode]);
+
+  React.useEffect(() => {
     if (action.id === 'respond') {
       setShowMoreRespondModes(false);
     }
@@ -471,17 +499,22 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
       onBoundaryToneChange?.('gentle');
       onBoundaryDeliveryChange?.('');
     }
-    if (action.id === 'work-life') {
+    if (isWorkLifeActivity) {
       setShowMoreModes(false);
-      setActiveMode('task');
-      onWorkLifeModeChange?.('task');
+      const defaultWorkLifeId = workLifeMode || workLifeActivities?.[0]?.id || 'task-breakdown';
+      setActiveMode(defaultWorkLifeId);
+      if (!workLifeMode) {
+        onWorkLifeModeChange?.(defaultWorkLifeId);
+      }
       onWorkLifeToneChange?.('clear');
       onWorkLifeContextChange?.('');
       onWorkLifeSecondaryModeChange?.('');
     }
-    if (action.id === 'money') {
+    if (isMoneyActivity) {
       setShowMoreMoneyModes(false);
-      onMoneyModeChange?.('budget-check');
+      if (!moneyMode) {
+        onMoneyModeChange?.('budget-check');
+      }
       onMoneyPerspectiveChange?.('conservative');
       onMoneyScopeChange?.('');
       onMoneyContextChange?.('');
@@ -715,7 +748,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
         </>
       )}
 
-      {action.id === 'work-life' && onWorkLifeModeChange && (
+      {isWorkLifeActivity && onWorkLifeModeChange && (
         <>
           <div style={sectionLabelStyle}>Activity</div>
           <div style={layerCardStyle}>
@@ -815,7 +848,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
         </>
       )}
 
-      {action.id === 'money' && onMoneyModeChange && (
+      {isMoneyActivity && onMoneyModeChange && (
         <>
           <div style={sectionLabelStyle}>Activity</div>
           <div style={layerCardStyle}>

@@ -2,9 +2,11 @@ import { TimeOfDay, QuickPrompt } from '../types';
 
 export const getQuickPrompts = (timeOfDay: TimeOfDay): QuickPrompt[] => {
   return [
+    { text: "I just need to talk", category: 'emotional' },
     { text: "I'm overwhelmed", category: 'emotional' },
-    { text: "Help me focus", category: 'practical' },
-    { text: "I want to write", category: 'practical' },
+    { text: "Help me respond to something", category: 'practical' },
+    { text: "Something's on my mind", category: 'emotional' },
+    { text: "I'm applying for jobs", category: 'practical' },
   ];
 };
 

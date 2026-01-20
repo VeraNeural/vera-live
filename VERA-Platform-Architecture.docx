@@ -1,0 +1,175 @@
+# VERA Platform Architecture
+
+## Folder Structure
+
+### Root Directory
+- `.env.example`
+- `.env.local`
+- `.git/`
+- `.github/`
+- `.gitignore`
+- `.next/`
+- `.vercel/`
+- `.vscode/`
+- `checks/`
+- `ci/`
+- `docs/`
+- `eslint.config.mjs`
+- `next-env.d.ts`
+- `next.config.ts`
+- `node_modules/`
+- `package-lock.json`
+- `package.json`
+- `perf/`
+- `policies/`
+- `postcss.config.js`
+- `postcss.config.mjs`
+- `public/`
+- `README.md`
+- `scripts/`
+- `specs/`
+- `src/`
+- `tests/`
+- `tsconfig.json`
+- `tsconfig.tsbuildinfo`
+- `vitest.config.ts`
+
+### `src` Directory
+- `app/`
+- `components/`
+- `contexts/`
+- `core/`
+- `hooks/`
+- `lib/`
+- `middleware.ts`
+
+### `src/app` Directory
+- `admin/`
+- `api/`
+- `assessment/`
+- `auth/`
+- `chat/`
+- `favicon.ico`
+- `forge/`
+- `globals.css`
+- `layout.tsx`
+- `login/`
+- `page.tsx`
+- `professionals/`
+- `providers.tsx`
+- `sanctuary/`
+- `signal-integrity-mode/`
+- `signup/`
+- `trust/`
+- `vds/`
+- `voice/`
+
+### `src/components` Directory
+- `AttachmentButton.tsx`
+- `ChallengeConsentChip.tsx`
+- `icons/`
+- `ImagePreview.tsx`
+- `PaywallModal.tsx`
+- `pwa/`
+- `rest/`
+- `sanctuary/`
+- `sidebar/`
+- `TrustTransparencySidebar.tsx`
+- `vera/`
+- `VoiceButton.tsx`
+
+### `src/lib` Directory
+- `auth/`
+- `fileUtils.ts`
+- `hume/`
+- `journal/`
+- `library/`
+- `memory.ts`
+- `memoryExtractor.ts`
+- `ops/`
+- `sim/`
+- `studio/`
+- `supabase/`
+- `supabaseAdmin.ts`
+- `telemetry/`
+- `vera/`
+- `zen/`
+
+## Pages/Routes
+
+### Sanctuary
+- `page.tsx`: Main sanctuary page.
+- Subroutes:
+  - `journal/page.tsx`
+  - `zen/page.tsx`
+  - `studio/page.tsx`
+  - `studio/[category]/page.tsx`
+  - `rest/page.tsx`
+  - `recalibration/page.tsx`
+  - `library/page.tsx`
+
+### Voice
+- `page.tsx`: Voice-related features.
+
+### Trust
+- `page.tsx`: Trust-related features.
+
+### Other Routes
+- `signup/page.tsx`
+- `login/page.tsx`
+- `sanctuary/upgrade/page.tsx`
+
+## Components
+- `AttachmentButton.tsx`
+- `ChallengeConsentChip.tsx`
+- `ImagePreview.tsx`
+- `PaywallModal.tsx`
+- `TrustTransparencySidebar.tsx`
+- `VoiceButton.tsx`
+
+## Libraries/Utilities
+- `fileUtils.ts`
+- `memory.ts`
+- `memoryExtractor.ts`
+- `supabaseAdmin.ts`
+
+## Technology Stack
+
+### Dependencies
+- `@anthropic-ai/sdk`
+- `@clerk/nextjs`
+- `@supabase/ssr`
+- `@supabase/supabase-js`
+- `hume`
+- `lucide-react`
+- `next`
+- `openai`
+- `react`
+- `react-dom`
+- `stripe`
+
+### DevDependencies
+- `@tailwindcss/postcss`
+- `@types/node`
+- `@types/react`
+- `@types/react-dom`
+- `babel-plugin-react-compiler`
+- `eslint`
+- `eslint-config-next`
+- `tailwindcss`
+- `ts-node`
+- `typescript`
+- `vitest`
+
+### Scripts
+- `dev`
+- `build`
+- `start`
+- `lint`
+- `typecheck`
+- `test`
+- `verify:runtime`
+
+---
+
+This document provides a comprehensive overview of the VERA platform's architecture, including its folder structure, pages, components, libraries, and technology stack.

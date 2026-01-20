@@ -3,9 +3,18 @@
 
 export const ACTIVITY_PROMPT_FRAGMENTS: Record<string, string> = {
   // Communication
-  'decode-message': 'Provide a plain-text interpretation. Cover meaning and response orientation. Do not add new facts.',
+  'decode-message': 'Produce a single, coherent interpretive brief. State the definitive read first, then compress rationale into authoritative prose. Surface power dynamics and leverage explicitly. Explain why the message is framed this way. Name consequences explicitly. Provide one grounded next move in a single sentence. Do not hedge, do not speculate beyond the text. Do not use bullet lists, disclaimers, or questions. Tone intensity levels: measured / surgical / brutal. Default to surgical; only switch to measured or brutal if the user explicitly asks. Tone changes delivery sharpness only—never interpretation and never advice. Include confidence scoring exactly in this format: "Decode Confidence: 0.00–1.00" and "Rationale: ..." based only on linguistic compression, power asymmetry indicators, indirect request structures, responsibility shifting, and timing/context markers (if provided). If confidence < 0.60, explicitly name what is missing in a "Missing: ..." line; do not fill gaps. Badge rule: Only include the badge line "VERA Signature Decode™" if the output includes a single dominant interpretation, explicit power/leverage, named consequences, a grounded next move, and confidence scoring. Otherwise omit the badge line.',
   respond: 'Provide a ready-to-send response. Match the requested output shape. Do not add commitments.',
   boundaries: 'Provide a clear boundary statement. Keep it direct and respectful. Do not add new demands.',
+  'worklife-analysis': 'Provide warm, human analysis. Use custom systemPrompt directly.',
+  'worklife-action': 'Provide one clear next step. Use custom systemPrompt directly.',
+  'worklife-clarify': 'Provide JSON with clarifying question and options. Use custom systemPrompt directly.',
+  'worklife-sorted': 'Sort user task list into categories. Use custom systemPrompt directly.',
+  'money-analysis': 'Provide sharp CFO-style money analysis. Use custom systemPrompt directly.',
+  'money-action': 'Provide 7-day money reset action plan. Use custom systemPrompt directly.',
+  'thinking-detect': 'Detect whether user needs THINKING or LEARNING mode and provide clarifying question. Use custom systemPrompt directly.',
+  'thinking-analysis': 'Provide deep analysis based on detected mode (thinking or learning). Use custom systemPrompt directly.',
+  'thinking-action': 'Provide actionable next step based on detected mode (thinking or learning). Use custom systemPrompt directly.',
 
   // Work & Life
   'task-breakdown': 'Provide ordered steps. Keep steps actionable. Do not add new goals.',
@@ -63,4 +72,10 @@ export const ACTIVITY_PROMPT_FRAGMENTS: Record<string, string> = {
   'metaphor-maker': 'Provide multiple metaphors with usage notes. Keep it on concept.',
   'bio-about': 'Provide bio variants at multiple lengths. Use only provided facts.',
   'creative-writing': 'Provide multiple story ideas with key elements. Keep it on genre.',
+
+  // Relationships & Wellness Orchestrator
+  'wellness-clarify': 'Detect whether user needs RELATIONSHIP or SELF-CARE mode and provide clarifying question. Use custom systemPrompt directly.',
+  'wellness-analysis': 'Provide warm analysis based on detected mode (relationship or self-care). Use custom systemPrompt directly.',
+  'wellness-action': 'Provide one clear, doable next step. Use custom systemPrompt directly.',
+  'wellness-deeper': 'Provide deep pattern recognition and real blocks. Use custom systemPrompt directly.',
 };

@@ -1,0 +1,106 @@
+# VERA Features Complete
+
+## Orchestrators
+
+### Communication-Orchestrator
+- **Purpose**: Facilitates communication-related tasks.
+- **Flow**:
+  - **Input**: User provides communication context.
+  - **Clarify**: System asks clarifying questions.
+  - **Result**: Generates communication strategies or responses.
+
+### Worklife-Orchestrator
+- **Purpose**: Manages work-life balance tasks.
+- **Flow**:
+  - **Input**: User provides work-life context.
+  - **Clarify**: System refines input through questions.
+  - **Result**: Provides actionable insights or plans.
+
+### Money-Orchestrator
+- **Purpose**: Handles financial tasks.
+- **Flow**:
+  - **Input**: User provides financial context.
+  - **Clarify**: System asks for additional details.
+  - **Result**: Generates financial analysis or plans.
+
+### Thinking-Orchestrator
+- **Purpose**: Supports brainstorming and decision-making.
+- **Flow**:
+  - **Input**: User provides a problem or idea.
+  - **Clarify**: System refines the problem or idea.
+  - **Result**: Provides structured thoughts or solutions.
+
+### Wellness-Orchestrator
+- **Purpose**: Focuses on personal well-being.
+- **Flow**:
+  - **Input**: User provides wellness context.
+  - **Clarify**: System asks clarifying questions.
+  - **Result**: Suggests wellness strategies.
+
+### Appkit-Orchestrator
+- **Purpose**: Assists with job applications.
+- **Flow**:
+  - **Input**: User provides job-related details.
+  - **Clarify**: System refines the input.
+  - **Result**: Generates resumes, cover letters, and follow-ups.
+
+## Create Tools
+
+### Write Email
+- **Purpose**: Helps users draft professional emails.
+- **Flow**:
+  - **Input**: User provides email context.
+  - **Clarify**: System asks for additional details.
+  - **Result**: Generates a polished email.
+
+### Social Post
+- **Purpose**: Assists in creating social media posts.
+- **Flow**:
+  - **Input**: User provides post context.
+  - **Clarify**: System refines the input.
+  - **Result**: Generates a ready-to-post draft.
+
+### Bio
+- **Purpose**: Creates professional bios.
+- **Flow**:
+  - **Input**: User provides personal details.
+  - **Clarify**: System asks for additional information.
+  - **Result**: Generates a concise bio.
+
+### Creative Writing
+- **Purpose**: Supports creative writing tasks.
+- **Flow**:
+  - **Input**: User provides writing prompts.
+  - **Clarify**: System refines the prompts.
+  - **Result**: Generates creative content.
+
+## Spaces
+
+### Zen
+- **Purpose**: Provides a space for mindfulness and relaxation.
+
+### Rest
+- **Purpose**: Focuses on rest and recovery activities.
+
+### Journal
+- **Purpose**: Offers journaling tools for self-reflection.
+
+### Studio
+- **Purpose**: Supports creative and artistic activities.
+
+### Library
+- **Purpose**: Provides access to curated resources and knowledge.
+
+### Recalibration
+- **Purpose**: Helps users reset and refocus.
+
+## Sidebar Categories
+- **Personal**: Focuses on individual growth and well-being.
+- **Work**: Supports professional development.
+- **Relationships**: Enhances interpersonal connections.
+- **Legal / Financial**: Manages legal and financial tasks.
+- **General**: Covers miscellaneous topics.
+
+---
+
+This document provides a comprehensive overview of all features in the VERA platform, including orchestrators, create tools, spaces, and sidebar categories.

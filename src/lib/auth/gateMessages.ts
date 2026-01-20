@@ -16,13 +16,13 @@ export const SANCTUARY_PREVIEW = {
 export const FORGE_PREVIEW = {
   title: "Forge",
   description:
-    "A focused builder space for sustained projects, structured iterations, and decision support.",
+    "A structured build-and-ship environment for deterministic specs, PRDs, APIs, and go-to-market work.",
   features: [
-    "Project memory + continuity",
-    "Structured plans and iterations",
-    "Build-focused tools and rooms",
-    "Unlimited conversations",
+    "Deterministic specs and PRDs",
+    "API contracts and technical design docs",
+    "Landing page outlines and marketing drafts",
+    "Repeatable, governed outputs",
   ],
-  cta_primary: "Enter Forge",
+  cta_primary: "Upgrade to Forge",
   cta_secondary: "Continue with free",
 } as const;
