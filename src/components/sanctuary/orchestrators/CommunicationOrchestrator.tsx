@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { FormattedOutput } from '@/lib/ops/components/FormattedOutput';
 import { OpsIcon } from '@/lib/ops/icons';
 import type { AIProvider, GenerationMode } from '@/lib/ops/types';
+import { logError, safeCopyToClipboard, handleApiResponse, DEFAULT_ERROR_MESSAGE, safeLocalStorage } from '../utils/errorHandler';
 
 interface SavedOutput {
   id: string;
@@ -63,11 +64,7 @@ export function CommunicationOrchestrator({
   const computedInputBorder = inputBorder || colors.cardBorder;
 
   const handleCopy = useCallback(async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
+    await safeCopyToClipboard(text);
   }, []);
 
   const handleCommunicationGenerate = useCallback(async () => {
@@ -106,8 +103,7 @@ Be concise but thorough.`;
         }),
       });
       
-      const decodeData = await decodeRes.json();
-      if (!decodeRes.ok) throw new Error(decodeData.error || 'Decode failed');
+      const decodeData = await handleApiResponse(decodeRes) as { content?: string };
       setCommunicationDecodeOutput(decodeData.content || '');
       setCommunicationDecodeGenerating(false);
       
@@ -151,14 +147,13 @@ Write ONLY the response they can copy and send.`;
         }),
       });
       
-      const respondData = await respondRes.json();
-      if (!respondRes.ok) throw new Error(respondData.error || 'Respond failed');
+      const respondData = await handleApiResponse(respondRes) as { content?: string };
       setCommunicationRespondOutput(respondData.content || '');
       
     } catch (err) {
-      console.error('Communication generation error:', err);
-      setCommunicationDecodeOutput('Error analyzing message.');
-      setCommunicationRespondOutput('Error generating response.');
+      logError(err, { operation: 'communicationGenerate', activityId: 'communication-orchestrator' });
+      setCommunicationDecodeOutput(DEFAULT_ERROR_MESSAGE);
+      setCommunicationRespondOutput(DEFAULT_ERROR_MESSAGE);
     } finally {
       setCommunicationDecodeGenerating(false);
       setCommunicationRespondGenerating(false);
@@ -218,12 +213,11 @@ Write ONLY the response they can copy and send. Make it specific to the actual m
           activityId: 'respond',
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Generation failed');
+      const data = await handleApiResponse(res) as { content?: string };
       setCommunicationRespondOutput(data.content || 'Unable to generate response.');
     } catch (err) {
-      console.error('Boundary generation error:', err);
-      setCommunicationRespondOutput('Error generating boundary response.');
+      logError(err, { operation: 'boundaryGenerate', activityId: 'respond' });
+      setCommunicationRespondOutput(DEFAULT_ERROR_MESSAGE);
     } finally {
       setCommunicationBoundaryGenerating(false);
     }
@@ -241,14 +235,13 @@ Write ONLY the response they can copy and send. Make it specific to the actual m
     };
     try {
       const key = 'vera.savedOutputs.v1';
-      const existingRaw = localStorage.getItem(key);
-      const existing: SavedOutput[] = existingRaw ? JSON.parse(existingRaw) : [];
+      const existing: SavedOutput[] = safeLocalStorage<SavedOutput[]>('get', key) || [];
       existing.unshift(saved);
-      localStorage.setItem(key, JSON.stringify(existing));
+      safeLocalStorage('set', key, existing);
       setSaveState('saved');
       setTimeout(() => setSaveState('idle'), 2000);
     } catch (err) {
-      console.error('Save error:', err);
+      logError(err, { operation: 'saveOutput', activityId: 'communication-orchestrator' });
       setSaveState('error');
       setTimeout(() => setSaveState('idle'), 2000);
     }

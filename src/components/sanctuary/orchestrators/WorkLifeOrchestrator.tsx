@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { FormattedOutput } from '@/lib/ops/components/FormattedOutput';
 import { OpsIcon } from '@/lib/ops/icons';
 import type { AIProvider, GenerationMode } from '@/lib/ops/types';
+import { logError, safeCopyToClipboard, handleApiResponse, DEFAULT_ERROR_MESSAGE, safeLocalStorage, safeJsonParse } from '../utils/errorHandler';
 
 interface SavedOutput {
   id: string;
@@ -66,11 +67,7 @@ export function WorkLifeOrchestrator({
   const [saveState, setSaveState] = useState<'idle' | 'saved' | 'error'>('idle');
 
   const handleCopy = useCallback(async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
+    await safeCopyToClipboard(text);
   }, []);
 
   const handleReset = useCallback(() => {
@@ -127,25 +124,24 @@ Only return the JSON, nothing else.`;
         }),
       });
 
-      const clarifyData = await clarifyResponse.json();
-      if (!clarifyResponse.ok) throw new Error(clarifyData.error || 'Generation failed');
+      const clarifyData = await handleApiResponse(clarifyResponse) as { content?: string };
 
       const clarifyText = clarifyData.content || '';
-      try {
-        const parsed = JSON.parse(clarifyText);
-        setWorkLifeClarifyQuestion(parsed.question || '');
-        setWorkLifeClarifyOptions(parsed.options || []);
-        setWorkLifeClarifyInsight(parsed.insight || '');
-        setWorkLifeStage('clarify');
-      } catch {
-        // If JSON parsing fails, use fallback
-        setWorkLifeClarifyQuestion('What feels most true about why you\'re stuck?');
-        setWorkLifeClarifyOptions(['I don\'t know where to start', 'I\'m afraid of doing it wrong', 'I\'m avoiding something deeper']);
-        setWorkLifeClarifyInsight('');
-        setWorkLifeStage('clarify');
-      }
+      const parsed = safeJsonParse(
+        clarifyText,
+        {
+          question: 'What feels most true about why you\'re stuck?',
+          options: ['I don\'t know where to start', 'I\'m afraid of doing it wrong', 'I\'m avoiding something deeper'],
+          insight: ''
+        },
+        { operation: 'workLifeClarifyParse', activityId: 'worklife-clarify' }
+      );
+      setWorkLifeClarifyQuestion(parsed.question || '');
+      setWorkLifeClarifyOptions(parsed.options || []);
+      setWorkLifeClarifyInsight(parsed.insight || '');
+      setWorkLifeStage('clarify');
     } catch (err) {
-      console.error('Work & Life clarify error:', err);
+      logError(err, { operation: 'workLifeClarify', activityId: 'worklife-clarify' });
       // Fallback to direct result if clarify fails
       setWorkLifeStage('result');
     } finally {
@@ -198,8 +194,7 @@ Tone: Warm, wise, human. Never clinical. Never a lecture.`;
         }),
       });
 
-      const analysisData = await analysisResponse.json();
-      if (!analysisResponse.ok) throw new Error(analysisData.error || 'Generation failed');
+      const analysisData = await handleApiResponse(analysisResponse) as { content?: string };
 
       const analysisText = analysisData.content || '';
       setWorkLifeAnalysisOutput(analysisText);
@@ -242,14 +237,13 @@ Tone: Direct, warm, actionable. Like a friend who cuts through the noise and tel
         }),
       });
 
-      const actionData = await actionResponse.json();
-      if (!actionResponse.ok) throw new Error(actionData.error || 'Generation failed');
+      const actionData = await handleApiResponse(actionResponse) as { content?: string };
 
       setWorkLifeActionOutput(actionData.content || '');
     } catch (err) {
-      console.error('Work & Life generation error:', err);
-      setWorkLifeAnalysisOutput('Something went wrong. Please try again.');
-      setWorkLifeActionOutput('Something went wrong. Please try again.');
+      logError(err, { operation: 'workLifeContinue', activityId: 'worklife-action' });
+      setWorkLifeAnalysisOutput(DEFAULT_ERROR_MESSAGE);
+      setWorkLifeActionOutput(DEFAULT_ERROR_MESSAGE);
     } finally {
       setWorkLifeGenerating(false);
     }
@@ -311,8 +305,8 @@ Be SPECIFIC to their actual list. Use their exact words. Name their items. Don't
         setWorkLifeDumpStage('sorted');
       }
     } catch (err) {
-      console.error('Sort error:', err);
-      setWorkLifeSortedOutput(`Error: ${err instanceof Error ? err.message : 'Unknown error'}. Try again.`);
+      logError(err, { operation: 'sortList', activityId: 'worklife-sorted' });
+      setWorkLifeSortedOutput(DEFAULT_ERROR_MESSAGE);
       setWorkLifeDumpStage('sorted');
     } finally {
       setWorkLifeSortedGenerating(false);
@@ -331,14 +325,13 @@ Be SPECIFIC to their actual list. Use their exact words. Name their items. Don't
     };
     try {
       const key = 'vera.savedOutputs.v1';
-      const existingRaw = localStorage.getItem(key);
-      const existing: SavedOutput[] = existingRaw ? JSON.parse(existingRaw) : [];
+      const existing: SavedOutput[] = safeLocalStorage<SavedOutput[]>('get', key) || [];
       existing.unshift(saved);
-      localStorage.setItem(key, JSON.stringify(existing));
+      safeLocalStorage('set', key, existing);
       setSaveState('saved');
       setTimeout(() => setSaveState('idle'), 2000);
     } catch (err) {
-      console.error('Save error:', err);
+      logError(err, { operation: 'saveOutput', activityId: 'worklife-action' });
       setSaveState('error');
       setTimeout(() => setSaveState('idle'), 2000);
     }

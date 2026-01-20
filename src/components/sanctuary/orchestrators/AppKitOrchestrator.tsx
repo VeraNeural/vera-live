@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import { FormattedOutput } from '@/lib/ops/components/FormattedOutput';
 import type { AIProvider, GenerationMode } from '@/lib/ops/types';
+import { logError, safeCopyToClipboard } from '../utils/errorHandler';
 
 interface AppKitOrchestratorProps {
   colors: {
@@ -40,11 +41,7 @@ export function AppKitOrchestrator({
   const [appKitActiveTab, setAppKitActiveTab] = useState('resume');
 
   const handleCopy = useCallback(async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch (err) {
-      if (process.env.NODE_ENV === 'development') console.error('Failed to copy:', err);
-    }
+    await safeCopyToClipboard(text);
   }, []);
 
   const handleReset = useCallback(() => {
@@ -203,7 +200,7 @@ Output ONLY the email template.`,
       setAppKitThankYouOutput(thankYouData.content || thankYouData.response || '');
       setAppKitStage('results');
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') console.error('Error generating kit:', error);
+      logError(error, { operation: 'appKitGenerate', activityId: 'appkit-orchestrator' });
     } finally {
       setAppKitGenerating(false);
     }

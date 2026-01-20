@@ -23,6 +23,7 @@ import { CommunicationOrchestrator } from './orchestrators/CommunicationOrchestr
 import { createStyles } from './styles/opsRoom.styles';
 import { GLOBAL_STYLES, GENERATION_MODES, AI_PROVIDERS, SPACES, type Space } from './constants/opsRoom.constants';
 import { type SavedOutput, type FocusMode, type AccessTier } from './types/opsRoom.types';
+import { logError, safeLocalStorage, safeCopyToClipboard, handleApiResponse, DEFAULT_ERROR_MESSAGE } from './utils/errorHandler';
 import {
   thinkingAction,
   wellnessAction,
@@ -224,7 +225,8 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
         } else {
           setAccessTier('free');
         }
-      } catch {
+      } catch (error) {
+        logError(error, { operation: 'fetchTier' });
         if (!isMounted) setAccessTier(null);
       }
     };
@@ -677,8 +679,7 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
         }),
       });
 
-      const decodeData = await decodeResponse.json();
-      if (!decodeResponse.ok) throw new Error(decodeData.error || 'Generation failed');
+      const decodeData = await handleApiResponse(decodeResponse) as { content?: string };
 
       const decodeText = decodeData.content || '';
       setCommunicationDecodeOutput(decodeText);
@@ -717,12 +718,12 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
         }),
       });
 
-      const respondData = await respondResponse.json();
-      if (!respondResponse.ok) throw new Error(respondData.error || 'Generation failed');
-      setCommunicationRespondOutput(respondData.content);
-    } catch {
-      setCommunicationDecodeOutput('Something went wrong. Please try again.');
-      setCommunicationRespondOutput('Something went wrong. Please try again.');
+      const respondData = await handleApiResponse(respondResponse) as { content?: string };
+      setCommunicationRespondOutput(respondData.content || '');
+    } catch (error) {
+      logError(error, { operation: 'communicationGenerate', activityId: 'decode-message' });
+      setCommunicationDecodeOutput(DEFAULT_ERROR_MESSAGE);
+      setCommunicationRespondOutput(DEFAULT_ERROR_MESSAGE);
     } finally {
       setCommunicationDecodeGenerating(false);
       setCommunicationRespondGenerating(false);
@@ -1094,13 +1095,13 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
 
     try {
       const key = 'vera.savedOutputs.v1';
-      const existingRaw = localStorage.getItem(key);
-      const existing: SavedOutput[] = existingRaw ? JSON.parse(existingRaw) : [];
+      const existing: SavedOutput[] = safeLocalStorage<SavedOutput[]>('get', key) || [];
       existing.unshift(saved);
-      localStorage.setItem(key, JSON.stringify(existing));
+      safeLocalStorage('set', key, existing);
       setSaveState('saved');
       setTimeout(() => setSaveState('idle'), 1500);
     } catch (err) {
+      logError(err, { operation: 'saveOutput', activityId });
       setSaveState('error');
       setTimeout(() => setSaveState('idle'), 1500);
     }
@@ -1214,13 +1215,12 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
         }),
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Generation failed');
+      const data = await handleApiResponse(response) as { content?: string; provider?: AIProvider; responses?: { provider: AIProvider; content: string }[] };
 
       if (generationMode === 'compare' && data.responses) {
         setCompareOutputs(data.responses);
       } else {
-        setOutput(data.content);
+        setOutput(data.content || '');
         setUsedProvider(data.provider || null);
 
         const actionId = selectedDropdownOption?.id || selectedAction.id;
@@ -1250,7 +1250,8 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
         }
       }
     } catch (err) {
-      setOutput('Something went wrong. Please try again.');
+      logError(err, { operation: 'handleGenerate', activityId: selectedAction.id, provider: selectedProvider });
+      setOutput(DEFAULT_ERROR_MESSAGE);
       setSignalLayer('');
       setHandoffFlags([]);
       setCoreMove('');
@@ -1264,10 +1265,10 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
     }
   };
 
-  const handleCopy = (text?: string) => {
+  const handleCopy = async (text?: string) => {
     const textToCopy = text || output;
     if (!textToCopy) return;
-    navigator.clipboard.writeText(textToCopy);
+    await safeCopyToClipboard(textToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
