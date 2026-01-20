@@ -20,6 +20,7 @@ import { ThinkingOrchestrator } from './orchestrators/ThinkingOrchestrator';
 import { MoneyOrchestrator } from './orchestrators/MoneyOrchestrator';
 import { WorkLifeOrchestrator } from './orchestrators/WorkLifeOrchestrator';
 import { CommunicationOrchestrator } from './orchestrators/CommunicationOrchestrator';
+import { createStyles } from './styles/opsRoom.styles';
 
 interface OpsRoomProps {
   onBack: () => void;
@@ -1706,44 +1707,31 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
         : (createActivities.find((a) => a.id === createActivityId) || createActivities[0] || null));
   const selectedCreateOption = selectedCreateActivity?.dropdownOptions?.find((o) => o.id === createOptionId) || null;
 
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+
   return (
     <>
       <style jsx global>{GLOBAL_STYLES}</style>
 
-      <div style={{ position: 'fixed', inset: 0, background: colors.bg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={styles.container}>
         {/* Ambient Background */}
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
-          <div style={{
-            position: 'absolute', top: '-10%', left: '50%', transform: 'translateX(-50%)',
-            width: 'min(120vw, 700px)', height: 'min(80vh, 500px)',
-            background: isDark
-              ? 'radial-gradient(ellipse at 50% 30%, rgba(255, 180, 100, 0.08) 0%, transparent 70%)'
-              : 'radial-gradient(ellipse at 50% 30%, rgba(255, 220, 180, 0.4) 0%, transparent 70%)',
-            borderRadius: '50%',
-          }} />
+        <div style={styles.ambientBackground}>
+          <div style={styles.ambientGradient} />
         </div>
 
         {/* Header */}
-        <header style={{ padding: '16px', paddingTop: 'max(16px, env(safe-area-inset-top))', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 50 }}>
-          <button onClick={handleBack} style={{
-            display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px',
-            background: colors.cardBg, border: `1px solid ${colors.cardBorder}`,
-            borderRadius: 50, cursor: 'pointer', fontSize: 14, fontWeight: 500, color: colors.textMuted,
-          }}>
+        <header style={styles.header}>
+          <button onClick={handleBack} style={styles.backButton}>
             <OpsIcon type="arrow-left" color={colors.textMuted} />
             <span>Back</span>
           </button>
 
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={styles.themeButtonContainer}>
             {['light', 'auto', 'dark'].map((theme) => (
               <button
                 key={theme}
                 onClick={() => setManualTheme(theme as ThemeMode)}
-                style={{
-                  padding: '8px 12px', borderRadius: 20, border: `1px solid ${manualTheme === theme ? colors.accent : colors.cardBorder}`,
-                  background: manualTheme === theme ? (isDark ? 'rgba(255,180,100,0.1)' : 'rgba(200,160,100,0.15)') : 'transparent',
-                  cursor: 'pointer', fontSize: 12, fontWeight: 500, color: manualTheme === theme ? colors.accent : colors.textMuted,
-                }}
+                style={styles.themeButton(manualTheme === theme)}
               >
                 {theme}
               </button>
@@ -1752,12 +1740,12 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
         </header>
 
         {/* Content */}
-        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 20px 40px', opacity: isLoaded ? 1 : 0, transition: 'opacity 0.4s ease-out' }}>
+        <div style={styles.contentArea(isLoaded)}>
           {!activeCategory && !selectedAction && !output && !compareOutputs && (
             <>
-              <div style={{ textAlign: 'center', marginBottom: 28 }}>
-                <h1 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 40, fontWeight: 300, color: colors.text, marginBottom: 8 }}>Focus</h1>
-                <p style={{ fontSize: 15, color: colors.textMuted }}>Select a category from the sidebar to get started</p>
+              <div style={styles.welcomeContainer}>
+                <h1 style={styles.welcomeTitle}>Focus</h1>
+                <p style={styles.welcomeSubtitle}>Select a category from the sidebar to get started</p>
               </div>
 
               <ProviderSelector
@@ -1767,28 +1755,17 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
                 colors={colors}
                 isDark={isDark}
               />
-              <div style={{ width: '100%', maxWidth: 700, marginTop: 18 }}>
-                <div style={{ padding: '16px', borderRadius: 16, background: colors.cardBg, border: `1px solid ${colors.cardBorder}` }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.08em', color: colors.textMuted, marginBottom: 10 }}>
+              <div style={styles.cardContainer}>
+                <div style={styles.card}>
+                  <div style={styles.cardLabel}>
                     FOCUS
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  <div style={styles.buttonGrid}>
                     {focusModes.map((mode) => (
                       <button
                         key={mode.id}
                         onClick={() => setFocusMode(mode.id)}
-                        style={{
-                          padding: '8px 14px',
-                          borderRadius: 999,
-                          border: `1px solid ${focusMode === mode.id ? colors.accent : colors.cardBorder}`,
-                          background: focusMode === mode.id
-                            ? (isDark ? 'rgba(255,180,100,0.1)' : 'rgba(200,160,100,0.15)')
-                            : 'transparent',
-                          color: focusMode === mode.id ? colors.text : colors.textMuted,
-                          fontSize: 12,
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                        }}
+                        style={styles.pillButton(focusMode === mode.id)}
                       >
                         {mode.label}
                       </button>
@@ -1816,9 +1793,9 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
 
           {selectedAction?.id === 'language-learning' && !output && !compareOutputs && !isGenerating && (
             <>
-              <div style={{ width: '100%', maxWidth: 700, marginBottom: 16 }}>
-                <div style={{ padding: '16px', borderRadius: 16, background: colors.cardBg, border: `1px solid ${colors.cardBorder}` }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.08em', color: colors.textMuted, marginBottom: 10 }}>
+              <div style={styles.cardContainer}>
+                <div style={styles.card}>
+                  <div style={styles.cardLabel}>
                     FOCUS
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -1826,18 +1803,7 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
                       <button
                         key={mode.id}
                         onClick={() => setFocusMode(mode.id)}
-                        style={{
-                          padding: '8px 14px',
-                          borderRadius: 999,
-                          border: `1px solid ${focusMode === mode.id ? colors.accent : colors.cardBorder}`,
-                          background: focusMode === mode.id
-                            ? (isDark ? 'rgba(255,180,100,0.1)' : 'rgba(200,160,100,0.15)')
-                            : 'transparent',
-                          color: focusMode === mode.id ? colors.text : colors.textMuted,
-                          fontSize: 12,
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                        }}
+                        style={styles.pillButton(focusMode === mode.id)}
                       >
                         {mode.label}
                       </button>
