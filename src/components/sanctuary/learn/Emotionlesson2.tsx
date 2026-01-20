@@ -8,7 +8,6 @@ interface LessonProps {
   onComplete?: () => void;
 }
 
-// TODO: Update this content for Lesson 2
 const CONTENT = [
   {
     type: 'title',
