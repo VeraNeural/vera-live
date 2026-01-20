@@ -1,15 +1,16 @@
-import { useEffect } from 'react';
+import { useEffect, type Dispatch, type SetStateAction } from 'react';
 import { getTimeOfDay } from '@/lib/ops/theme';
 import { opsRoom } from '@/app/sanctuary/ops/consolidatedData';
 import { logError } from '../utils/errorHandler';
 import type { AccessTier } from '../types/opsRoom.types';
+import type { TimeOfDay } from '@/lib/ops/types';
 
 interface UseOpsRoomEffectsParams {
   // State setters
-  setAccessTier: (tier: AccessTier | null) => void;
-  setTimeOfDay: (time: string) => void;
-  setIsLoaded: (loaded: boolean) => void;
-  setActiveCategory: (category: string | null) => void;
+  setAccessTier: Dispatch<SetStateAction<AccessTier | null>>;
+  setTimeOfDay: Dispatch<SetStateAction<TimeOfDay>>;
+  setIsLoaded: Dispatch<SetStateAction<boolean>>;
+  setActiveCategory: Dispatch<SetStateAction<string | null>>;
   setSelectedAction: (action: any) => void;
   setSelectedDropdownOption: (option: any) => void;
   setFormFields: (fields: any) => void;
