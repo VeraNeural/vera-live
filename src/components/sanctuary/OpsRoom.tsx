@@ -270,44 +270,6 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
     return null;
   };
 
-  // Use centralized effects hook
-  useOpsRoomEffects({
-    setAccessTier,
-    setTimeOfDay,
-    setIsLoaded,
-    setActiveCategory,
-    setSelectedAction,
-    setSelectedDropdownOption,
-    setFormFields,
-    setSimpleInput,
-    setCreateActivityId,
-    setCreateOptionId,
-    setWorkLifeMode,
-    setMoneyMode,
-    initialView,
-    initialCategory,
-    initialActivity,
-    initialOption,
-    activeCategory,
-    selectedAction,
-    isGenerating,
-    simpleInput,
-    respondMode,
-    output,
-    createActivityId,
-    communicationAction,
-    thinkingAction,
-    workLifeAction,
-    moneyAction,
-    wellnessAction,
-    createSharedAction,
-    handleGenerate,
-    normalizeCategoryFromView,
-    isWorkLifeGroupedActivity,
-    isMoneyActivity,
-    defaultWorkLifeId,
-  });
-
   const isDark = manualTheme === 'dark' ? true : manualTheme === 'light' ? false : (timeOfDay === 'evening' || timeOfDay === 'night');
   const colors = isDark ? TIME_COLORS.evening : TIME_COLORS[timeOfDay];
   const separatorColor = isDark ? 'rgba(235, 210, 180, 0.12)' : 'rgba(140, 110, 80, 0.12)';
@@ -1108,6 +1070,44 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
       setIsGenerating(false);
     }
   };
+
+  // Use centralized effects hook
+  useOpsRoomEffects({
+    setAccessTier,
+    setTimeOfDay,
+    setIsLoaded,
+    setActiveCategory,
+    setSelectedAction,
+    setSelectedDropdownOption,
+    setFormFields,
+    setSimpleInput,
+    setCreateActivityId,
+    setCreateOptionId,
+    setWorkLifeMode,
+    setMoneyMode,
+    initialView,
+    initialCategory,
+    initialActivity,
+    initialOption,
+    activeCategory,
+    selectedAction,
+    isGenerating,
+    simpleInput,
+    respondMode,
+    output,
+    createActivityId,
+    communicationAction,
+    thinkingAction,
+    workLifeAction,
+    moneyAction,
+    wellnessAction,
+    createSharedAction,
+    handleGenerate,
+    normalizeCategoryFromView,
+    isWorkLifeGroupedActivity,
+    isMoneyActivity,
+    defaultWorkLifeId,
+  });
 
   const handleCopy = async (text?: string) => {
     const textToCopy = text || output;

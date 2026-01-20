@@ -93,6 +93,7 @@ export const AI_PROVIDERS: Record<AIProvider, { name: string; color: string }> =
   claude: { name: 'Claude', color: '#D97706' },
   gpt4: { name: 'GPT-4', color: '#10B981' },
   grok: { name: 'Grok', color: '#8B5CF6' },
+  'vera-neural': { name: 'VERA Neural', color: '#6366F1' },
 };
 
 export const SPACES = ['Personal', 'Work', 'Relationships', 'Legal / Financial', 'General'] as const;

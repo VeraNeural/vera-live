@@ -67,6 +67,12 @@ const AI_PROVIDERS: Record<
     iconType: 'ai-grok',
     tagline: 'Creative & Edgy',
   },
+  'vera-neural': {
+    name: 'VERA Neural',
+    color: '#6366F1',
+    iconType: 'ai-vera',
+    tagline: 'Local & Private',
+  },
 };
 
 export const ModeSelector: React.FC<ModeSelectorProps> = ({

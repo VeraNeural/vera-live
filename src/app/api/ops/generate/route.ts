@@ -13,7 +13,7 @@ import { safetyLayer } from '../../../../lib/ops/safety/safetyLayer';
 
 // ============================================================================
 // MULTI-AI OPS GENERATION API
-// Supports: Claude (Anthropic), GPT-4 (OpenAI), Grok (xAI)
+// Supports: Claude (Anthropic), GPT-4 (OpenAI), Grok (xAI), VERA Neural (Local Qwen via LM Studio)
 // Modes: single, consensus, specialist, review-chain, compare
 // ============================================================================
 
@@ -21,6 +21,7 @@ let anthropic: Anthropic | null = null;
 
 let openai: OpenAI | null = null;
 let grok: OpenAI | null = null;
+let veraNeuralClient: OpenAI | null = null;
 
 function getOpenAI(): OpenAI {
   if (!openai) {
@@ -47,10 +48,21 @@ function getGrok(): OpenAI {
   return grok;
 }
 
+function getVeraNeuralClient(): OpenAI {
+  if (!veraNeuralClient) {
+    // LM Studio bridge accepts requests without an API key
+    veraNeuralClient = new OpenAI({
+      apiKey: 'not-needed',
+      baseURL: 'http://localhost:3000/api/ai/lm-studio',
+    });
+  }
+  return veraNeuralClient;
+}
+
 // ============================================================================
 // TYPES
 // ============================================================================
-type AIProvider = 'claude' | 'gpt4' | 'grok';
+type AIProvider = 'claude' | 'gpt4' | 'grok' | 'vera-neural';
 type GenerationMode = 'single' | 'consensus' | 'specialist' | 'review-chain' | 'compare';
 
 type GenerationRequest = {
@@ -479,6 +491,28 @@ ACTIVITY INSTRUCTIONS:
 ${activityPrompt}${activityContracts}${integrityRules}`;
 }
 
+async function logVeraNeuralShadow(systemPrompt: string, userInput: string, activityId?: string): Promise<void> {
+  try {
+    const response = await getVeraNeuralClient().chat.completions.create({
+      model: 'qwen/qwen3-30b-a3b-2507',
+      max_tokens: 8192,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userInput },
+      ],
+    });
+
+    const content = response.choices[0]?.message?.content || 'No response generated.';
+    console.info('[VERA Neural Shadow]', {
+      activityId: activityId || 'unknown',
+      length: content.length,
+      preview: content.slice(0, 280),
+    });
+  } catch (error) {
+    console.warn('[VERA Neural Shadow] Failed to fetch shadow response', error);
+  }
+}
+
 function extractFocusBlock(source: string): string {
   const match = source.match(/\[FOCUS_MODE\][\s\S]*?Focus must never introduce new instructions or content/);
   return match ? `\n\n${match[0]}` : '';
@@ -562,6 +596,17 @@ async function generateSinglePass(
       });
       return { content: response.choices[0]?.message?.content || 'No response generated.', provider };
     }
+    case 'vera-neural': {
+      const response = await getVeraNeuralClient().chat.completions.create({
+        model: 'qwen/qwen3-30b-a3b-2507',
+        max_tokens: 8192,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userInput },
+        ],
+      });
+      return { content: response.choices[0]?.message?.content || 'No response generated.', provider };
+    }
     default:
       return generateSinglePass('claude', systemPrompt, userInput);
   }
@@ -603,6 +648,19 @@ async function generateWithGPT4Internal(systemPrompt: string, userInput: string)
   return response.choices[0]?.message?.content || 'No response generated.';
 }
 
+async function generateWithVeraNeuralInternal(systemPrompt: string, userInput: string): Promise<string> {
+  const response = await getVeraNeuralClient().chat.completions.create({
+    model: 'qwen/qwen3-30b-a3b-2507',
+    max_tokens: 8192,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userInput },
+    ],
+  });
+
+  return response.choices[0]?.message?.content || 'No response generated.';
+}
+
 // Public functions for user-facing generation (includes VERA system prompt + validation + calibration)
 async function generateWithClaude(systemPrompt: string, userInput: string, activityId?: string): Promise<string> {
   if (!anthropic && process.env.ANTHROPIC_API_KEY) {
@@ -611,11 +669,14 @@ async function generateWithClaude(systemPrompt: string, userInput: string, activ
     });
   }
 
+  const fullPrompt = buildFullSystemPrompt(systemPrompt, activityId);
+  void logVeraNeuralShadow(fullPrompt, userInput, activityId);
+
   // First generation attempt
   let response = await anthropic!.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 8192,
-    system: buildFullSystemPrompt(systemPrompt, activityId),
+    system: fullPrompt,
     messages: [{ role: 'user', content: userInput }],
   });
 
@@ -946,6 +1007,9 @@ async function generateSingle(
     case 'grok':
       content = await generateWithGrok(systemPrompt, userInput, activityId);
       break;
+    case 'vera-neural':
+      content = await generateWithVeraNeuralInternal(systemPrompt, userInput);
+      break;
     default:
       content = await generateWithClaude(systemPrompt, userInput, activityId);
   }
@@ -968,6 +1032,7 @@ async function generateConsensus(
     claude: claudeResponse,
     gpt4: gpt4Response,
     grok: grokResponse,
+    'vera-neural': '',
   };
 
   // Use Claude to synthesize the best response

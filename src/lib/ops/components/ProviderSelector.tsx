@@ -62,6 +62,12 @@ const AI_PROVIDERS: Record<
     iconType: 'ai-grok',
     tagline: 'Creative & Edgy',
   },
+  'vera-neural': {
+    name: 'VERA Neural',
+    color: '#8B5CF6',
+    iconType: 'brain',
+    tagline: 'Your AI nervous system',
+  },
 };
 
 export const ProviderSelector: React.FC<ProviderSelectorProps> = ({

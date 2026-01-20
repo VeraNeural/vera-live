@@ -19,7 +19,7 @@ export type Category =
   | 'creativity' 
   | 'planning';
 
-export type AIProvider = 'claude' | 'gpt4' | 'grok';
+export type AIProvider = 'claude' | 'gpt4' | 'grok' | 'vera-neural';
 
 export type GenerationMode = 
   | 'single' 
