@@ -737,4 +737,4 @@ Write ONLY the response they can copy and send. Make it specific to the actual m
   );
 }
 
-export default CommunicationOrchestrator;
+export default React.memo(CommunicationOrchestrator);

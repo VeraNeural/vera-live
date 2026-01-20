@@ -902,4 +902,4 @@ Be specific to what they shared. Use their words.`;
   );
 }
 
-export default ThinkingOrchestrator;
+export default React.memo(ThinkingOrchestrator);

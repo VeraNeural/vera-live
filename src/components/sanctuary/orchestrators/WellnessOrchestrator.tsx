@@ -902,4 +902,4 @@ Be specific. Use their words.`;
   );
 }
 
-export default WellnessOrchestrator;
+export default React.memo(WellnessOrchestrator);

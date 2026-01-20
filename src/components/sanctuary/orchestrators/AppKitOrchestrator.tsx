@@ -491,4 +491,4 @@ Output ONLY the email template.`,
   );
 }
 
-export default AppKitOrchestrator;
+export default React.memo(AppKitOrchestrator);

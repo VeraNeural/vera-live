@@ -678,4 +678,4 @@ Be specific to THEIR spending. Use their words. Call out their actual purchases.
   );
 }
 
-export default MoneyOrchestrator;
+export default React.memo(MoneyOrchestrator);

@@ -836,4 +836,4 @@ Be SPECIFIC to their actual list. Use their exact words. Name their items. Don't
   );
 }
 
-export default WorkLifeOrchestrator;
+export default React.memo(WorkLifeOrchestrator);
