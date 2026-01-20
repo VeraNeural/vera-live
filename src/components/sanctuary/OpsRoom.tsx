@@ -24,6 +24,7 @@ import { createStyles } from './styles/opsRoom.styles';
 import { GLOBAL_STYLES, GENERATION_MODES, AI_PROVIDERS, SPACES, type Space } from './constants/opsRoom.constants';
 import { type SavedOutput, type FocusMode, type AccessTier } from './types/opsRoom.types';
 import { logError, safeLocalStorage, safeCopyToClipboard, handleApiResponse, DEFAULT_ERROR_MESSAGE } from './utils/errorHandler';
+import { useOpsRoomEffects } from './hooks/useOpsRoomEffects';
 import {
   thinkingAction,
   wellnessAction,
@@ -212,30 +213,6 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
     'marketing-pack',
   ]);
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchTier = async () => {
-      try {
-        const res = await fetch('/api/user/tier');
-        const data = await res.json();
-        const tier = typeof data?.tier === 'string' ? data.tier.toLowerCase() : 'free';
-        if (!isMounted) return;
-        if (tier === 'anonymous' || tier === 'free' || tier === 'forge' || tier === 'sanctuary') {
-          setAccessTier(tier as AccessTier);
-        } else {
-          setAccessTier('free');
-        }
-      } catch (error) {
-        logError(error, { operation: 'fetchTier' });
-        if (!isMounted) setAccessTier(null);
-      }
-    };
-    fetchTier();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
   const fallbackTier = useMemo<AccessTier>(() => {
     if (!clerkLoaded || !isSignedIn) return 'anonymous';
     const md = (user?.publicMetadata ?? {}) as Record<string, unknown>;
@@ -274,13 +251,6 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
     return acc;
   }, {});
 
-  useEffect(() => {
-    setTimeOfDay(getTimeOfDay());
-    setTimeout(() => setIsLoaded(true), 100);
-    const interval = setInterval(() => setTimeOfDay(getTimeOfDay()), 60000);
-    return () => clearInterval(interval);
-  }, []);
-
   const normalizeCategoryFromView = (view?: string): { category: string; actionId?: string; languageTab?: 'learn' | 'translate' } | null => {
     const v = (view || '').toLowerCase().trim();
     if (!v) return null;
@@ -300,159 +270,43 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
     return null;
   };
 
-  useEffect(() => {
-    const mapped = normalizeCategoryFromView(initialView);
-    if (!mapped) return;
-    setActiveCategory(mapped.category);
-    if (mapped.actionId) {
-      const category = opsRoom.categories.find((c) => c.id === mapped.category);
-      const action = category?.activities.find((a) => a.id === mapped.actionId) ?? null;
-      setSelectedAction(action);
-
-      if (mapped.actionId === 'language-learning' && mapped.languageTab) {
-        try {
-          window.localStorage.setItem('vera.ops.language.lastTab.v1', mapped.languageTab);
-        } catch {
-          // ignore
-        }
-      }
-    } else {
-      setSelectedAction(null);
-    }
-  }, [initialView]);
-
-  // Handle direct navigation from sidebar (category + activity + option)
-  useEffect(() => {
-    if (!initialCategory) return;
-    
-    const category = opsRoom.categories.find(c => c.id === initialCategory);
-    if (!category) return;
-
-    if (initialCategory === 'communication') {
-      setActiveCategory(initialCategory);
-      setSelectedAction(communicationAction);
-      setSelectedDropdownOption(null);
-      setFormFields({});
-      setSimpleInput('');
-      return;
-    }
-    
-    if (!initialActivity) {
-      setActiveCategory(initialCategory);
-      return;
-    }
-
-    const activity = category.activities.find(a => a.id === initialActivity);
-    if (!activity) return;
-    
-    setActiveCategory(initialCategory);
-    if (initialCategory === 'create') {
-      if (activity.id === 'write-email' || activity.id === 'social-post') {
-        setSelectedAction(activity);
-        setCreateActivityId(activity.id);
-        setCreateOptionId(initialOption || '');
-        setSelectedDropdownOption(null);
-        return;
-      }
-      if (activity.id === 'bio-about' || activity.id === 'creative-writing') {
-        setSelectedAction(createSharedAction);
-        setCreateActivityId(activity.id);
-        setCreateOptionId('');
-        setSelectedDropdownOption(null);
-        return;
-      }
-    }
-    if (initialCategory === 'work-life' && activity.id !== 'career') {
-      const nextId = isWorkLifeGroupedActivity(activity.id) ? activity.id : defaultWorkLifeId;
-      setWorkLifeMode(nextId);
-    }
-
-    if (initialCategory === 'money' && isMoneyActivity(activity.id)) {
-      setMoneyMode(activity.id);
-    }
-
-    setSelectedAction(activity);
-    
-    // Standalone or custom-component → form shows directly (selectedDropdownOption stays null)
-    // Dropdown without option param → shows option cards (selectedDropdownOption stays null)
-    // Dropdown with option param → go to specific option form
-    
-    if (activity.id === 'boundaries') {
-      setSelectedDropdownOption(null);
-      return;
-    }
-
-    if (activity.type === 'dropdown' && initialOption && activity.dropdownOptions) {
-      const option = activity.dropdownOptions.find(o => o.id === initialOption);
-      if (option) {
-        setSelectedDropdownOption(option);
-      }
-    }
-  }, [initialCategory, initialActivity, initialOption]);
-
-  useEffect(() => {
-    if (activeCategory !== 'thinking-learning') return;
-    if (selectedAction?.id === 'thinking-orchestrator') return;
-    if (selectedAction?.id === 'language-learning') return;
-    setSelectedAction(thinkingAction);
-    setSelectedDropdownOption(null);
-    setFormFields({});
-    setSimpleInput('');
-  }, [activeCategory, selectedAction]);
-
-  useEffect(() => {
-    if (activeCategory !== 'work-life') return;
-    if (selectedAction?.id === 'worklife-orchestrator') return;
-    setSelectedAction(workLifeAction);
-    setSelectedDropdownOption(null);
-    setFormFields({});
-    setSimpleInput('');
-  }, [activeCategory, selectedAction?.id]);
-
-  useEffect(() => {
-    if (activeCategory !== 'money') return;
-    if (selectedAction?.id === 'money-orchestrator') return;
-    setSelectedAction(moneyAction);
-    setSelectedDropdownOption(null);
-    setFormFields({});
-    setSimpleInput('');
-  }, [activeCategory, selectedAction?.id]);
-
-  useEffect(() => {
-    if (activeCategory !== 'relationships-wellness') return;
-    if (selectedAction?.id === 'wellness-orchestrator') return;
-    setSelectedAction(wellnessAction);
-    setSelectedDropdownOption(null);
-    setFormFields({});
-    setSimpleInput('');
-  }, [activeCategory]);
-
-  useEffect(() => {
-    if (activeCategory !== 'communication') return;
-    if (selectedAction?.id === 'communication-orchestrator') return;
-    setSelectedAction(communicationAction);
-    setSelectedDropdownOption(null);
-    setFormFields({});
-    setSimpleInput('');
-  }, [activeCategory, selectedAction?.id]);
-
-  useEffect(() => {
-    if (activeCategory !== 'create') return;
-    if (selectedAction?.id === 'create') return;
-    if (selectedAction?.id === 'write-email') return;
-    if (selectedAction?.id === 'social-post') return;
-    if (selectedAction?.id === 'bio-about') return;
-    if (selectedAction?.id === 'creative-writing') return;
-    const sharedCreateIds = new Set(['bio-about', 'creative-writing']);
-    if (!sharedCreateIds.has(createActivityId)) {
-      setCreateActivityId('bio-about');
-      setCreateOptionId('');
-    }
-    setSelectedAction(createAction);
-    setSelectedDropdownOption(null);
-    setFormFields({});
-    setSimpleInput('');
-  }, [activeCategory, createActivityId]);
+  // Use centralized effects hook
+  useOpsRoomEffects({
+    setAccessTier,
+    setTimeOfDay,
+    setIsLoaded,
+    setActiveCategory,
+    setSelectedAction,
+    setSelectedDropdownOption,
+    setFormFields,
+    setSimpleInput,
+    setCreateActivityId,
+    setCreateOptionId,
+    setWorkLifeMode,
+    setMoneyMode,
+    initialView,
+    initialCategory,
+    initialActivity,
+    initialOption,
+    activeCategory,
+    selectedAction,
+    isGenerating,
+    simpleInput,
+    respondMode,
+    output,
+    createActivityId,
+    communicationAction,
+    thinkingAction,
+    workLifeAction,
+    moneyAction,
+    wellnessAction,
+    createSharedAction,
+    handleGenerate,
+    normalizeCategoryFromView,
+    isWorkLifeGroupedActivity,
+    isMoneyActivity,
+    defaultWorkLifeId,
+  });
 
   const isDark = manualTheme === 'dark' ? true : manualTheme === 'light' ? false : (timeOfDay === 'evening' || timeOfDay === 'night');
   const colors = isDark ? TIME_COLORS.evening : TIME_COLORS[timeOfDay];
@@ -1067,16 +921,6 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
       focusPrompts[focusMode],
     ].join(' | ') + focusContract + toneContract;
   };
-
-  useEffect(() => {
-    if (!selectedAction || selectedAction.id !== 'respond') return;
-    if (!simpleInput.trim()) return;
-    if (isGenerating) return;
-    if (!respondMode) return;
-    if (output !== null) {
-      handleGenerate();
-    }
-  }, [respondMode]);
 
   const saveOutput = () => {
     if (!selectedAction || !selectedAction.allowSave) return;
