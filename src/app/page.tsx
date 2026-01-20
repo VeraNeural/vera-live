@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser, UserButton } from "@clerk/nextjs";
 import { useTheme, ThemeToggle } from "@/contexts/ThemeContext";
-import TrustTransparencySidebar from "@/components/TrustTransparencySidebar";
+import { TrustTransparencySidebar } from "@/components/sidebar";
 
 type Message = {
   role: "user" | "assistant";
@@ -269,7 +269,6 @@ export default function Page() {
       >
         <TrustTransparencySidebar
           isDark={isDark}
-          colors={colors}
           open={trustOpen}
           onOpenChange={setTrustOpen}
         />

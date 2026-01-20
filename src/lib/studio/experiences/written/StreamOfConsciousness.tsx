@@ -116,7 +116,9 @@ export function StreamOfConsciousness({ onBack, onComplete, theme = 'dark' }: St
   };
 
   const handleSave = () => {
-    console.log('Saving stream:', content);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Saving stream:', content);
+    }
     onComplete?.();
     onBack();
   };

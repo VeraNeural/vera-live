@@ -61,7 +61,9 @@ export function UnsentLetter({ onBack, onComplete, theme = 'dark' }: UnsentLette
 
   const handleSave = () => {
     // TODO: Save to journal/storage
-    console.log('Saving unsent letter:', { recipient, content });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Saving unsent letter:', { recipient, content });
+    }
     onComplete?.();
     onBack();
   };

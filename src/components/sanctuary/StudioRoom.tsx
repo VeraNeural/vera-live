@@ -137,7 +137,9 @@ export default function CreativeStudio({ onBack, onStartActivity, initialView, i
   };
 
   const handleComplete = (data?: any) => {
-    console.log('Activity completed:', data);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Activity completed:', data);
+    }
     const activity = activeExperience ? ACTIVITIES.find(a => a.id === activeExperience) : null;
     setCompletionMessage(activity?.title ? `Completed: ${activity.title}` : 'Completed');
     setActiveExperience(null);

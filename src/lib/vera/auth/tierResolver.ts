@@ -12,6 +12,7 @@ export type ResolvedTier = {
   userId: string | null;
   gateResponse?: { gate: string; text: string };
   nudge?: { kind: 'signup_soft' | 'signup_hard'; text: string };
+  userEmail?: string; // Added userEmail property
 };
 
 /**
@@ -77,7 +78,9 @@ export async function resolveTier(sessionId: string): Promise<ResolvedTier> {
 
   try {
     const access = await getUserAccessState(userId);
-    console.log('[TIER DEBUG]', { userId, accessState: access.state });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[TIER DEBUG]', { userId, accessState: access.state });
+    }
     // Map anonymous to free for routing purposes
     if (access.state === 'sanctuary') {
       entitlementTier = 'sanctuary';

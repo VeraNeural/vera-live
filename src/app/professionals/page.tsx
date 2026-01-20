@@ -26,7 +26,9 @@ export default function ProfessionalsLanding() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Waitlist signup:', { email, role });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Waitlist signup:', { email, role });
+    }
     setSubmitted(true);
   };
 

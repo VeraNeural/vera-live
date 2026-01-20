@@ -41,5 +41,7 @@ export function buildAuditEvent(input: {
 export function logAuditEvent(event: AuditEvent): void {
   // For serverless, console logging is the safest default.
   // If you want durable storage, wire this to Supabase/Stripe metadata/etc.
-  console.log('[VERA audit]', event);
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[VERA audit]', event);
+  }
 }

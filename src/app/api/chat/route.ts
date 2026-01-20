@@ -3,8 +3,9 @@ import { handleMessage, ChatResult } from '@/lib/vera/core/handleMessage';
 import { getOrCreateSession, normalizeConversationId, buildSessionCookie } from '@/lib/vera/auth/sessionManager';
 import { resolveTier } from '@/lib/vera/auth/tierResolver';
 import { validateMessages } from '@/lib/vera/governance/messageValidator';
-import type { ChatRequestBody, ChatContext } from '@/lib/vera/core/types';
+import type { ChatRequestBody, ChatContext, RoutingTier } from '@/lib/vera/core/types';
 import { meteringIdFromSessionId, recordMessage, resolveMeteringIdForClerkUserId } from '@/lib/auth/messageCounter';
+import { authorize } from '@/lib/julija';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -45,6 +46,47 @@ export async function POST(req: Request) {
       });
     }
 
+    // ============================================
+    // JULIJA AUTHORIZATION LAYER
+    // ============================================
+    const authResult = await authorize({
+      userId: tierResult.userId || 'anonymous',
+      userTier: tierResult.tier || 'anonymous',
+      userEmail: tierResult.userEmail || '',
+      messageContent: messages?.[messages.length - 1]?.content || '',
+      sessionContext: messages || [],
+    });
+
+    // Log authorization for audit trail (dev only)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[JULIJA]', {
+        authorized: authResult.authorized,
+        riskBand: authResult.riskBand,
+        reason: authResult.reason,
+      });
+    }
+
+    // If not authorized, return appropriate response
+    if (!authResult.authorized) {
+      return NextResponse.json({
+        error: 'Access restricted',
+        reason: authResult.reason,
+        upgradeRequired: authResult.riskBand === 'orange' || authResult.riskBand === 'red',
+      }, { status: 403 });
+    }
+
+    // Extract risk band for response shaping
+    const riskBand = authResult.riskBand;
+
+    // Log for monitoring (dev only)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[JULIJA] Authorization:', {
+        authorized: authResult.authorized,
+        riskBand,
+        userId: tierResult.userId,
+      });
+    }
+
     // 5. Validate messages
     const validation = validateMessages(messages, tierResult.tier);
     if (!validation.valid && validation.error) {
@@ -61,16 +103,32 @@ export async function POST(req: Request) {
 
     const turnId = messages!.filter((m) => m.role === 'user').length;
 
+    const routingTier: RoutingTier =
+      tierResult.tier === 'anonymous' ? 'free' : tierResult.tier;
+
     const context: ChatContext = {
       sessionId,
       userId: tierResult.userId,
-      tier: tierResult.tier as any,
+      tier: routingTier,
       conversationId,
       turnId,
       startedAt,
       projectState: project_state,
       sanctuaryState: sanctuary_state,
+      riskGuidance: '', // Initialize riskGuidance
     };
+
+    // Add to system prompt based on risk band
+    let riskGuidance = '';
+    if (riskBand === 'yellow') {
+      riskGuidance = '\n\nThe user may be experiencing stress. Use warm, empathetic language. Check in on how they are feeling.';
+    } else if (riskBand === 'orange') {
+      riskGuidance = '\n\nThe user may be in distress. Be gentle and grounding. Offer supportive presence. If appropriate, gently mention that support resources exist.';
+    } else if (riskBand === 'red') {
+      riskGuidance = '\n\nPRIORITY: User safety. Be present, calm, and supportive. Do not abandon. Provide crisis resources if appropriate (988 Suicide & Crisis Lifeline). Focus on immediate emotional safety.';
+    }
+
+    context.riskGuidance = riskGuidance; // Set riskGuidance in context
 
     // 7. Handle message (all logic is in here)
     const result = await handleMessage(messages!, context);

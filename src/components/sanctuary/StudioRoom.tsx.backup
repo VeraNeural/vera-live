@@ -290,7 +290,9 @@ export default function CreativeStudio({ onBack, onStartActivity }: CreativeStud
   };
 
   const handleActivityComplete = (data?: any) => {
-    console.log('Activity completed:', data);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Activity completed:', data);
+    }
     setActiveActivity(null);
     // Could save to projects here
   };
@@ -305,7 +307,9 @@ export default function CreativeStudio({ onBack, onStartActivity }: CreativeStud
       <EmotionColorMap
         onBack={() => setActiveActivity(null)}
         onComplete={(data) => {
-          console.log('Completed:', data);
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Completed:', data);
+          }
           setActiveActivity(null);
         }}
       />

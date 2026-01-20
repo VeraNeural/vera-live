@@ -68,7 +68,9 @@ export function useLibraryData(): UseLibraryDataReturn {
           .select('*')
           .order('created_at', { ascending: false });
 
-        console.log('Lessons from DB:', lessonsData);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Lessons from DB:', lessonsData);
+        }
 
         if (storiesData) setDbStories(storiesData);
         if (lessonsData) setDbLessons(lessonsData);

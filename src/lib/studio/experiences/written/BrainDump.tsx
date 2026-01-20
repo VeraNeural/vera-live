@@ -89,7 +89,9 @@ export function BrainDump({ onBack, onComplete, theme = 'dark' }: BrainDumpProps
 
   const handleSave = () => {
     // TODO: Save to journal/storage
-    console.log('Saving brain dump:', content);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Saving brain dump:', content);
+    }
     onComplete?.();
     onBack();
   };

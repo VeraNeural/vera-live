@@ -76,7 +76,9 @@ export interface TelemetryEvent {
 // IMPORTANT: This must never throw in the user path.
 export async function logTelemetry(event: TelemetryEvent): Promise<void> {
   try {
-    console.log('telemetry_event', event);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('telemetry_event', event);
+    }
   } catch (err) {
     console.error('Telemetry write failed', err);
   }

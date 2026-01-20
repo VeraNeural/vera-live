@@ -39,10 +39,14 @@ export default function VoicePage() {
     apiKey: HUME_API_KEY,
     configId: HUME_CONFIG_ID,
     onMessage: (msg) => {
-      console.log("[Voice] Message:", msg);
+      if (process.env.NODE_ENV === 'development') {
+        console.log("[Voice] Message:", msg);
+      }
     },
     onStatusChange: (s) => {
-      console.log("[Voice] Status:", s);
+      if (process.env.NODE_ENV === 'development') {
+        console.log("[Voice] Status:", s);
+      }
     },
     onError: (err) => {
       setError(err);

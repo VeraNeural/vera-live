@@ -194,7 +194,9 @@ export async function logDecisionEvent(params: {
   // IMPORTANT: do not throw in the user path.
   try {
     // Default: console-backed append-only log.
-    console.log('decision_audit_event', event);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('decision_audit_event', event);
+    }
 
     // ---- Storage Adapter (Supabase example) ----
     // Replace with your own adapter if needed.

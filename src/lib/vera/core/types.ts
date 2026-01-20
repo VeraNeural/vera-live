@@ -70,4 +70,5 @@ export type ChatContext = {
   startedAt: number;
   projectState?: BuildProjectState | null;
   sanctuaryState?: SanctuaryState | null;
+  riskGuidance?: string; // Added riskGuidance property
 };

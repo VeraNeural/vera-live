@@ -121,7 +121,9 @@ async function autoCreateIssuesForCriticalHealthChecks(checks: HealthCheck[]): P
           resolved: false,
         });
 
-        console.log(`VERA auto-created issue: ${url}`);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`VERA auto-created issue: ${url}`);
+        }
       } catch (e) {
         // Best-effort: never fail health checks because GitHub is down/misconfigured.
         const msg = e instanceof Error ? e.message : String(e);

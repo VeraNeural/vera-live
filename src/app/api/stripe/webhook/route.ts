@@ -141,7 +141,9 @@ export async function POST(request: NextRequest) {
             currentPeriodEnd,
           });
 
-          console.log(`Entitlement updated: ${entitlement} active for ${clerkUserId}`);
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`Entitlement updated: ${entitlement} active for ${clerkUserId}`);
+          }
         }
         break;
       }
@@ -162,7 +164,9 @@ export async function POST(request: NextRequest) {
             currentPeriodEnd,
           });
 
-          console.log(`Entitlement updated: ${entitlement} status=${subscription.status} for ${clerkUserId}`);
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`Entitlement updated: ${entitlement} status=${subscription.status} for ${clerkUserId}`);
+          }
         }
         break;
       }
@@ -180,9 +184,13 @@ export async function POST(request: NextRequest) {
             currentPeriodStart: null,
             currentPeriodEnd: null,
           });
-          console.log(`Entitlement updated: ${entitlement} canceled for ${clerkUserId}`);
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`Entitlement updated: ${entitlement} canceled for ${clerkUserId}`);
+          }
         } else {
-          console.log(`Subscription deleted: ${subscription.id} (no clerk_user_id in metadata)`);
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`Subscription deleted: ${subscription.id} (no clerk_user_id in metadata)`);
+          }
         }
         break;
       }
@@ -209,7 +217,9 @@ export async function POST(request: NextRequest) {
               currentPeriodEnd,
             });
           }
-          console.log(`Invoice paid for subscription: ${subscriptionId}`);
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`Invoice paid for subscription: ${subscriptionId}`);
+          }
         }
         break;
       }
@@ -236,13 +246,17 @@ export async function POST(request: NextRequest) {
               currentPeriodEnd,
             });
           }
-          console.log(`Payment failed for subscription: ${subscriptionId}`);
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`Payment failed for subscription: ${subscriptionId}`);
+          }
         }
         break;
       }
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`Unhandled event type: ${event.type}`);
+        }
     }
 
     return NextResponse.json({ received: true });

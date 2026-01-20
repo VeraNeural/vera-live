@@ -658,9 +658,6 @@ export default function LibraryRoom({ onBack, onStartStory, onStartLesson, onSta
   .select('*')
   .order('created_at', { ascending: false });
 
-// ADD THIS LINE HERE:
-console.log('Lessons from DB:', lessonsData);
-
 if (storiesData) setDbStories(storiesData);
 if (lessonsData) setDbLessons(lessonsData);
         if (assessmentsData) setDbAssessments(assessmentsData);

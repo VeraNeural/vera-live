@@ -157,11 +157,15 @@ function trackValidatorTrigger(activityId: string, violationType: string) {
   }
   
   // Log to console for monitoring (can be removed in production)
-  console.log(`[Validator] ${activityId}: ${violationType} violation (${validatorStats[activityId].total} total violations)`);
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[Validator] ${activityId}: ${violationType} violation (${validatorStats[activityId].total} total violations)`);
+  }
   
   // Log summary every 10 violations for any activity
   if (validatorStats[activityId].total % 10 === 0) {
-    console.log(`[Validator Stats] ${activityId}:`, validatorStats[activityId]);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Validator Stats] ${activityId}:`, validatorStats[activityId]);
+    }
   }
 }
 

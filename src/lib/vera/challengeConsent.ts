@@ -25,8 +25,11 @@ export type ChallengeCookieState = {
 const COOKIE_FORMAT_PREFIX = 'v1';
 
 function consentCookieSecret(): string {
-  // Prefer a dedicated secret. Fall back to existing server-only salt.
-  return process.env.VERA_CONSENT_SECRET ?? process.env.VERA_TELEMETRY_SALT ?? 'dev-salt-change-me';
+  const secret = process.env.CHALLENGE_SECRET;
+  if (!secret) {
+    throw new Error('CHALLENGE_SECRET environment variable is required');
+  }
+  return secret;
 }
 
 function signPayload(payloadB64Url: string): string {
