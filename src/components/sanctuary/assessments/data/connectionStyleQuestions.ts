@@ -1,0 +1,253 @@
+import { Question } from '../shared/types';
+
+export const CONNECTION_STYLE_QUESTIONS: Question[] = [
+  // Attachment Security (5 questions)
+  {
+    id: 'attachment_1',
+    text: 'How comfortable are you depending on others?',
+    type: 'slider',
+    category: 'attachment',
+    min: 1,
+    max: 10,
+    minLabel: 'Very uncomfortable',
+    maxLabel: 'Completely comfortable',
+  },
+  {
+    id: 'attachment_2',
+    text: 'When someone close to you is unavailable, you typically:',
+    type: 'choice',
+    options: [
+      { value: 1, label: 'Feel anxious or abandoned — need reassurance' },
+      { value: 2, label: 'Feel hurt but try not to show it' },
+      { value: 3, label: 'Feel disappointed but manage okay' },
+      { value: 4, label: "Feel fine — trust they'll be back" },
+    ],
+    category: 'attachment',
+  },
+  {
+    id: 'attachment_3',
+    text: 'How secure do you feel in your closest relationships?',
+    type: 'scale',
+    options: [
+      { value: 1, label: 'Often insecure', description: 'Worry about being left or rejected' },
+      { value: 2, label: 'Sometimes insecure', description: 'Depends on the relationship' },
+      { value: 3, label: 'Mostly secure', description: 'Generally feel stable' },
+      { value: 4, label: 'Very secure', description: 'Trust in my connections' },
+    ],
+    category: 'attachment',
+  },
+  {
+    id: 'attachment_4',
+    text: 'Your belief about whether people will be there for you:',
+    type: 'choice',
+    options: [
+      { value: 1, label: 'People usually let me down eventually' },
+      { value: 2, label: "I'm not sure — it varies a lot" },
+      { value: 3, label: 'Most people are reliable if I choose well' },
+      { value: 4, label: 'I trust that people who love me will show up' },
+    ],
+    category: 'attachment',
+  },
+  {
+    id: 'attachment_5',
+    text: 'How easily do you trust new people?',
+    type: 'slider',
+    category: 'attachment',
+    min: 1,
+    max: 10,
+    minLabel: 'Very slowly — trust is earned',
+    maxLabel: 'Fairly easily — open by default',
+  },
+
+  // Boundary Clarity (4 questions)
+  {
+    id: 'boundaries_1',
+    text: 'How clear are you about your own boundaries?',
+    type: 'scale',
+    options: [
+      { value: 1, label: 'Unclear', description: "I'm not sure what my limits are" },
+      { value: 2, label: 'Somewhat clear', description: 'I know some but not all' },
+      { value: 3, label: 'Mostly clear', description: 'I generally know my limits' },
+      { value: 4, label: 'Very clear', description: 'I have a strong sense of my boundaries' },
+    ],
+    category: 'boundaries',
+  },
+  {
+    id: 'boundaries_2',
+    text: 'How comfortable are you saying "no" to people you care about?',
+    type: 'slider',
+    category: 'boundaries',
+    min: 1,
+    max: 10,
+    minLabel: 'Very difficult',
+    maxLabel: 'Comfortable when needed',
+  },
+  {
+    id: 'boundaries_3',
+    text: 'When someone crosses a boundary, you typically:',
+    type: 'choice',
+    options: [
+      { value: 1, label: 'Say nothing — avoid conflict' },
+      { value: 2, label: 'Hint at it — hope they notice' },
+      { value: 3, label: 'Address it eventually — after building courage' },
+      { value: 4, label: 'Speak up clearly — in the moment or soon after' },
+    ],
+    category: 'boundaries',
+  },
+  {
+    id: 'boundaries_4',
+    text: "How often do you feel responsible for other people's emotions?",
+    type: 'scale',
+    options: [
+      { value: 1, label: 'Almost always', description: 'I feel I need to fix their feelings' },
+      { value: 2, label: 'Often', description: 'Frequently take on their emotions' },
+      { value: 3, label: 'Sometimes', description: 'With certain people' },
+      { value: 4, label: 'Rarely', description: 'I can separate their feelings from mine' },
+    ],
+    category: 'boundaries',
+  },
+
+  // Intimacy Comfort (4 questions)
+  {
+    id: 'intimacy_1',
+    text: 'How comfortable are you with emotional closeness?',
+    type: 'slider',
+    category: 'intimacy',
+    min: 1,
+    max: 10,
+    minLabel: 'Uncomfortable — feels vulnerable',
+    maxLabel: 'Very comfortable — I seek it',
+  },
+  {
+    id: 'intimacy_2',
+    text: 'When a relationship starts getting close, you:',
+    type: 'choice',
+    options: [
+      { value: 1, label: 'Pull back — it feels too intense' },
+      { value: 2, label: 'Get nervous — worry about getting hurt' },
+      { value: 3, label: 'Proceed cautiously — but stay open' },
+      { value: 4, label: 'Lean in — closeness is what I want' },
+    ],
+    category: 'intimacy',
+  },
+  {
+    id: 'intimacy_3',
+    text: 'How much do you share your inner world with close others?',
+    type: 'scale',
+    options: [
+      { value: 1, label: 'Very little', description: 'I keep most things private' },
+      { value: 2, label: 'Some things', description: 'Surface level mostly' },
+      { value: 3, label: 'A fair amount', description: 'The important things' },
+      { value: 4, label: 'Most everything', description: "I'm an open book with trusted people" },
+    ],
+    category: 'intimacy',
+  },
+  {
+    id: 'intimacy_4',
+    text: 'Physical affection in close relationships feels:',
+    type: 'choice',
+    options: [
+      { value: 1, label: "Uncomfortable — I'm not very physical" },
+      { value: 2, label: 'Okay in small doses — but not too much' },
+      { value: 3, label: 'Good — I enjoy appropriate affection' },
+      { value: 4, label: 'Essential — touch is important to me' },
+    ],
+    category: 'intimacy',
+  },
+
+  // Independence Need (4 questions)
+  {
+    id: 'independence_1',
+    text: 'How much alone time do you need to feel like yourself?',
+    type: 'slider',
+    category: 'independence',
+    min: 1,
+    max: 10,
+    minLabel: 'Very little — I prefer company',
+    maxLabel: 'A lot — solitude is essential',
+  },
+  {
+    id: 'independence_2',
+    text: 'In relationships, you tend to:',
+    type: 'choice',
+    options: [
+      { value: 4, label: 'Merge — we become "we"' },
+      { value: 3, label: 'Stay close — but maintain some separateness' },
+      { value: 2, label: 'Keep space — togetherness can feel suffocating' },
+      { value: 1, label: "Stay independent — relationships shouldn't change who I am" },
+    ],
+    category: 'independence',
+  },
+  {
+    id: 'independence_3',
+    text: 'How do you feel when a partner or close friend wants more time together?',
+    type: 'scale',
+    options: [
+      { value: 1, label: 'Overwhelmed', description: 'I need my space' },
+      { value: 2, label: 'Slightly pressured', description: 'But I can accommodate' },
+      { value: 3, label: 'Generally positive', description: 'Nice to be wanted' },
+      { value: 4, label: 'Happy', description: 'I love spending time together' },
+    ],
+    category: 'independence',
+  },
+  {
+    id: 'independence_4',
+    text: 'Your ideal relationship balance is:',
+    type: 'choice',
+    options: [
+      { value: 1, label: 'Mostly independent — occasional togetherness' },
+      { value: 2, label: 'Balanced independence — regular but not constant contact' },
+      { value: 3, label: 'Balanced closeness — frequent connection with some space' },
+      { value: 4, label: 'Very close — as much togetherness as possible' },
+    ],
+    category: 'independence',
+  },
+
+  // Conflict Style (4 questions)
+  {
+    id: 'conflict_1',
+    text: 'When conflict arises in a relationship, your instinct is to:',
+    type: 'choice',
+    options: [
+      { value: 1, label: 'Avoid — hope it goes away' },
+      { value: 2, label: 'Accommodate — give in to keep peace' },
+      { value: 3, label: "Discuss — when I've calmed down" },
+      { value: 4, label: 'Address — talk it through directly' },
+    ],
+    category: 'conflict',
+  },
+  {
+    id: 'conflict_2',
+    text: 'How comfortable are you expressing anger or frustration to loved ones?',
+    type: 'slider',
+    category: 'conflict',
+    min: 1,
+    max: 10,
+    minLabel: 'Very uncomfortable',
+    maxLabel: 'Comfortable when appropriate',
+  },
+  {
+    id: 'conflict_3',
+    text: 'After an argument with someone close, you typically:',
+    type: 'scale',
+    options: [
+      { value: 1, label: 'Ruminate', description: "Can't stop thinking about it" },
+      { value: 2, label: 'Withdraw', description: 'Need significant time alone' },
+      { value: 3, label: 'Process', description: 'Think it through, then reconnect' },
+      { value: 4, label: 'Repair quickly', description: 'Want to resolve and reconnect' },
+    ],
+    category: 'conflict',
+  },
+  {
+    id: 'conflict_4',
+    text: 'Your relationship to conflict is:',
+    type: 'choice',
+    options: [
+      { value: 1, label: 'Conflict is dangerous — avoid at all costs' },
+      { value: 2, label: 'Conflict is uncomfortable — minimize when possible' },
+      { value: 3, label: 'Conflict is normal — handle it when needed' },
+      { value: 4, label: 'Conflict can be growth — sometimes necessary and valuable' },
+    ],
+    category: 'conflict',
+  },
+];
