@@ -10,6 +10,7 @@ import { DecodeMessageForm, getDecodePlaceholder } from './forms/DecodeMessageFo
 import { WorkLifeForm } from './forms/WorkLifeForm';
 import { MoneyForm } from './forms/MoneyForm';
 import { ThinkingForm } from './forms/ThinkingForm';
+import { RelationshipsForm } from './forms/RelationshipsForm';
 
 export const DynamicForm: React.FC<DynamicFormProps> = ({
   action,
@@ -89,7 +90,6 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
   const isApplicationKit = action.id === 'career' && activeOptionId === 'application-kit';
   const showCreateTone = action.id === 'create' && (createActivityId === 'write-email' || createActivityId === 'social-post');
   const showCareerTone = action.id === 'career' && (!activeOptionId || activeOptionId === 'cover-letter');
-  const showRelationshipsTone = action.id === 'relationships-wellness' && relationshipMode === 'relationship-help';
   const getApplicationKitSections = (text: string) => {
     const resumeMatch = text.match(/##\s*Optimized Resume[\s\S]*?(?=##\s*Cover Letter & Emails|$)/i);
     const coverMatch = text.match(/##\s*Cover Letter & Emails[\s\S]*/i);
@@ -215,32 +215,6 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
 
   const showThinkingMore = useOverflowWatcher([thinkingToneRef], [action.id]);
 
-  const relationshipPrimaryModes = [
-    { id: 'perspective-shift', label: 'Perspective Shift' },
-    { id: 'vent-session', label: 'Vent Session' },
-    { id: 'self-check-in', label: 'Self Check-In' },
-    { id: 'relationship-help', label: 'Relationship Help' },
-  ];
-  const relationshipToneModes = [
-    { id: 'gentle', label: 'Gentle' },
-    { id: 'honest', label: 'Honest' },
-    { id: 'grounded', label: 'Grounded' },
-    { id: 'supportive', label: 'Supportive' },
-  ];
-  const relationshipDepthModes = [
-    { id: 'short', label: 'Short' },
-    { id: 'medium', label: 'Medium' },
-    { id: 'deep', label: 'Deep' },
-  ];
-
-  React.useEffect(() => {
-    if (action.id === 'relationships-wellness') {
-      onRelationshipModeChange?.('perspective-shift');
-      onRelationshipToneChange?.('gentle');
-      onRelationshipDepthChange?.('short');
-    }
-  }, [action.id]);
-
   const applicationKitOutput = isApplicationKit
     ? getApplicationKitSections((output || '').trim())
     : { resume: '', cover: '' };
@@ -347,81 +321,20 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
       )}
 
       {action.id === 'relationships-wellness' && onRelationshipModeChange && (
-        <>
-          <div style={sectionLabelStyle}>Activity</div>
-          <div style={layerCardStyle}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {relationshipPrimaryModes.map((mode) => (
-                <button
-                  key={mode.id}
-                  onClick={() => onRelationshipModeChange(mode.id)}
-                  style={{
-                    padding: '8px 12px',
-                    borderRadius: 999,
-                    border: `1px solid ${mode.id === relationshipMode ? colors.accent : inputBorder}`,
-                    background: 'transparent',
-                    color: mode.id === relationshipMode ? colors.text : colors.textMuted,
-                    fontSize: 12,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {mode.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          {showRelationshipsTone && (
-            <>
-              <div style={sectionLabelStyle}>Tone</div>
-              <div style={layerCardStyle}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {onRelationshipToneChange && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                      {relationshipToneModes.map((mode) => (
-                        <button
-                          key={mode.id}
-                          onClick={() => onRelationshipToneChange(mode.id)}
-                          style={{
-                            padding: '8px 12px',
-                            borderRadius: 999,
-                            border: `1px solid ${mode.id === relationshipTone ? colors.accent : inputBorder}`,
-                            background: 'transparent',
-                            color: mode.id === relationshipTone ? colors.text : colors.textMuted,
-                            fontSize: 12,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {mode.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {onRelationshipDepthChange && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                      {relationshipDepthModes.map((mode) => (
-                        <button
-                          key={mode.id}
-                          onClick={() => onRelationshipDepthChange(mode.id)}
-                          style={{
-                            padding: '8px 12px',
-                            borderRadius: 999,
-                            border: `1px solid ${mode.id === relationshipDepth ? colors.accent : inputBorder}`,
-                            background: 'transparent',
-                            color: mode.id === relationshipDepth ? colors.text : colors.textMuted,
-                            fontSize: 12,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {mode.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-        </>
+        <RelationshipsForm
+          action={action}
+          relationshipMode={relationshipMode}
+          onRelationshipModeChange={onRelationshipModeChange}
+          relationshipTone={relationshipTone}
+          onRelationshipToneChange={onRelationshipToneChange}
+          relationshipDepth={relationshipDepth}
+          onRelationshipDepthChange={onRelationshipDepthChange}
+          colors={colors}
+          isDark={isDark}
+          inputBorder={inputBorder}
+          layerCardStyle={layerCardStyle}
+          sectionLabelStyle={sectionLabelStyle}
+        />
       )}
 
       {action.id === 'create' && onCreateActivityChange && (
