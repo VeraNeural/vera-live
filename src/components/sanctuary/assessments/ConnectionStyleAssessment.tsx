@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { AssessmentProps, AssessmentResults, Question } from './shared/types';
 import QuestionRenderer from './shared/QuestionRenderer';
+import ResultsDisplay from './shared/ResultsDisplay';
 
 const QUESTIONS: Question[] = [
   // Attachment Security (5 questions)
@@ -1042,102 +1043,17 @@ export default function ConnectionStyleAssessment({ onBack, onComplete }: Assess
                 ))}
               </div>
 
-              {/* Insights */}
-              <div style={{
-                padding: 20,
-                background: cardBg,
-                border: `1px solid ${cardBorder}`,
-                borderRadius: 16,
-                marginBottom: 16,
-              }}>
-                <h3 style={{ fontSize: 16, fontWeight: 600, color: textColor, marginBottom: 16 }}>
-                  Key Insights
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {results.insights.map((insight, i) => (
-                    <div key={i} style={{ display: 'flex', gap: 12 }}>
-                      <div style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: '50%',
-                        background: `${accentColor}22`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                        marginTop: 2,
-                      }}>
-                        <span style={{ fontSize: 12, color: accentColor }}>{i + 1}</span>
-                      </div>
-                      <p style={{ fontSize: 14, color: mutedColor, lineHeight: 1.6 }}>
-                        {insight}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Recommendations */}
-              <div style={{
-                padding: 20,
-                background: cardBg,
-                border: `1px solid ${cardBorder}`,
-                borderRadius: 16,
-                marginBottom: 16,
-              }}>
-                <h3 style={{ fontSize: 16, fontWeight: 600, color: textColor, marginBottom: 16 }}>
-                  Your Growth Path
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {results.recommendations.map((rec, i) => (
-                    <div key={i} style={{ display: 'flex', gap: 12 }}>
-                      <div style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: '50%',
-                        background: `${primary.color}22`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                        marginTop: 2,
-                      }}>
-                        <span style={{ fontSize: 14, color: primary.color }}>→</span>
-                      </div>
-                      <p style={{ fontSize: 14, color: mutedColor, lineHeight: 1.6 }}>
-                        {rec}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Toolkit */}
-              <div style={{
-                padding: 20,
-                background: `linear-gradient(135deg, ${primary.color}10 0%, transparent 100%)`,
-                border: `1px solid ${primary.color}25`,
-                borderRadius: 16,
-                marginBottom: 16,
-              }}>
-                <h3 style={{ fontSize: 16, fontWeight: 600, color: textColor, marginBottom: 12 }}>
-                  Your Connection Toolkit
-                </h3>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {primary.tools.map((tool, i) => (
-                    <span key={i} style={{
-                      padding: '10px 16px',
-                      background: `${primary.color}20`,
-                      border: `1px solid ${primary.color}30`,
-                      borderRadius: 20,
-                      fontSize: 14,
-                      color: textColor,
-                    }}>
-                      {tool}
-                    </span>
-                  ))}
-                </div>
-              </div>
+              {/* Insights & Recommendations - Replaced with ResultsDisplay component */}
+              <ResultsDisplay
+                insights={results.insights}
+                recommendations={results.recommendations}
+                accentColor={accentColor}
+                primaryColor={primary.color}
+                textColor={textColor}
+                mutedColor={mutedColor}
+                cardBg={cardBg}
+                cardBorder={cardBorder}
+              />
 
               {/* Secondary Style */}
               {secondary && (
