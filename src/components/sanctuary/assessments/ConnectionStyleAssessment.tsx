@@ -2,37 +2,7 @@
 
 import { useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
-
-interface AssessmentProps {
-  onBack: () => void;
-  onComplete?: (results: AssessmentResults) => void;
-}
-
-interface AssessmentResults {
-  attachmentSecurity: number;
-  boundaryClarity: number;
-  intimacyComfort: number;
-  independenceNeed: number;
-  conflictStyle: number;
-  connectionStyle: string;
-  secondaryStyle: string;
-  insights: string[];
-  recommendations: string[];
-  relationshipStrengths: string[];
-}
-
-interface Question {
-  id: string;
-  text: string;
-  subtext?: string;
-  type: 'scale' | 'choice' | 'slider';
-  options?: { value: number; label: string; description?: string }[];
-  category: 'attachment' | 'boundaries' | 'intimacy' | 'independence' | 'conflict';
-  min?: number;
-  max?: number;
-  minLabel?: string;
-  maxLabel?: string;
-}
+import { AssessmentProps, AssessmentResults, Question } from './shared/types';
 
 const QUESTIONS: Question[] = [
   // Attachment Security (5 questions)
