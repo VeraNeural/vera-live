@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { AssessmentProps, AssessmentResults, Question } from './shared/types';
+import QuestionRenderer from './shared/QuestionRenderer';
 
 const QUESTIONS: Question[] = [
   // Attachment Security (5 questions)
@@ -812,98 +813,8 @@ export default function ConnectionStyleAssessment({ onBack, onComplete }: Assess
               )}
             </div>
 
-            {/* Scale/Choice Options */}
-            {(question.type === 'scale' || question.type === 'choice') && question.options && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {question.options.map((option, i) => (
-                  <button
-                    key={i}
-                    className="assess-option"
-                    onClick={() => handleAnswer(option.value)}
-                    style={{
-                      padding: '18px 20px',
-                      background: cardBg,
-                      border: `1px solid ${cardBorder}`,
-                      borderRadius: 16,
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                    }}
-                  >
-                    <div style={{
-                      fontSize: 16,
-                      fontWeight: 500,
-                      color: textColor,
-                      marginBottom: option.description ? 4 : 0,
-                    }}>
-                      {option.label}
-                    </div>
-                    {option.description && (
-                      <div style={{ fontSize: 13, color: mutedColor }}>
-                        {option.description}
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Slider */}
-            {question.type === 'slider' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                <div style={{ padding: '0 8px' }}>
-                  <input
-                    type="range"
-                    min={question.min || 1}
-                    max={question.max || 10}
-                    value={sliderValue}
-                    onChange={(e) => setSliderValue(parseInt(e.target.value))}
-                    className="slider-input"
-                    style={{
-                      width: '100%',
-                      background: `linear-gradient(to right, ${accentColor} 0%, ${accentColor} ${((sliderValue - 1) / 9) * 100}%, ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)'} ${((sliderValue - 1) / 9) * 100}%, ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)'} 100%)`,
-                      cursor: 'pointer',
-                    }}
-                  />
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    marginTop: 16,
-                  }}>
-                    <span style={{ fontSize: 12, color: mutedColor, maxWidth: '35%' }}>
-                      {question.minLabel}
-                    </span>
-                    <span style={{
-                      fontSize: 32,
-                      fontWeight: 300,
-                      color: accentColor,
-                      lineHeight: 1,
-                    }}>
-                      {sliderValue}
-                    </span>
-                    <span style={{ fontSize: 12, color: mutedColor, maxWidth: '35%', textAlign: 'right' }}>
-                      {question.maxLabel}
-                    </span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleSliderSubmit}
-                  style={{
-                    padding: '16px',
-                    background: `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}dd 100%)`,
-                    border: 'none',
-                    borderRadius: 50,
-                    color: '#fff',
-                    fontSize: 16,
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Continue
-                </button>
-              </div>
-            )}
+            {/* Render Question using QuestionRenderer component */}
+            <QuestionRenderer question={question} handleAnswer={handleAnswer} />
           </div>
         </div>
       </>
