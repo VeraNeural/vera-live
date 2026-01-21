@@ -2,36 +2,7 @@
 
 import { useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
-
-interface AssessmentProps {
-  onBack: () => void;
-  onComplete?: (results: AssessmentResults) => void;
-}
-
-interface AssessmentResults {
-  emotionalAwareness: number;
-  emotionalExpression: number;
-  emotionalRegulation: number;
-  emotionalDepth: number;
-  emotionalResilience: number;
-  dominantPattern: string;
-  secondaryPattern: string;
-  insights: string[];
-  recommendations: string[];
-}
-
-interface Question {
-  id: string;
-  text: string;
-  subtext?: string;
-  type: 'scale' | 'choice' | 'slider';
-  options?: { value: number; label: string; description?: string }[];
-  category: 'awareness' | 'expression' | 'regulation' | 'depth' | 'resilience';
-  min?: number;
-  max?: number;
-  minLabel?: string;
-  maxLabel?: string;
-}
+import { AssessmentProps, AssessmentResults, Question } from './shared/types';
 
 const QUESTIONS: Question[] = [
   // Emotional Awareness
@@ -343,7 +314,7 @@ export default function InnerLandscapeAssessment({ onBack, onComplete }: Assessm
 
     QUESTIONS.forEach((q) => {
       if (allAnswers[q.id]) {
-        categories[q.category].push(allAnswers[q.id]);
+        categories[q.category as keyof typeof categories].push(allAnswers[q.id]);
       }
     });
 
@@ -987,11 +958,11 @@ export default function InnerLandscapeAssessment({ onBack, onComplete }: Assessm
                   Your Emotional Profile
                 </h3>
                 {[
-                  { label: 'Awareness', value: results.emotionalAwareness, color: '#6B9BC3' },
-                  { label: 'Expression', value: results.emotionalExpression, color: '#E8B86D' },
-                  { label: 'Regulation', value: results.emotionalRegulation, color: '#7BA05B' },
-                  { label: 'Depth', value: results.emotionalDepth, color: '#A78BB3' },
-                  { label: 'Resilience', value: results.emotionalResilience, color: '#C4956A' },
+                  { label: 'Awareness', value: results.emotionalAwareness as number, color: '#6B9BC3' },
+                  { label: 'Expression', value: results.emotionalExpression as number, color: '#E8B86D' },
+                  { label: 'Regulation', value: results.emotionalRegulation as number, color: '#7BA05B' },
+                  { label: 'Depth', value: results.emotionalDepth as number, color: '#A78BB3' },
+                  { label: 'Resilience', value: results.emotionalResilience as number, color: '#C4956A' },
                 ].map((item, i) => (
                   <div key={i} style={{ marginBottom: i < 4 ? 16 : 0 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>

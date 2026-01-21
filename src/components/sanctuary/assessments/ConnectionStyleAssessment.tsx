@@ -436,7 +436,7 @@ export default function ConnectionStyleAssessment({ onBack, onComplete }: Assess
 
     QUESTIONS.forEach((q) => {
       if (allAnswers[q.id]) {
-        categories[q.category].push(allAnswers[q.id]);
+        categories[q.category as keyof typeof categories].push(allAnswers[q.id]);
       }
     });
 
@@ -1011,11 +1011,11 @@ export default function ConnectionStyleAssessment({ onBack, onComplete }: Assess
                   Your Relationship Profile
                 </h3>
                 {[
-                  { label: 'Attachment Security', value: results.attachmentSecurity, color: '#7BA05B' },
-                  { label: 'Boundary Clarity', value: results.boundaryClarity, color: '#C4956A' },
-                  { label: 'Intimacy Comfort', value: results.intimacyComfort, color: '#A78BB3' },
-                  { label: 'Independence Need', value: results.independenceNeed, color: '#6B9BC3' },
-                  { label: 'Conflict Capacity', value: results.conflictStyle, color: '#E8B86D' },
+                  { label: 'Attachment Security', value: results.attachmentSecurity as number, color: '#7BA05B' },
+                  { label: 'Boundary Clarity', value: results.boundaryClarity as number, color: '#C4956A' },
+                  { label: 'Intimacy Comfort', value: results.intimacyComfort as number, color: '#A78BB3' },
+                  { label: 'Independence Need', value: results.independenceNeed as number, color: '#6B9BC3' },
+                  { label: 'Conflict Capacity', value: results.conflictStyle as number, color: '#E8B86D' },
                 ].map((item, i) => (
                   <div key={i} style={{ marginBottom: i < 4 ? 16 : 0 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
