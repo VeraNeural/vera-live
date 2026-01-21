@@ -2,38 +2,7 @@
 
 import { useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
-
-interface AssessmentProps {
-  onBack: () => void;
-  onComplete?: (results: AssessmentResults) => void;
-}
-
-interface AssessmentResults {
-  chronotype: number;
-  energyStability: number;
-  seasonalSensitivity: number;
-  rhythmAlignment: number;
-  recoveryPattern: number;
-  lifeRhythm: string;
-  secondaryRhythm: string;
-  peakHours: string;
-  insights: string[];
-  recommendations: string[];
-  optimalPractices: string[];
-}
-
-interface Question {
-  id: string;
-  text: string;
-  subtext?: string;
-  type: 'scale' | 'choice' | 'slider';
-  options?: { value: number; label: string; description?: string }[];
-  category: 'chronotype' | 'energy' | 'seasonal' | 'alignment' | 'recovery';
-  min?: number;
-  max?: number;
-  minLabel?: string;
-  maxLabel?: string;
-}
+import { AssessmentProps, AssessmentResults, Question } from './shared/types';
 
 const QUESTIONS: Question[] = [
   {
@@ -463,7 +432,7 @@ export default function LifeRhythmAssessment({ onBack, onComplete }: AssessmentP
 
     QUESTIONS.forEach((q) => {
       if (allAnswers[q.id]) {
-        categories[q.category].push(allAnswers[q.id]);
+        categories[q.category as keyof typeof categories].push(allAnswers[q.id]);
       }
     });
 
@@ -1143,11 +1112,11 @@ export default function LifeRhythmAssessment({ onBack, onComplete }: AssessmentP
                   Your Rhythm Profile
                 </h3>
                 {[
-                  { label: 'Chronotype (Morning-Evening)', value: results.chronotype, color: '#E8B86D' },
-                  { label: 'Energy Stability', value: results.energyStability, color: '#7BA05B' },
-                  { label: 'Seasonal Sensitivity', value: results.seasonalSensitivity, color: '#C4956A' },
-                  { label: 'Rhythm Alignment', value: results.rhythmAlignment, color: '#6B9BC3' },
-                  { label: 'Recovery Capacity', value: results.recoveryPattern, color: '#A78BB3' },
+                  { label: 'Chronotype (Morning-Evening)', value: results.chronotype as number, color: '#E8B86D' },
+                  { label: 'Energy Stability', value: results.energyStability as number, color: '#7BA05B' },
+                  { label: 'Seasonal Sensitivity', value: results.seasonalSensitivity as number, color: '#C4956A' },
+                  { label: 'Rhythm Alignment', value: results.rhythmAlignment as number, color: '#6B9BC3' },
+                  { label: 'Recovery Capacity', value: results.recoveryPattern as number, color: '#A78BB3' },
                 ].map((item, i) => (
                   <div key={i} style={{ marginBottom: i < 4 ? 16 : 0 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
