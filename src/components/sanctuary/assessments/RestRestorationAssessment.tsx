@@ -2,38 +2,7 @@
 
 import { useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
-
-interface AssessmentProps {
-  onBack: () => void;
-  onComplete?: (results: AssessmentResults) => void;
-}
-
-interface AssessmentResults {
-  physicalRest: number;
-  mentalRest: number;
-  emotionalRest: number;
-  socialRest: number;
-  sensoryRest: number;
-  creativeRest: number;
-  restStyle: string;
-  secondaryStyle: string;
-  insights: string[];
-  recommendations: string[];
-  idealPractices: string[];
-}
-
-interface Question {
-  id: string;
-  text: string;
-  subtext?: string;
-  type: 'scale' | 'choice' | 'slider';
-  options?: { value: number; label: string; description?: string }[];
-  category: 'physical' | 'mental' | 'emotional' | 'social' | 'sensory' | 'creative';
-  min?: number;
-  max?: number;
-  minLabel?: string;
-  maxLabel?: string;
-}
+import { AssessmentProps, AssessmentResults, Question } from './shared/types';
 
 const QUESTIONS: Question[] = [
   // Physical Rest (4 questions)
@@ -472,7 +441,7 @@ export default function RestRestorationAssessment({ onBack, onComplete }: Assess
 
     QUESTIONS.forEach((q) => {
       if (allAnswers[q.id]) {
-        categories[q.category].push(allAnswers[q.id]);
+        categories[q.category as keyof typeof categories].push(allAnswers[q.id]);
       }
     });
 
@@ -1134,12 +1103,12 @@ export default function RestRestorationAssessment({ onBack, onComplete }: Assess
                   Lower scores indicate greater need for this type of rest
                 </p>
                 {[
-                  { label: 'Physical Rest', value: results.physicalRest, color: '#C4956A' },
-                  { label: 'Mental Rest', value: results.mentalRest, color: '#6B9BC3' },
-                  { label: 'Emotional Rest', value: results.emotionalRest, color: '#C47070' },
-                  { label: 'Social Rest', value: results.socialRest, color: '#7BA05B' },
-                  { label: 'Sensory Rest', value: results.sensoryRest, color: '#A78BB3' },
-                  { label: 'Creative Rest', value: results.creativeRest, color: '#E8B86D' },
+                  { label: 'Physical Rest', value: results.physicalRest as number, color: '#C4956A' },
+                  { label: 'Mental Rest', value: results.mentalRest as number, color: '#6B9BC3' },
+                  { label: 'Emotional Rest', value: results.emotionalRest as number, color: '#C47070' },
+                  { label: 'Social Rest', value: results.socialRest as number, color: '#7BA05B' },
+                  { label: 'Sensory Rest', value: results.sensoryRest as number, color: '#A78BB3' },
+                  { label: 'Creative Rest', value: results.creativeRest as number, color: '#E8B86D' },
                 ].map((item, i) => (
                   <div key={i} style={{ marginBottom: i < 5 ? 16 : 0 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -1248,7 +1217,7 @@ export default function RestRestorationAssessment({ onBack, onComplete }: Assess
                   Your Ideal Practices
                 </h3>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {results.idealPractices.map((practice, i) => (
+                  {(results.idealPractices as string[]).map((practice, i) => (
                     <span key={i} style={{
                       padding: '10px 16px',
                       background: `${primary.color}20`,
