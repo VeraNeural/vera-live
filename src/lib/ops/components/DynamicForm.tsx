@@ -9,6 +9,7 @@ import { BoundariesForm } from './forms/BoundariesForm';
 import { DecodeMessageForm, getDecodePlaceholder } from './forms/DecodeMessageForm';
 import { WorkLifeForm } from './forms/WorkLifeForm';
 import { MoneyForm } from './forms/MoneyForm';
+import { ThinkingForm } from './forms/ThinkingForm';
 
 export const DynamicForm: React.FC<DynamicFormProps> = ({
   action,
@@ -149,32 +150,6 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
 
   const [activeMode, setActiveMode] = useState<string>('task-breakdown');
 
-  const [showMoreThinkingModes, setShowMoreThinkingModes] = useState(false);
-  const thinkingPrimaryModes = [
-    { id: 'brainstorm', label: 'Brainstorm' },
-    { id: 'summarize', label: 'Summarize' },
-    { id: 'explain-like', label: 'Explain Like…' },
-    { id: 'perspective-shift', label: 'Perspective Shift' },
-  ];
-  const thinkingSecondaryModes = [
-    { id: 'compare-ideas', label: 'Compare Ideas' },
-    { id: 'clarify-thinking', label: 'Clarify Thinking' },
-    { id: 'reduce-complexity', label: 'Reduce Complexity' },
-    { id: 'expand-options', label: 'Expand Options' },
-    { id: 'mental-model', label: 'Mental Model' },
-  ];
-  const thinkingStyleModes = [
-    { id: 'simple', label: 'Simple' },
-    { id: 'structured', label: 'Structured' },
-    { id: 'creative', label: 'Creative' },
-    { id: 'analytical', label: 'Analytical' },
-  ];
-  const thinkingDepthModes = [
-    { id: 'short', label: 'Short' },
-    { id: 'medium', label: 'Medium' },
-    { id: 'deep', label: 'Deep' },
-  ];
-
   const focusModes = [
     { id: 'think', label: 'THINK' },
     { id: 'decide', label: 'DECIDE' },
@@ -259,13 +234,6 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
   ];
 
   React.useEffect(() => {
-    if (action.id === 'thinking-learning') {
-      setShowMoreThinkingModes(false);
-      onThinkingModeChange?.('brainstorm');
-      onThinkingStyleChange?.('simple');
-      onThinkingDepthChange?.('short');
-      onThinkingSecondaryModeChange?.('');
-    }
     if (action.id === 'relationships-wellness') {
       onRelationshipModeChange?.('perspective-shift');
       onRelationshipToneChange?.('gentle');
@@ -360,33 +328,22 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
       )}
 
       {action.id === 'thinking-learning' && onThinkingModeChange && (
-        <>
-          <div style={sectionLabelStyle}>Activity</div>
-          <div style={layerCardStyle}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {thinkingPrimaryModes.map((mode) => (
-                <button
-                  key={mode.id}
-                  onClick={() => {
-                    onThinkingModeChange(mode.id);
-                    setShowMoreThinkingModes(false);
-                  }}
-                  style={{
-                    padding: '8px 12px',
-                    borderRadius: 999,
-                    border: `1px solid ${mode.id === thinkingMode ? colors.accent : inputBorder}`,
-                    background: 'transparent',
-                    color: mode.id === thinkingMode ? colors.text : colors.textMuted,
-                    fontSize: 12,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {mode.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </>
+        <ThinkingForm
+          action={action}
+          thinkingMode={thinkingMode}
+          onThinkingModeChange={onThinkingModeChange}
+          thinkingStyle={thinkingStyle}
+          onThinkingStyleChange={onThinkingStyleChange}
+          thinkingDepth={thinkingDepth}
+          onThinkingDepthChange={onThinkingDepthChange}
+          thinkingSecondaryMode={thinkingSecondaryMode}
+          onThinkingSecondaryModeChange={onThinkingSecondaryModeChange}
+          colors={colors}
+          isDark={isDark}
+          inputBorder={inputBorder}
+          layerCardStyle={layerCardStyle}
+          sectionLabelStyle={sectionLabelStyle}
+        />
       )}
 
       {action.id === 'relationships-wellness' && onRelationshipModeChange && (
