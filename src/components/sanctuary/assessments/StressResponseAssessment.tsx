@@ -2,32 +2,7 @@
 
 import { useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
-
-interface AssessmentProps {
-  onBack: () => void;
-  onComplete?: (results: AssessmentResults) => void;
-}
-
-interface AssessmentResults {
-  activationLevel: number;
-  recoveryCapacity: number;
-  triggerAwareness: number;
-  copingFlexibility: number;
-  windowOfTolerance: number;
-  stressResponse: string;
-  secondaryResponse: string;
-  insights: string[];
-  recommendations: string[];
-  regulationTools: string[];
-}
-
-interface Question {
-  id: string;
-  text: string;
-  subtext?: string;
-  options: { value: number; label: string; description?: string }[];
-  category: 'activation' | 'recovery' | 'triggers' | 'coping' | 'window';
-}
+import { AssessmentProps, AssessmentResults, Question } from './shared/types';
 
 const QUESTIONS: Question[] = [
   {
@@ -307,7 +282,7 @@ export default function StressResponseAssessment({ onBack, onComplete }: Assessm
 
     QUESTIONS.forEach((q) => {
       if (allAnswers[q.id]) {
-        categories[q.category].push(allAnswers[q.id]);
+        categories[q.category as keyof typeof categories].push(allAnswers[q.id]);
       }
     });
 
@@ -646,7 +621,7 @@ export default function StressResponseAssessment({ onBack, onComplete }: Assessm
 
             {/* Options */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {question.options.map((option, i) => (
+              {question.options?.map((option, i) => (
                 <button
                   key={i}
                   className="assess-option"
@@ -857,11 +832,11 @@ export default function StressResponseAssessment({ onBack, onComplete }: Assessm
                   Your Nervous System Profile
                 </h3>
                 {[
-                  { label: 'Baseline Regulation', value: results.activationLevel, color: '#7BA05B' },
-                  { label: 'Recovery Capacity', value: results.recoveryCapacity, color: '#6B9BC3' },
-                  { label: 'Trigger Awareness', value: results.triggerAwareness, color: '#E8B86D' },
-                  { label: 'Coping Flexibility', value: results.copingFlexibility, color: '#A78BB3' },
-                  { label: 'Window of Tolerance', value: results.windowOfTolerance, color: '#C4956A' },
+                  { label: 'Baseline Regulation', value: results.activationLevel as number, color: '#7BA05B' },
+                  { label: 'Recovery Capacity', value: results.recoveryCapacity as number, color: '#6B9BC3' },
+                  { label: 'Trigger Awareness', value: results.triggerAwareness as number, color: '#E8B86D' },
+                  { label: 'Coping Flexibility', value: results.copingFlexibility as number, color: '#A78BB3' },
+                  { label: 'Window of Tolerance', value: results.windowOfTolerance as number, color: '#C4956A' },
                 ].map((item, i) => (
                   <div key={i} style={{ marginBottom: i < 4 ? 16 : 0 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
