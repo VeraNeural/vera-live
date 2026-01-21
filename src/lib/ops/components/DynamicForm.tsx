@@ -1,103 +1,13 @@
 import React, { useState } from 'react';
-import { ActionItem } from '../types';
 import { OpsIcon } from '../icons';
 import { THINKING_MODES } from '../config/thinkingModes';
 import { ACTIVITY_THINKING_MODES } from '../config/activityThinkingModes';
-
-// Make DynamicForm accept activities with either field structure
-type FlexibleAction = Omit<ActionItem, 'fields'> & {
-  fields?: Array<{
-    id?: string;
-    name?: string;
-    label: string;
-    type: 'text' | 'textarea' | 'select' | 'number';
-    placeholder?: string;
-    options?: { value: string; label: string }[];
-    required?: boolean;
-  }>;
-  dropdownOptions?: Array<{
-    id: string;
-    label: string;
-    description: string;
-    icon: string;
-    placeholder?: string;
-  }>;
-  disclaimer?: string;
-};
-
-interface DynamicFormProps {
-  action: FlexibleAction;
-  activeOptionId?: string;
-  output?: string | null;
-  simpleInput: string;
-  formFields: Record<string, string>;
-  onSimpleInputChange: (value: string) => void;
-  onFormFieldChange: (fieldId: string, value: string) => void;
-  onGenerate: (payload?: { thinkingMode?: { id: string; label: string; persona?: string } }) => void;
-  isGenerating: boolean;
-  isValid: boolean;
-  colors: {
-    text: string;
-    textMuted: string;
-    accent: string;
-    cardBg: string;
-    cardBorder: string;
-  };
-  isDark: boolean;
-  onDecodeEntryChange?: (entryId: string) => void;
-  respondMode?: string;
-  onRespondModeChange?: (modeId: string) => void;
-  boundaryMode?: string;
-  onBoundaryModeChange?: (modeId: string) => void;
-  boundaryTone?: string;
-  onBoundaryToneChange?: (toneId: string) => void;
-  boundaryDelivery?: string;
-  onBoundaryDeliveryChange?: (deliveryId: string) => void;
-  workLifeMode?: string;
-  onWorkLifeModeChange?: (modeId: string) => void;
-  workLifeActivities?: Array<{ id: string; title: string; label?: string }>;
-  moneyActivities?: Array<{ id: string; title: string; label?: string }>;
-  workLifeTone?: string;
-  onWorkLifeToneChange?: (toneId: string) => void;
-  workLifeContext?: string;
-  onWorkLifeContextChange?: (contextId: string) => void;
-  workLifeSecondaryMode?: string;
-  onWorkLifeSecondaryModeChange?: (modeId: string) => void;
-  thinkingMode?: string;
-  onThinkingModeChange?: (modeId: string) => void;
-  thinkingStyle?: string;
-  onThinkingStyleChange?: (styleId: string) => void;
-  thinkingDepth?: string;
-  onThinkingDepthChange?: (depthId: string) => void;
-  thinkingSecondaryMode?: string;
-  onThinkingSecondaryModeChange?: (modeId: string) => void;
-  moneyMode?: string;
-  onMoneyModeChange?: (modeId: string) => void;
-  moneyPerspective?: string;
-  onMoneyPerspectiveChange?: (perspectiveId: string) => void;
-  moneyScope?: string;
-  onMoneyScopeChange?: (scopeId: string) => void;
-  moneyContext?: string;
-  onMoneyContextChange?: (contextId: string) => void;
-  moneySecondaryMode?: string;
-  onMoneySecondaryModeChange?: (modeId: string) => void;
-  relationshipMode?: string;
-  onRelationshipModeChange?: (modeId: string) => void;
-  relationshipTone?: string;
-  onRelationshipToneChange?: (toneId: string) => void;
-  relationshipDepth?: string;
-  onRelationshipDepthChange?: (depthId: string) => void;
-  focusMode?: string;
-  onFocusModeChange?: (modeId: string) => void;
-  createActivities?: Array<{ id: string; title: string; description: string; dropdownOptions?: Array<{ id: string; label: string; description: string; icon: string }> }>;
-  createActivityId?: string;
-  onCreateActivityChange?: (activityId: string) => void;
-  createOptionId?: string;
-  onCreateOptionChange?: (optionId: string) => void;
-  careerTone?: string;
-  onCareerToneChange?: (toneId: string) => void;
-  onSelectDropdownOption?: (option: { id: string; label: string; description: string; icon: string; placeholder: string; systemPrompt: string; fields?: any[] }) => void;
-}
+import { FlexibleAction, DynamicFormProps } from './forms/shared/types';
+import { FormHeader } from './forms/shared/FormHeader';
+import { RespondForm } from './forms/RespondForm';
+import { BoundariesForm } from './forms/BoundariesForm';
+import { DecodeMessageForm, getDecodePlaceholder } from './forms/DecodeMessageForm';
+import { WorkLifeForm } from './forms/WorkLifeForm';
 
 export const DynamicForm: React.FC<DynamicFormProps> = ({
   action,
@@ -194,29 +104,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
   const [showAdvancedThinking, setShowAdvancedThinking] = useState(false);
   const [selectedThinkingMode, setSelectedThinkingMode] = useState<string>('');
   const [personaInput, setPersonaInput] = useState('');
-  const decodeEntryOptions = {
-    primary: [
-      { id: 'email', label: 'Decode an email', placeholder: 'Paste the email you want to decode...' },
-      { id: 'text', label: 'Decode a text', placeholder: 'Paste the text you want to decode...' },
-      { id: 'summary', label: 'Summarize something', placeholder: 'Paste the content you want summarized...' },
-    ],
-    secondary: [
-      { id: 'promise', label: 'Decode a promise', placeholder: 'Paste the promise you want to decode...' },
-      { id: 'request', label: 'Decode a request', placeholder: 'Paste the request you want to decode...' },
-      { id: 'sales', label: 'Decode a sales message', placeholder: 'Paste the sales message you want to decode...' },
-      { id: 'boundary', label: 'Decode a boundary message', placeholder: 'Paste the boundary message you want to decode...' },
-      { id: 'legal', label: 'Decode a legal notice', placeholder: 'Paste the legal notice you want to decode...' },
-      { id: 'work', label: 'Decode a work message', placeholder: 'Paste the work message you want to decode...' },
-      { id: 'personal', label: 'Decode a personal message', placeholder: 'Paste the personal message you want to decode...' },
-      { id: 'power', label: 'Decode a power dynamic', placeholder: 'Paste the message you want to decode...' },
-    ],
-  };
-  const decodePlaceholder = (() => {
-    if (action.id !== 'decode-message') return action.placeholder;
-    const allOptions = [...decodeEntryOptions.primary, ...decodeEntryOptions.secondary];
-    const match = allOptions.find((opt) => opt.id === decodeEntry);
-    return match?.placeholder || action.placeholder;
-  })();
+  const decodePlaceholder = getDecodePlaceholder(action, decodeEntry);
 
   const activityThinkingKey = activeOptionId || action.id;
   const allowedThinkingModes = ACTIVITY_THINKING_MODES[activityThinkingKey] || [];
@@ -251,40 +139,6 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
     });
   };
 
-  const [showMoreBoundaryModes, setShowMoreBoundaryModes] = useState(false);
-  const boundaryPrimaryModes = [
-    { id: 'boundary-script', label: 'Boundary Script' },
-    { id: 'tough-conversation', label: 'Tough Conversation' },
-    { id: 'say-no-clearly', label: 'Say No Clearly' },
-  ];
-  const boundaryToneModes = [
-    { id: 'gentle', label: 'Gentle' },
-    { id: 'firm', label: 'Firm' },
-    { id: 'professional', label: 'Professional' },
-    { id: 'personal', label: 'Personal' },
-  ];
-  const boundarySecondaryModes = [
-    { id: 'short-direct', label: 'Short & Direct' },
-    { id: 'long-thoughtful', label: 'Long & Thoughtful' },
-    { id: 'written-message', label: 'Written Message' },
-    { id: 'spoken-conversation', label: 'Spoken Conversation' },
-  ];
-
-  const [showMoreRespondModes, setShowMoreRespondModes] = useState(false);
-  const respondPrimaryModes = [
-    { id: 'quick', label: 'Quick' },
-    { id: 'follow-up', label: 'Follow up' },
-    { id: 'acknowledge', label: 'Acknowledge' },
-    { id: 'buy-time', label: 'Buy time' },
-  ];
-  const respondSecondaryModes = [
-    { id: 'decline', label: 'Decline' },
-    { id: 'clarify', label: 'Clarify' },
-    { id: 'apology', label: 'Apology' },
-    { id: 'reframe', label: 'Reframe' },
-    { id: 'confirm-understanding', label: 'Confirm understanding' },
-  ];
-
   const isWorkLifeActivity = Boolean(
     (workLifeActivities && workLifeActivities.some((activity) => activity.id === action.id)) ||
       action.id === 'work-life'
@@ -294,31 +148,6 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
   );
 
   const [activeMode, setActiveMode] = useState<string>('task-breakdown');
-  const showWorkLifeTone = isWorkLifeActivity && (activeMode === 'decision-helper' || activeMode === 'planning');
-  const [showMoreModes, setShowMoreModes] = useState(false);
-  const workLifePrimaryModes = (workLifeActivities?.length
-    ? workLifeActivities.map((activity) => ({
-        id: activity.id,
-        label: activity.label || activity.title,
-      }))
-    : [
-        { id: 'task-breakdown', label: 'Task Breakdown' },
-        { id: 'decision-helper', label: 'Decision Helper' },
-        { id: 'planning', label: 'Planning' },
-      ]
-  );
-  const workLifeToneModes = [
-    { id: 'clear', label: 'Clear' },
-    { id: 'strategic', label: 'Strategic' },
-    { id: 'practical', label: 'Practical' },
-    { id: 'calm', label: 'Calm' },
-  ];
-  const workLifeSecondaryModes = [
-    { id: 'prioritization', label: 'Prioritization' },
-    { id: 'time', label: 'Time Blocking' },
-    { id: 'overwhelm', label: 'Overwhelm Reset' },
-    { id: 'project', label: 'Project Mapping' },
-  ];
 
   const [showMoreMoneyModes, setShowMoreMoneyModes] = useState(false);
   const moneyPrimaryModes = moneyActivities?.length
@@ -417,9 +246,6 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
     margin: '0 0 8px 4px',
   };
 
-  const respondRowRef = React.useRef<HTMLDivElement>(null);
-  const boundaryToneRef = React.useRef<HTMLDivElement>(null);
-  const workLifeToneRef = React.useRef<HTMLDivElement>(null);
   const moneyToneRef = React.useRef<HTMLDivElement>(null);
   const thinkingToneRef = React.useRef<HTMLDivElement>(null);
 
@@ -452,9 +278,6 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
     return isOverflow;
   };
 
-  const showRespondMore = useOverflowWatcher([respondRowRef], [action.id]);
-  const showBoundaryMore = useOverflowWatcher([boundaryToneRef], [action.id]);
-  const showWorkLifeMore = useOverflowWatcher([workLifeToneRef], [action.id]);
   const showMoneyMore = useOverflowWatcher([moneyToneRef], [action.id]);
   const showThinkingMore = useOverflowWatcher([thinkingToneRef], [action.id]);
 
@@ -477,39 +300,6 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
   ];
 
   React.useEffect(() => {
-    if (action.id === 'decode-message' && onDecodeEntryChange) {
-      onDecodeEntryChange(decodeEntry);
-    }
-  }, [action.id, decodeEntry, onDecodeEntryChange]);
-
-  React.useEffect(() => {
-    if (!isWorkLifeActivity) return;
-    if (!workLifeMode) return;
-    if (workLifeMode === activeMode) return;
-    setActiveMode(workLifeMode);
-  }, [isWorkLifeActivity, workLifeMode, activeMode]);
-
-  React.useEffect(() => {
-    if (action.id === 'respond') {
-      setShowMoreRespondModes(false);
-    }
-    if (action.id === 'boundaries') {
-      setShowMoreBoundaryModes(false);
-      onBoundaryModeChange?.('boundary-script');
-      onBoundaryToneChange?.('gentle');
-      onBoundaryDeliveryChange?.('');
-    }
-    if (isWorkLifeActivity) {
-      setShowMoreModes(false);
-      const defaultWorkLifeId = workLifeMode || workLifeActivities?.[0]?.id || 'task-breakdown';
-      setActiveMode(defaultWorkLifeId);
-      if (!workLifeMode) {
-        onWorkLifeModeChange?.(defaultWorkLifeId);
-      }
-      onWorkLifeToneChange?.('clear');
-      onWorkLifeContextChange?.('');
-      onWorkLifeSecondaryModeChange?.('');
-    }
     if (isMoneyActivity) {
       setShowMoreMoneyModes(false);
       if (!moneyMode) {
@@ -540,312 +330,61 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
 
   return (
     <div style={{ width: '100%', maxWidth: 700, animation: 'fadeIn 0.4s ease-out' }}>
-      <div style={layerCardStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: isDark
-                ? 'rgba(255, 180, 100, 0.1)'
-                : 'rgba(200, 160, 100, 0.15)',
-            }}
-          >
-            <OpsIcon type={action.icon} color={colors.accent} />
-          </div>
-          <div>
-            <h2
-              style={{
-                fontFamily: "'Cormorant Garamond', Georgia, serif",
-                fontSize: 22,
-                fontWeight: 300,
-                color: colors.text,
-              }}
-            >
-              {action.title}
-            </h2>
-            <p style={{ fontSize: 13, color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(30,30,30,0.7)' }}>{action.description}</p>
-          </div>
-        </div>
-        <div style={{ height: 1, backgroundColor: separatorColor }} />
-      </div>
+      <FormHeader
+        action={action}
+        colors={colors}
+        isDark={isDark}
+        separatorColor={separatorColor}
+        layerCardStyle={layerCardStyle}
+      />
 
       {action.id === 'respond' && onRespondModeChange && (
-        <>
-          <div style={sectionLabelStyle}>Activity</div>
-          <div style={layerCardStyle}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div ref={respondRowRef} style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {respondPrimaryModes.map((mode) => (
-                  <button
-                    key={mode.id}
-                    onClick={() => {
-                      onRespondModeChange(mode.id);
-                      setShowMoreRespondModes(false);
-                    }}
-                    style={{
-                      padding: '8px 12px',
-                      borderRadius: 999,
-                      border: `1px solid ${mode.id === respondMode ? colors.accent : inputBorder}`,
-                      background: 'transparent',
-                      color: mode.id === respondMode ? colors.text : colors.textMuted,
-                      fontSize: 12,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {mode.label}
-                  </button>
-                ))}
-              </div>
-              {showRespondMore && (
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <button
-                    onClick={() => setShowMoreRespondModes((prev) => !prev)}
-                    style={{
-                      padding: '8px 12px',
-                      borderRadius: 999,
-                      border: `1px solid ${showMoreRespondModes ? colors.accent : inputBorder}`,
-                      background: 'transparent',
-                      color: showMoreRespondModes ? colors.text : colors.textMuted,
-                      fontSize: 12,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    More
-                  </button>
-                </div>
-              )}
-              {showMoreRespondModes && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {respondSecondaryModes.map((mode) => (
-                    <button
-                      key={mode.id}
-                      onClick={() => {
-                        onRespondModeChange(mode.id);
-                        setShowMoreRespondModes(false);
-                      }}
-                      style={{
-                        padding: '8px 12px',
-                        borderRadius: 999,
-                        border: `1px solid ${mode.id === respondMode ? colors.accent : inputBorder}`,
-                        background: 'transparent',
-                        color: mode.id === respondMode ? colors.text : colors.textMuted,
-                        fontSize: 12,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {mode.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-          <div style={sectionLabelStyle}>Tone</div>
-          <div style={layerCardStyle} />
-        </>
+        <RespondForm
+          action={action}
+          respondMode={respondMode}
+          onRespondModeChange={onRespondModeChange}
+          colors={colors}
+          isDark={isDark}
+          inputBorder={inputBorder}
+          layerCardStyle={layerCardStyle}
+          sectionLabelStyle={sectionLabelStyle}
+        />
       )}
 
       {action.id === 'boundaries' && onBoundaryModeChange && (
-        <>
-          <div style={sectionLabelStyle}>Activity</div>
-          <div style={layerCardStyle}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {boundaryPrimaryModes.map((mode) => (
-                <button
-                  key={mode.id}
-                  onClick={() => {
-                    onBoundaryModeChange(mode.id);
-                    setShowMoreBoundaryModes(false);
-                  }}
-                  style={{
-                    padding: '8px 12px',
-                    borderRadius: 999,
-                    border: `1px solid ${mode.id === boundaryMode ? colors.accent : inputBorder}`,
-                    background: 'transparent',
-                    color: mode.id === boundaryMode ? colors.text : colors.textMuted,
-                    fontSize: 12,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {mode.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div style={sectionLabelStyle}>Tone</div>
-          <div style={layerCardStyle}>
-            <div ref={boundaryToneRef} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {onBoundaryToneChange && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {boundaryToneModes.map((tone) => (
-                    <button
-                      key={tone.id}
-                      onClick={() => onBoundaryToneChange(tone.id)}
-                      style={{
-                        padding: '8px 12px',
-                        borderRadius: 999,
-                        border: `1px solid ${tone.id === boundaryTone ? colors.accent : inputBorder}`,
-                        background: 'transparent',
-                        color: tone.id === boundaryTone ? colors.text : colors.textMuted,
-                        fontSize: 12,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {tone.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {showBoundaryMore && (
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <button
-                    onClick={() => setShowMoreBoundaryModes((prev) => !prev)}
-                    style={{
-                      padding: '8px 12px',
-                      borderRadius: 999,
-                      border: `1px solid ${showMoreBoundaryModes ? colors.accent : inputBorder}`,
-                      background: 'transparent',
-                      color: showMoreBoundaryModes ? colors.text : colors.textMuted,
-                      fontSize: 12,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    More
-                  </button>
-                </div>
-              )}
-              {showMoreBoundaryModes && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {boundarySecondaryModes.map((mode) => (
-                    <button
-                      key={mode.id}
-                      onClick={() => {
-                        onBoundaryDeliveryChange?.(mode.id);
-                        setShowMoreBoundaryModes(false);
-                      }}
-                      style={{
-                        padding: '8px 12px',
-                        borderRadius: 999,
-                        border: `1px solid ${mode.id === boundaryDelivery ? colors.accent : inputBorder}`,
-                        background: 'transparent',
-                        color: mode.id === boundaryDelivery ? colors.text : colors.textMuted,
-                        fontSize: 12,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {mode.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </>
+        <BoundariesForm
+          action={action}
+          boundaryMode={boundaryMode}
+          onBoundaryModeChange={onBoundaryModeChange}
+          boundaryTone={boundaryTone}
+          onBoundaryToneChange={onBoundaryToneChange}
+          boundaryDelivery={boundaryDelivery}
+          onBoundaryDeliveryChange={onBoundaryDeliveryChange}
+          colors={colors}
+          isDark={isDark}
+          inputBorder={inputBorder}
+          layerCardStyle={layerCardStyle}
+          sectionLabelStyle={sectionLabelStyle}
+        />
       )}
 
       {isWorkLifeActivity && onWorkLifeModeChange && (
-        <>
-          <div style={sectionLabelStyle}>Activity</div>
-          <div style={layerCardStyle}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {workLifePrimaryModes.map((mode) => (
-                <button
-                  key={mode.id}
-                  onClick={() => {
-                    setActiveMode(mode.id as typeof activeMode);
-                    onWorkLifeModeChange(mode.id);
-                    setShowMoreModes(false);
-                  }}
-                  style={{
-                    padding: '8px 12px',
-                    borderRadius: 999,
-                    border: `1px solid ${mode.id === activeMode ? colors.accent : inputBorder}`,
-                    background: 'transparent',
-                    color: mode.id === activeMode ? colors.text : colors.textMuted,
-                    fontSize: 12,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {mode.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          {showWorkLifeTone && (
-            <>
-              <div style={sectionLabelStyle}>Tone</div>
-              <div style={layerCardStyle}>
-                <div ref={workLifeToneRef} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {onWorkLifeToneChange && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                      {workLifeToneModes.map((tone) => (
-                        <button
-                          key={tone.id}
-                          onClick={() => onWorkLifeToneChange(tone.id)}
-                          style={{
-                            padding: '8px 12px',
-                            borderRadius: 999,
-                            border: `1px solid ${tone.id === workLifeTone ? colors.accent : inputBorder}`,
-                            background: 'transparent',
-                            color: tone.id === workLifeTone ? colors.text : colors.textMuted,
-                            fontSize: 12,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {tone.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {showWorkLifeMore && (
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <button
-                        onClick={() => setShowMoreModes((prev) => !prev)}
-                        style={{
-                          padding: '8px 12px',
-                          borderRadius: 999,
-                          border: `1px solid ${showMoreModes ? colors.accent : inputBorder}`,
-                          background: 'transparent',
-                          color: showMoreModes ? colors.text : colors.textMuted,
-                          fontSize: 12,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        More
-                      </button>
-                    </div>
-                  )}
-                  {showMoreModes && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                      {workLifeSecondaryModes.map((mode) => (
-                        <button
-                          key={mode.id}
-                          onClick={() => onWorkLifeSecondaryModeChange?.(mode.id)}
-                          style={{
-                            padding: '8px 12px',
-                            borderRadius: 999,
-                            border: `1px solid ${mode.id === workLifeSecondaryMode ? colors.accent : inputBorder}`,
-                            background: 'transparent',
-                            color: mode.id === workLifeSecondaryMode ? colors.text : colors.textMuted,
-                            fontSize: 12,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {mode.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-        </>
+        <WorkLifeForm
+          action={action}
+          workLifeMode={workLifeMode}
+          onWorkLifeModeChange={onWorkLifeModeChange}
+          workLifeActivities={workLifeActivities}
+          workLifeTone={workLifeTone}
+          onWorkLifeToneChange={onWorkLifeToneChange}
+          workLifeSecondaryMode={workLifeSecondaryMode}
+          onWorkLifeSecondaryModeChange={onWorkLifeSecondaryModeChange}
+          onWorkLifeContextChange={onWorkLifeContextChange}
+          colors={colors}
+          isDark={isDark}
+          inputBorder={inputBorder}
+          layerCardStyle={layerCardStyle}
+          sectionLabelStyle={sectionLabelStyle}
+        />
       )}
 
       {isMoneyActivity && onMoneyModeChange && (
@@ -1326,53 +865,18 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
       )}
 
       {action.id === 'decode-message' && !action.fields && (
-        <>
-          <div style={sectionLabelStyle}>Activity</div>
-          <div style={layerCardStyle}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {decodeEntryOptions.primary.map((opt) => (
-                <button
-                  key={opt.id}
-                  onClick={() => setDecodeEntry(opt.id)}
-                  style={{
-                    padding: '8px 12px',
-                    borderRadius: 999,
-                    border: `1px solid ${opt.id === decodeEntry ? colors.accent : inputBorder}`,
-                    background: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(255, 255, 255, 0.7)',
-                    color: opt.id === decodeEntry ? colors.text : colors.textMuted,
-                    fontSize: 13,
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, opacity: 0.8 }}>
-              {decodeEntryOptions.secondary.map((opt) => (
-                <button
-                  key={opt.id}
-                  onClick={() => setDecodeEntry(opt.id)}
-                  style={{
-                    padding: '7px 11px',
-                    borderRadius: 999,
-                    border: `1px solid ${opt.id === decodeEntry ? colors.accent : inputBorder}`,
-                    background: 'transparent',
-                    color: opt.id === decodeEntry ? colors.text : colors.textMuted,
-                    fontSize: 12,
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          </div>
-        </>
+        <DecodeMessageForm
+          action={action}
+          onDecodeEntryChange={(entry) => {
+            setDecodeEntry(entry);
+            onDecodeEntryChange?.(entry);
+          }}
+          colors={colors}
+          isDark={isDark}
+          inputBorder={inputBorder}
+          layerCardStyle={layerCardStyle}
+          sectionLabelStyle={sectionLabelStyle}
+        />
       )}
 
       {onFocusModeChange && (
