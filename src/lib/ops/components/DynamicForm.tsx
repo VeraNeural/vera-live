@@ -11,6 +11,7 @@ import { WorkLifeForm } from './forms/WorkLifeForm';
 import { MoneyForm } from './forms/MoneyForm';
 import { ThinkingForm } from './forms/ThinkingForm';
 import { RelationshipsForm } from './forms/RelationshipsForm';
+import { CreateForm } from './forms/CreateForm';
 
 export const DynamicForm: React.FC<DynamicFormProps> = ({
   action,
@@ -88,7 +89,6 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
   const inputBorder = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(160, 130, 90, 0.12)';
   const separatorColor = isDark ? 'rgba(235, 210, 180, 0.12)' : 'rgba(140, 110, 80, 0.12)';
   const isApplicationKit = action.id === 'career' && activeOptionId === 'application-kit';
-  const showCreateTone = action.id === 'create' && (createActivityId === 'write-email' || createActivityId === 'social-post');
   const showCareerTone = action.id === 'career' && (!activeOptionId || activeOptionId === 'cover-letter');
   const getApplicationKitSections = (text: string) => {
     const resumeMatch = text.match(/##\s*Optimized Resume[\s\S]*?(?=##\s*Cover Letter & Emails|$)/i);
@@ -337,76 +337,19 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
         />
       )}
 
-      {action.id === 'create' && onCreateActivityChange && (
-        <>
-          <div style={sectionLabelStyle}>Activity</div>
-          <div style={layerCardStyle}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {(createActivities || []).map((activity) => (
-                <button
-                  key={activity.id}
-                  onClick={() => onCreateActivityChange(activity.id)}
-                  style={{
-                    padding: '8px 12px',
-                    borderRadius: 999,
-                    border: `1px solid ${activity.id === createActivityId ? colors.accent : inputBorder}`,
-                    background: 'transparent',
-                    color: activity.id === createActivityId ? colors.text : colors.textMuted,
-                    fontSize: 12,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {activity.title}
-                </button>
-              ))}
-            </div>
-          </div>
-          {showCreateTone && (
-            <>
-              <div style={sectionLabelStyle}>Tone</div>
-              <div style={layerCardStyle}>
-                <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 10 }}>
-                  Select the tone of the writing
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {(() => {
-                    const selectedActivity = (createActivities || []).find((a) => a.id === createActivityId);
-                    const fallbackToneOptions = [
-                      { id: 'clear', label: 'Clear' },
-                      { id: 'warm', label: 'Warm' },
-                      { id: 'bold', label: 'Bold' },
-                      { id: 'playful', label: 'Playful' },
-                      { id: 'minimal', label: 'Minimal' },
-                      { id: 'polished', label: 'Polished' },
-                    ];
-                    const toneOptions = selectedActivity?.dropdownOptions?.length
-                      ? selectedActivity.dropdownOptions
-                      : fallbackToneOptions;
-                    if (!toneOptions.length) return null;
-                    return toneOptions.map((option) => (
-                      <button
-                        key={option.id}
-                        onClick={() => onCreateOptionChange?.(option.id)}
-                        style={{
-                          padding: '8px 12px',
-                          borderRadius: 999,
-                          border: `1px solid ${option.id === createOptionId ? colors.accent : inputBorder}`,
-                          background: 'transparent',
-                          color: option.id === createOptionId ? colors.text : colors.textMuted,
-                          fontSize: 12,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        {option.label}
-                      </button>
-                    ));
-                  })()}
-                </div>
-              </div>
-            </>
-          )}
-        </>
-      )}
+      <CreateForm
+        action={action}
+        createActivities={createActivities}
+        createActivityId={createActivityId}
+        onCreateActivityChange={onCreateActivityChange}
+        createOptionId={createOptionId}
+        onCreateOptionChange={onCreateOptionChange}
+        colors={colors}
+        isDark={isDark}
+        inputBorder={inputBorder}
+        layerCardStyle={layerCardStyle}
+        sectionLabelStyle={sectionLabelStyle}
+      />
 
       {action.id === 'career' && onSelectDropdownOption && !isApplicationKit && (
         <>
@@ -502,64 +445,6 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
               >
                 Application Kit
               </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      {(action.id === 'write-email' || action.id === 'social-post') && onCreateOptionChange && (
-        <>
-          <div style={sectionLabelStyle}>Activity</div>
-          <div style={layerCardStyle}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              <div
-                style={{
-                  padding: '8px 12px',
-                  borderRadius: 999,
-                  border: `1px solid ${colors.accent}`,
-                  background: 'transparent',
-                  color: colors.text,
-                  fontSize: 12,
-                  fontWeight: 600,
-                }}
-              >
-                {action.id === 'write-email' ? 'Write Email' : 'Social Post'}
-              </div>
-            </div>
-          </div>
-          <div style={sectionLabelStyle}>Tone</div>
-          <div style={layerCardStyle}>
-            <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 10 }}>
-              Select the tone of the writing
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {(action.id === 'write-email'
-                ? (action.dropdownOptions || [])
-                : [
-                    { id: 'insightful', label: 'Insightful' },
-                    { id: 'friendly', label: 'Friendly' },
-                    { id: 'bold', label: 'Bold' },
-                    { id: 'concise', label: 'Concise' },
-                    { id: 'playful', label: 'Playful' },
-                    { id: 'storytelling', label: 'Storytelling' },
-                  ]
-              ).map((option: { id: string; label: string }) => (
-                <button
-                  key={option.id}
-                  onClick={() => onCreateOptionChange(option.id)}
-                  style={{
-                    padding: '8px 12px',
-                    borderRadius: 999,
-                    border: `1px solid ${option.id === createOptionId ? colors.accent : inputBorder}`,
-                    background: 'transparent',
-                    color: option.id === createOptionId ? colors.text : colors.textMuted,
-                    fontSize: 12,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {option.label}
-                </button>
-              ))}
             </div>
           </div>
         </>
