@@ -1,6 +1,6 @@
 const VERA_NEURAL_CONFIG = {
   endpoint: 'http://192.168.1.200:1234/v1/chat/completions',
-  model: 'qwen/qwen3-30b-a3b-2507',
+  model: 'vera-neural',
 };
 
 export async function generateWithVeraNeural(prompt: string, systemPrompt?: string): Promise<string> {
