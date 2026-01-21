@@ -8,6 +8,7 @@ import { RespondForm } from './forms/RespondForm';
 import { BoundariesForm } from './forms/BoundariesForm';
 import { DecodeMessageForm, getDecodePlaceholder } from './forms/DecodeMessageForm';
 import { WorkLifeForm } from './forms/WorkLifeForm';
+import { MoneyForm } from './forms/MoneyForm';
 
 export const DynamicForm: React.FC<DynamicFormProps> = ({
   action,
@@ -87,7 +88,6 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
   const isApplicationKit = action.id === 'career' && activeOptionId === 'application-kit';
   const showCreateTone = action.id === 'create' && (createActivityId === 'write-email' || createActivityId === 'social-post');
   const showCareerTone = action.id === 'career' && (!activeOptionId || activeOptionId === 'cover-letter');
-  const showMoneyTone = action.id === 'money' && moneyMode === 'money-conversations' && (!activeOptionId || activeOptionId === 'salary-negotiation');
   const showRelationshipsTone = action.id === 'relationships-wellness' && relationshipMode === 'relationship-help';
   const getApplicationKitSections = (text: string) => {
     const resumeMatch = text.match(/##\s*Optimized Resume[\s\S]*?(?=##\s*Cover Letter & Emails|$)/i);
@@ -149,45 +149,6 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
 
   const [activeMode, setActiveMode] = useState<string>('task-breakdown');
 
-  const [showMoreMoneyModes, setShowMoreMoneyModes] = useState(false);
-  const moneyPrimaryModes = moneyActivities?.length
-    ? moneyActivities.map((activity) => ({
-        id: activity.id,
-        label: activity.label || activity.title,
-      }))
-    : [
-        { id: 'budget-check', label: 'Budget Check' },
-        { id: 'savings-goal', label: 'Savings Goal' },
-        { id: 'investment-basics', label: 'Investment Basics' },
-        { id: 'expense-review', label: 'Expense Review' },
-        { id: 'money-conversations', label: 'Money Conversations' },
-      ];
-  const moneyPerspectiveModes = [
-    { id: 'conservative', label: 'Conservative' },
-    { id: 'balanced', label: 'Balanced' },
-    { id: 'aggressive', label: 'Aggressive' },
-    { id: 'risk-aware', label: 'Risk-Aware' },
-  ];
-  const moneySecondaryModes = [
-    { id: 'cash-flow', label: 'Cash Flow' },
-    { id: 'tradeoff-analysis', label: 'Tradeoff Analysis' },
-    { id: 'scenario-comparison', label: 'Scenario Comparison' },
-    { id: 'risk-scan', label: 'Risk Scan' },
-    { id: 'cost-breakdown', label: 'Cost Breakdown' },
-  ];
-  const moneyScopeModes = [
-    { id: 'monthly', label: 'Monthly' },
-    { id: 'short-term', label: 'Short-Term (3–6 months)' },
-    { id: 'long-term', label: 'Long-Term' },
-    { id: 'one-time', label: 'One-Time Decision' },
-  ];
-  const moneyContextModes = [
-    { id: 'personal', label: 'Personal' },
-    { id: 'household', label: 'Household' },
-    { id: 'business-freelance', label: 'Business / Freelance' },
-    { id: 'shared-finances', label: 'Shared Finances' },
-  ];
-
   const [showMoreThinkingModes, setShowMoreThinkingModes] = useState(false);
   const thinkingPrimaryModes = [
     { id: 'brainstorm', label: 'Brainstorm' },
@@ -246,7 +207,6 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
     margin: '0 0 8px 4px',
   };
 
-  const moneyToneRef = React.useRef<HTMLDivElement>(null);
   const thinkingToneRef = React.useRef<HTMLDivElement>(null);
 
   const useOverflowWatcher = (refs: React.RefObject<HTMLElement | null>[], deps: React.DependencyList) => {
@@ -278,7 +238,6 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
     return isOverflow;
   };
 
-  const showMoneyMore = useOverflowWatcher([moneyToneRef], [action.id]);
   const showThinkingMore = useOverflowWatcher([thinkingToneRef], [action.id]);
 
   const relationshipPrimaryModes = [
@@ -300,16 +259,6 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
   ];
 
   React.useEffect(() => {
-    if (isMoneyActivity) {
-      setShowMoreMoneyModes(false);
-      if (!moneyMode) {
-        onMoneyModeChange?.('budget-check');
-      }
-      onMoneyPerspectiveChange?.('conservative');
-      onMoneyScopeChange?.('');
-      onMoneyContextChange?.('');
-      onMoneySecondaryModeChange?.('');
-    }
     if (action.id === 'thinking-learning') {
       setShowMoreThinkingModes(false);
       onThinkingModeChange?.('brainstorm');
@@ -388,144 +337,26 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
       )}
 
       {isMoneyActivity && onMoneyModeChange && (
-        <>
-          <div style={sectionLabelStyle}>Activity</div>
-          <div style={layerCardStyle}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {moneyPrimaryModes.map((mode) => (
-                <button
-                  key={mode.id}
-                  onClick={() => {
-                    onMoneyModeChange(mode.id);
-                    setShowMoreMoneyModes(false);
-                  }}
-                  style={{
-                    padding: '8px 12px',
-                    borderRadius: 999,
-                    border: `1px solid ${mode.id === moneyMode ? colors.accent : inputBorder}`,
-                    background: 'transparent',
-                    color: mode.id === moneyMode ? colors.text : colors.textMuted,
-                    fontSize: 12,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {mode.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          {showMoneyTone && (
-            <>
-              <div style={sectionLabelStyle}>Tone</div>
-              <div style={layerCardStyle}>
-                <div ref={moneyToneRef} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {onMoneyPerspectiveChange && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                      {moneyPerspectiveModes.map((mode) => (
-                        <button
-                          key={mode.id}
-                          onClick={() => onMoneyPerspectiveChange(mode.id)}
-                          style={{
-                            padding: '8px 12px',
-                            borderRadius: 999,
-                            border: `1px solid ${mode.id === moneyPerspective ? colors.accent : inputBorder}`,
-                            background: 'transparent',
-                            color: mode.id === moneyPerspective ? colors.text : colors.textMuted,
-                            fontSize: 12,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {mode.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {onMoneyScopeChange && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                      {moneyScopeModes.map((mode) => (
-                        <button
-                          key={mode.id}
-                          onClick={() => onMoneyScopeChange(mode.id)}
-                          style={{
-                            padding: '8px 12px',
-                            borderRadius: 999,
-                            border: `1px solid ${mode.id === moneyScope ? colors.accent : inputBorder}`,
-                            background: 'transparent',
-                            color: mode.id === moneyScope ? colors.text : colors.textMuted,
-                            fontSize: 12,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {mode.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {onMoneyContextChange && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                      {moneyContextModes.map((mode) => (
-                        <button
-                          key={mode.id}
-                          onClick={() => onMoneyContextChange(mode.id)}
-                          style={{
-                            padding: '8px 12px',
-                            borderRadius: 999,
-                            border: `1px solid ${mode.id === moneyContext ? colors.accent : inputBorder}`,
-                            background: 'transparent',
-                            color: mode.id === moneyContext ? colors.text : colors.textMuted,
-                            fontSize: 12,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {mode.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {showMoneyMore && (
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <button
-                        onClick={() => setShowMoreMoneyModes((prev) => !prev)}
-                        style={{
-                          padding: '8px 12px',
-                          borderRadius: 999,
-                          border: `1px solid ${showMoreMoneyModes ? colors.accent : inputBorder}`,
-                          background: 'transparent',
-                          color: showMoreMoneyModes ? colors.text : colors.textMuted,
-                          fontSize: 12,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        More
-                      </button>
-                    </div>
-                  )}
-                  {showMoreMoneyModes && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                      {moneySecondaryModes.map((mode) => (
-                        <button
-                          key={mode.id}
-                          onClick={() => onMoneySecondaryModeChange?.(mode.id)}
-                          style={{
-                            padding: '8px 12px',
-                            borderRadius: 999,
-                            border: `1px solid ${mode.id === moneySecondaryMode ? colors.accent : inputBorder}`,
-                            background: 'transparent',
-                            color: mode.id === moneySecondaryMode ? colors.text : colors.textMuted,
-                            fontSize: 12,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {mode.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-        </>
+        <MoneyForm
+          action={action}
+          moneyMode={moneyMode}
+          onMoneyModeChange={onMoneyModeChange}
+          moneyActivities={moneyActivities}
+          moneyPerspective={moneyPerspective}
+          onMoneyPerspectiveChange={onMoneyPerspectiveChange}
+          moneyScope={moneyScope}
+          onMoneyScopeChange={onMoneyScopeChange}
+          moneyContext={moneyContext}
+          onMoneyContextChange={onMoneyContextChange}
+          moneySecondaryMode={moneySecondaryMode}
+          onMoneySecondaryModeChange={onMoneySecondaryModeChange}
+          activeOptionId={activeOptionId}
+          colors={colors}
+          isDark={isDark}
+          inputBorder={inputBorder}
+          layerCardStyle={layerCardStyle}
+          sectionLabelStyle={sectionLabelStyle}
+        />
       )}
 
       {action.id === 'thinking-learning' && onThinkingModeChange && (
