@@ -117,7 +117,7 @@ export function StreamOfConsciousness({ onBack, onComplete, theme = 'dark' }: St
 
   const handleSave = () => {
     if (process.env.NODE_ENV === 'development') {
-      console.log('Saving stream:', content);
+      console.log('[StreamOfConsciousness] Saving entry (content redacted for privacy)');
     }
     onComplete?.();
     onBack();

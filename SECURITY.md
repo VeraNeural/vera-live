@@ -2,7 +2,7 @@
 
 > **Classification**: Internal  
 > **Last Updated**: 2026-01-25  
-> **Version**: 1.1  
+> **Version**: 1.2  
 
 VERA is an AI-powered mental wellness application. Due to the sensitive nature of user conversations, memories, and personal data, security incidents require heightened response protocols.
 
@@ -360,6 +360,45 @@ If a security incident affects crisis detection or response capabilities:
 2. Ensure crisis resources remain accessible
 3. Document any impact on user safety features
 4. Prioritize restoration of safety features above all else
+
+### 9.4 HIPAA-Aligned Safeguards
+
+While VERA is a wellness support tool (not a covered entity providing medical treatment), we implement HIPAA-aligned practices for user protection:
+
+#### Encryption
+
+| Layer | Protection | Implementation |
+|-------|------------|----------------|
+| **In Transit** | TLS 1.3 | HSTS header, upgrade-insecure-requests |
+| **At Rest (Database)** | AES-256 | Supabase built-in encryption |
+| **At Rest (Fields)** | AES-256-GCM | `src/lib/security/encryption.ts` (optional) |
+
+#### Access Controls
+
+| Control | Implementation |
+|---------|---------------|
+| **Row Level Security** | All user tables have RLS policies |
+| **User Isolation** | Users can only access their own data via `clerk_user_id` |
+| **Admin Audit** | Admin access is logged to `audit_logs` |
+| **Service Role** | Limited to server-side only, never exposed to client |
+
+#### Minimum Necessary Standard
+
+| Practice | Implementation |
+|----------|---------------|
+| **API Responses** | `dataMinimization.ts` strips internal fields |
+| **Exports** | Only user-facing data included |
+| **Logs** | Never contain message content or PHI |
+| **Analytics** | No PHI sent to GA4/Meta/TikTok |
+
+#### Third-Party Data Transmission
+
+| Service | Data Sent | Safeguard |
+|---------|-----------|-----------|
+| **Anthropic** | Message history for AI response | HTTPS, no logging on their end |
+| **Supabase** | All database content | SOC2 compliant, BAA available |
+| **Clerk** | Auth data (email, name) | SOC2 compliant |
+| **Stripe** | Payment info | PCI-DSS compliant |
 
 ---
 
