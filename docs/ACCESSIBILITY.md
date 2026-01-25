@@ -64,20 +64,22 @@ VERA is partially conformant with WCAG 2.1 Level AA. "Partially conformant" mean
 |---------|----------------|
 | **Text Alternatives** | All images have meaningful `alt` text |
 | **Page Language** | `<html lang="en">` set in layout |
-| **Semantic Structure** | `<main>`, `<header>`, `<footer>`, `<nav>`, `<article>` used appropriately |
+| **Semantic Structure** | `<main>`, `<header>`, `<footer>`, `<nav aria-label>`, `<article>` used appropriately |
 | **Form Labels** | All inputs have associated `<label>` elements with `htmlFor`/`id` pairs |
 | **Color Contrast** | Dark/light themes with sufficient contrast ratios |
 | **Responsive Design** | Content adapts to viewport, no horizontal scroll at 320px |
+| **Reduced Motion** | `prefers-reduced-motion` media query in globals.css |
 
 #### Operable
 
 | Feature | Implementation |
 |---------|----------------|
-| **Skip Link** | `<SkipLink>` component in root layout |
+| **Skip Link** | `<SkipLink>` component using `.sr-only-focusable` class |
 | **Keyboard Navigation** | All interactive elements accessible via keyboard |
-| **Focus Indicators** | Visible focus states on buttons and inputs |
+| **Focus Indicators** | `*:focus-visible` with 2px purple outline in globals.css |
 | **No Keyboard Traps** | Tab navigation flows logically |
 | **Touch Targets** | Minimum 44x44px for interactive elements |
+| **High Contrast Support** | `prefers-contrast: more` media query |
 
 #### Understandable
 
@@ -180,10 +182,11 @@ Special considerations for the conversational interface:
 | Feature | Implementation |
 |---------|----------------|
 | **Message Announcements** | Chat container has `role="log"` and `aria-live="polite"` |
+| **New Message Alert** | Hidden `aria-live="assertive"` region announces VERA responses |
 | **Typing Indicator** | Uses `role="status"` with descriptive `aria-label` |
-| **Input Label** | Textarea has `aria-label="Message to VERA"` |
-| **Button Labels** | Attachment, voice, and send buttons have `aria-label` |
-| **Keyboard Send** | Enter key sends message |
+| **Input Label** | Visually hidden `<label>` + `aria-describedby` for keyboard hint |
+| **Button Labels** | Attachment, voice, and send buttons have `aria-label` + `aria-hidden` SVGs |
+| **Keyboard Send** | Enter key sends message (hint in `aria-describedby`) |
 | **Focus Management** | Input retains focus after sending |
 
 ---
@@ -250,9 +253,11 @@ When reporting accessibility issues, please include:
 
 | File | Purpose |
 |------|---------|
+| `src/app/globals.css` | Focus-visible styles, sr-only classes, reduced motion |
 | `src/components/a11y/SkipLink.tsx` | Skip to main content link |
 | `src/app/layout.tsx` | Root layout with `lang="en"`, skip link |
-| `src/app/sanctuary/components/ChatInput.tsx` | Accessible chat input |
+| `src/app/sanctuary/components/ChatInput.tsx` | Accessible chat input with labels |
+| `src/components/sidebar/TrustTransparencySidebar.tsx` | Navigation with `<nav aria-label>` |
 | `eslint.config.mjs` | jsx-a11y plugin configuration |
 
 ---
@@ -261,6 +266,7 @@ When reporting accessibility issues, please include:
 
 | Date | Version | Changes | Reviewer |
 |------|---------|---------|----------|
+| 2026-01-25 | 1.1 | Phase 1 & 2 fixes: focus-visible, sr-only, nav semantics, chat a11y | Accessibility Team |
 | 2026-01-25 | 1.0 | Initial accessibility audit and documentation | Accessibility Team |
 
 ---
