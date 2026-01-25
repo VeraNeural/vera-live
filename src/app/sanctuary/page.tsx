@@ -682,14 +682,16 @@ export default function VeraSanctuary() {
         }} />
 
         {/* Main Content */}
-        <main style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          padding: '0 16px',
-          paddingBottom: 180,
-        }}>
+        <main 
+          id="main-content"
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            padding: '0 16px',
+            paddingBottom: 180,
+          }}>
           
           {/* VERA Chat Area */}
           <div style={{
@@ -706,6 +708,9 @@ export default function VeraSanctuary() {
             <div
               ref={chatRef}
               className="chat-scroll"
+              role="log"
+              aria-live="polite"
+              aria-label="Conversation with VERA"
               style={{
                 flex: 1,
                 overflowY: 'auto',
@@ -1132,7 +1137,11 @@ export default function VeraSanctuary() {
 
                   {/* Typing Indicator */}
                   {isTyping && (
-                    <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                    <div 
+                      style={{ display: 'flex', justifyContent: 'flex-start' }}
+                      role="status"
+                      aria-label="VERA is typing"
+                    >
                       <div style={{
                         padding: '14px 18px',
                         borderRadius: '20px 20px 20px 4px',
@@ -1140,7 +1149,9 @@ export default function VeraSanctuary() {
                         border: `1px solid ${colors.cardBorder}`,
                         display: 'flex',
                         gap: 6,
-                      }}>
+                      }}
+                      aria-hidden="true"
+                      >
                         {[0, 1, 2].map((i) => (
                           <div
                             key={i}

@@ -6,6 +6,7 @@ import Providers from './providers'
 import PwaClient from '@/components/pwa/PwaClient'
 import { CookieBanner } from '@/components/consent/CookieBanner'
 import { ConsentAwareScripts } from '@/components/consent/ConsentAwareScripts'
+import { SkipLink } from '@/components/a11y'
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -38,6 +39,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body>
+          <SkipLink />
           <Providers>
             <ThemeProvider>
               {children}

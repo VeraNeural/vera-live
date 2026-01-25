@@ -177,6 +177,7 @@ export const CareerForm: React.FC<CareerFormProps> = ({
           <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
             <div>
               <label
+                htmlFor="career-job-description"
                 style={{ display: 'block', fontSize: 13, fontWeight: 500, color: colors.textMuted, marginBottom: 6 }}
               >
                 Job Description
@@ -185,6 +186,7 @@ export const CareerForm: React.FC<CareerFormProps> = ({
                 Paste the job description here
               </div>
               <textarea
+                id="career-job-description"
                 className="input-field"
                 value={formFields.jobDescription || ''}
                 onChange={(e) => onFormFieldChange('jobDescription', e.target.value)}
@@ -207,6 +209,7 @@ export const CareerForm: React.FC<CareerFormProps> = ({
             </div>
             <div>
               <label
+                htmlFor="career-current-resume"
                 style={{ display: 'block', fontSize: 13, fontWeight: 500, color: colors.textMuted, marginBottom: 6 }}
               >
                 Current Resume
@@ -215,6 +218,7 @@ export const CareerForm: React.FC<CareerFormProps> = ({
                 Paste your existing resume here
               </div>
               <textarea
+                id="career-current-resume"
                 className="input-field"
                 value={formFields.currentResume || ''}
                 onChange={(e) => onFormFieldChange('currentResume', e.target.value)}
@@ -237,11 +241,13 @@ export const CareerForm: React.FC<CareerFormProps> = ({
             </div>
             <div>
               <label
+                htmlFor="career-optimized-resume"
                 style={{ display: 'block', fontSize: 13, fontWeight: 500, color: colors.textMuted, marginBottom: 6 }}
               >
                 Optimized Resume
               </label>
               <textarea
+                id="career-optimized-resume"
                 className="input-field"
                 value={applicationKitOutput.resume}
                 placeholder="Generated output will appear here"
@@ -265,11 +271,13 @@ export const CareerForm: React.FC<CareerFormProps> = ({
             </div>
             <div>
               <label
+                htmlFor="career-cover-letter"
                 style={{ display: 'block', fontSize: 13, fontWeight: 500, color: colors.textMuted, marginBottom: 6 }}
               >
                 Cover Letter & Emails
               </label>
               <textarea
+                id="career-cover-letter"
                 className="input-field"
                 value={applicationKitOutput.cover}
                 placeholder="Generated output will appear here"

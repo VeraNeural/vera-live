@@ -55,6 +55,7 @@ export function ChatInput({
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
+        aria-label="Attach image or file"
         style={{
           flexShrink: 0,
           width: 36,
@@ -77,7 +78,6 @@ export function ChatInput({
           e.currentTarget.style.color = colors.textMuted;
           e.currentTarget.style.background = 'transparent';
         }}
-        title="Attach image or file"
       >
         <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
@@ -88,6 +88,7 @@ export function ChatInput({
       <button
         type="button"
         onClick={onVoiceClick}
+        aria-label="Start voice session"
         style={{
           flexShrink: 0,
           width: 36,
@@ -110,7 +111,6 @@ export function ChatInput({
           e.currentTarget.style.color = colors.textMuted;
           e.currentTarget.style.background = 'transparent';
         }}
-        title="Voice session"
       >
         <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
           <path d="M12 1a4 4 0 00-4 4v7a4 4 0 008 0V5a4 4 0 00-4-4z" />
@@ -124,6 +124,7 @@ export function ChatInput({
       <textarea
         ref={inputRef}
         className="input-field"
+        aria-label="Message to VERA"
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={onKeyDown}
@@ -150,6 +151,7 @@ export function ChatInput({
         type="button"
         onClick={onSend}
         disabled={isGated || !inputValue.trim()}
+        aria-label="Send message"
         onMouseEnter={(e) => {
           if (inputValue.trim()) {
             e.currentTarget.style.transform = 'scale(1.1)';
@@ -179,9 +181,8 @@ export function ChatInput({
           borderRadius: '50%',
           transition: 'all 0.2s ease',
         }}
-        title="Send message"
       >
-        <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
           <line x1="22" y1="2" x2="11" y2="13" />
           <polygon points="22 2 15 22 11 13 2 9 22 2" />
         </svg>

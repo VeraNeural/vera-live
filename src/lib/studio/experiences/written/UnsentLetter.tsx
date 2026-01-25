@@ -280,17 +280,21 @@ export function UnsentLetter({ onBack, onComplete, theme = 'dark' }: UnsentLette
       <div style={{
         padding: '20px 24px 0',
       }}>
-        <label style={{
-          display: 'block',
-          color: colors.textDim,
-          fontSize: '13px',
-          marginBottom: '8px',
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-        }}>
+        <label
+          htmlFor="unsent-letter-recipient"
+          style={{
+            display: 'block',
+            color: colors.textDim,
+            fontSize: '13px',
+            marginBottom: '8px',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+          }}
+        >
           To
         </label>
         <input
+          id="unsent-letter-recipient"
           type="text"
           value={recipient}
           onChange={(e) => setRecipient(e.target.value)}
