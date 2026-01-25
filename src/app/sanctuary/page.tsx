@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { TrustTransparencySidebar } from '@/components/sidebar';
 import { useVeraNavigator } from '@/lib/vera/navigator/hooks/useVeraNavigator';
+import { LegalLinks } from '@/components/common/LegalLinks';
 import { TimeOfDay, ThemeMode, ConsentStatus, Room, Message, QuickPrompt } from './types';
 import { TIME_COLORS, getQuickPrompts, NAV_HINT_ROTATIONS, RoomIcon, ROOMS } from './constants';
 import { getTimeOfDay, getGreeting, getVeraGreeting } from './utils';
@@ -1226,6 +1227,9 @@ export default function VeraSanctuary() {
                 }}>
                   VERA is an AI assistant. While she strives for accuracy, please verify important information independently.
                 </p>
+                <div style={{ marginTop: 8 }}>
+                  <LegalLinks isDark={isDark} size="small" />
+                </div>
               </div>
             </div>
           </div>
@@ -1253,6 +1257,9 @@ export default function VeraSanctuary() {
             }}>
               VERA is an AI assistant. While she strives for accuracy, please verify important information independently.
             </p>
+            <div style={{ marginTop: 8 }}>
+              <LegalLinks isDark={isDark} size="small" />
+            </div>
           </div>
         )}
 

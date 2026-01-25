@@ -183,17 +183,24 @@ export function PrivacySettingsModal({ isOpen, onClose, isDark }: PrivacySetting
             <p style={{ margin: 0, fontSize: '12px', color: colors.textSecondary }}>
               For more information, see our{' '}
               <a
-                href="/privacy"
+                href="/legal/privacy"
                 style={{ color: colors.accent, textDecoration: 'underline' }}
               >
                 Privacy Policy
-              </a>{' '}
-              and{' '}
+              </a>
+              ,{' '}
               <a
-                href="/terms"
+                href="/legal/terms"
                 style={{ color: colors.accent, textDecoration: 'underline' }}
               >
                 Terms of Service
+              </a>
+              , and{' '}
+              <a
+                href="/legal/disclaimer"
+                style={{ color: colors.accent, textDecoration: 'underline' }}
+              >
+                Medical Disclaimer
               </a>
               .
             </p>
