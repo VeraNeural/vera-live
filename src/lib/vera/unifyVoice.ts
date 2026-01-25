@@ -3,6 +3,10 @@ import type { DecisionObject, ArousalState, ChallengeAllowance, Pace } from './d
 const LEAK_FORBIDDEN = [
   'neural',
   'iba',
+  'julija',
+  ' sim ', // space-bounded to avoid matching "simple"
+  'sim_state',
+  'sim state',
   'anthropic',
   'openai',
   'grok',
@@ -13,10 +17,16 @@ const LEAK_FORBIDDEN = [
   'policy',
   'band',
   'decisionobject',
+  'decision object',
   'model selection',
   'system prompt',
   'adaptive code',
   'governance',
+  'tier resolver',
+  'arousal state',
+  'sanctuary state',
+  'lead layer',
+  'internal layer',
 ];
 
 const FORBIDDEN_PHRASES = [

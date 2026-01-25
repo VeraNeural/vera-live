@@ -37,10 +37,10 @@ export default function TrustPage() {
       <section className="card">
         <h2>What this means</h2>
         <ul>
-          <li>Safety-first routing, state beats intent.</li>
-          <li>One unified voice, no internal layer exposure.</li>
+          <li>Safety-first approach — your state matters more than words.</li>
+          <li>One consistent voice that stays coherent and grounded.</li>
           <li>Gentle pacing under stress, clarity when regulated.</li>
-          <li>Deterministic governance rules, not vibes.</li>
+          <li>Consistent boundaries you can rely on.</li>
         </ul>
       </section>
 

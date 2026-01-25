@@ -25,6 +25,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { opsRoom } from '@/app/sanctuary/ops/consolidatedData';
+import { PrivacySettingsModal } from '@/components/settings/PrivacySettingsModal';
 
 type TrustTransparencySidebarProps = {
   isDark: boolean;
@@ -121,6 +122,7 @@ export default function TrustTransparencySidebar({
   const [conversations, setConversations] = useState<any[]>([]);
   const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const [trustExpanded, setTrustExpanded] = useState(false);
+  const [privacyModalOpen, setPrivacyModalOpen] = useState(false);
 
   const { isLoaded, isSignedIn, user } = useUser();
   const clerk = useClerk();
@@ -254,6 +256,7 @@ export default function TrustTransparencySidebar({
   const separatorColor = isDark ? 'rgba(235, 210, 180, 0.12)' : 'rgba(140, 110, 80, 0.12)';
 
   return (
+    <>
     <div
       style={{
         position: 'fixed',
@@ -932,6 +935,7 @@ export default function TrustTransparencySidebar({
               gap: '16px',
             }}>
               <button
+                onClick={() => setPrivacyModalOpen(true)}
                 style={{
                   border: 'none',
                   background: 'none',
@@ -962,5 +966,13 @@ export default function TrustTransparencySidebar({
           )}
         </div>
       </div>
+
+      {/* Privacy Settings Modal */}
+      <PrivacySettingsModal
+        isOpen={privacyModalOpen}
+        onClose={() => setPrivacyModalOpen(false)}
+        isDark={isDark}
+      />
+    </>
   );
 }

@@ -57,9 +57,9 @@ export async function POST(req: Request) {
       sessionContext: messages || [],
     });
 
-    // Log authorization for audit trail (dev only)
+    // Log authorization for audit trail (dev only - no internal names in logs)
     if (process.env.NODE_ENV === 'development') {
-      console.log('[JULIJA]', {
+      console.log('[AUTH]', {
         authorized: authResult.authorized,
         riskBand: authResult.riskBand,
         reason: authResult.reason,
@@ -70,7 +70,6 @@ export async function POST(req: Request) {
     if (!authResult.authorized) {
       return NextResponse.json({
         error: 'Access restricted',
-        reason: authResult.reason,
         upgradeRequired: authResult.riskBand === 'orange' || authResult.riskBand === 'red',
       }, { status: 403 });
     }
@@ -78,9 +77,9 @@ export async function POST(req: Request) {
     // Extract risk band for response shaping
     const riskBand = authResult.riskBand;
 
-    // Log for monitoring (dev only)
+    // Log for monitoring (dev only - no internal names in logs)
     if (process.env.NODE_ENV === 'development') {
-      console.log('[JULIJA] Authorization:', {
+      console.log('[AUTH] Result:', {
         authorized: authResult.authorized,
         riskBand,
         userId: tierResult.userId,

@@ -10,7 +10,7 @@ const ROOT = path.resolve(__dirname, "../../");
 
 const FILES_TO_SCAN = [
   "src/app/page.tsx",
-  "src/components/TrustTransparencySidebar.tsx",
+  "src/components/sidebar/TrustTransparencySidebar.tsx",
   "src/app/api/chat/route.ts",
 ].map((p) => path.join(ROOT, p));
 
