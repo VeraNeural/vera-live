@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import Stripe from 'stripe';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
+import { logAuditEvent, getAuditContext } from '@/lib/audit/auditLogger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -33,15 +34,20 @@ function getStripe(): Stripe | null {
  */
 export async function DELETE(request: NextRequest) {
   const auditTimestamp = new Date().toISOString();
+  const auditContext = getAuditContext(request);
   let auditUserId: string | null = null;
 
   try {
     // 1. Authenticate user
     const { userId } = await auth();
     if (!userId) {
+      await logAuditEvent('security.unauthorized_access', null, { endpoint: '/api/user/delete-account' }, false, auditContext);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     auditUserId = userId;
+
+    // Log deletion request
+    await logAuditEvent('data.deletion_requested', userId, {}, true, auditContext);
 
     // 2. Validate confirmation phrase
     let body: { confirmation?: string };
@@ -150,6 +156,12 @@ export async function DELETE(request: NextRequest) {
     }
 
     // 6. Log deletion for compliance audit (no PII, just metadata)
+    await logAuditEvent('data.deletion_completed', userId, {
+      tables_cleared: ['conversations', 'messages', 'user_memories', 'user_preferences', 'user_entitlements'],
+      stripe_cancelled: true,
+      clerk_deleted: true,
+    }, true, auditContext);
+
     console.log('[ACCOUNT_DELETE] Account deleted successfully', {
       userIdHash: Buffer.from(userId).toString('base64').slice(0, 16), // Partial hash only
       timestamp: auditTimestamp,
@@ -164,6 +176,10 @@ export async function DELETE(request: NextRequest) {
     });
 
   } catch (err) {
+    await logAuditEvent('data.deletion_completed', auditUserId, {
+      error_type: err instanceof Error ? err.name : 'Unknown',
+    }, false, auditContext);
+
     console.error('[ACCOUNT_DELETE] Deletion failed', {
       userId: auditUserId,
       error: err instanceof Error ? err.message : 'Unknown error',

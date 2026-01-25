@@ -43,20 +43,39 @@ export function CookieBanner() {
     return () => window.removeEventListener('cookie-consent-revoked', handleRevoke);
   }, []);
 
+  // Helper to log consent changes to audit log
+  const logConsentChange = useCallback(
+    async (analytics: boolean, marketing: boolean, action: string) => {
+      try {
+        await fetch('/api/consent/log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ analytics, marketing, action }),
+        });
+      } catch {
+        // Silently fail - consent logging is non-critical
+      }
+    },
+    []
+  );
+
   const handleAcceptAll = useCallback(() => {
     acceptAll();
+    logConsentChange(true, true, 'accept_all');
     setState('hidden');
-  }, []);
+  }, [logConsentChange]);
 
   const handleSavePreferences = useCallback(() => {
     setConsent(preferences);
+    logConsentChange(preferences.analytics, preferences.marketing, 'custom');
     setState('hidden');
-  }, [preferences]);
+  }, [preferences, logConsentChange]);
 
   const handleRejectOptional = useCallback(() => {
     setConsent({ analytics: false, marketing: false });
+    logConsentChange(false, false, 'reject_optional');
     setState('hidden');
-  }, []);
+  }, [logConsentChange]);
 
   if (state === 'hidden') {
     return null;

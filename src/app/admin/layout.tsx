@@ -56,6 +56,20 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           Marketing
         </Link>
         <Link
+          href="/admin/audit-logs"
+          style={{
+            padding: '10px 12px',
+            borderRadius: 12,
+            border: '1px solid rgba(255,255,255,0.10)',
+            background: 'rgba(255,255,255,0.04)',
+            color: 'rgba(255,255,255,0.92)',
+            textDecoration: 'none',
+            fontWeight: 600,
+          }}
+        >
+          Audit Logs
+        </Link>
+        <Link
           href="/admin/self-healing"
           style={{
             padding: '10px 12px',

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
+import { logSubscriptionEvent } from '@/lib/audit/auditLogger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -141,6 +142,12 @@ export async function POST(request: NextRequest) {
             currentPeriodEnd,
           });
 
+          // Audit log: subscription created
+          await logSubscriptionEvent('subscription.created', clerkUserId, {
+            entitlement,
+            status: subscription.status,
+          });
+
           if (process.env.NODE_ENV === 'development') {
             console.log(`Entitlement updated: ${entitlement} active for ${clerkUserId}`);
           }
@@ -164,6 +171,12 @@ export async function POST(request: NextRequest) {
             currentPeriodEnd,
           });
 
+          // Audit log: subscription updated
+          await logSubscriptionEvent('subscription.updated', clerkUserId, {
+            entitlement,
+            status: subscription.status,
+          });
+
           if (process.env.NODE_ENV === 'development') {
             console.log(`Entitlement updated: ${entitlement} status=${subscription.status} for ${clerkUserId}`);
           }
@@ -184,6 +197,12 @@ export async function POST(request: NextRequest) {
             currentPeriodStart: null,
             currentPeriodEnd: null,
           });
+
+          // Audit log: subscription cancelled
+          await logSubscriptionEvent('subscription.cancelled', clerkUserId, {
+            entitlement,
+          });
+
           if (process.env.NODE_ENV === 'development') {
             console.log(`Entitlement updated: ${entitlement} canceled for ${clerkUserId}`);
           }
@@ -244,6 +263,11 @@ export async function POST(request: NextRequest) {
               status: subscription.status,
               currentPeriodStart,
               currentPeriodEnd,
+            });
+
+            // Audit log: payment failed
+            await logSubscriptionEvent('subscription.payment_failed', clerkUserId, {
+              entitlement,
             });
           }
           if (process.env.NODE_ENV === 'development') {

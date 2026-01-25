@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
+import { logAuditEvent, getAuditContext } from '@/lib/audit/auditLogger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -35,12 +36,18 @@ function sanitizeForExport<T extends Record<string, unknown>>(
 }
 
 export async function GET(request: NextRequest) {
+  const auditContext = getAuditContext(request);
+
   try {
     // 1. Authenticate user
     const { userId } = await auth();
     if (!userId) {
+      await logAuditEvent('security.unauthorized_access', null, { endpoint: '/api/user/export-data' }, false, auditContext);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Log export request
+    await logAuditEvent('data.export_requested', userId, {}, true, auditContext);
 
     // 2. Check rate limit
     const rateCheck = checkRateLimit(userId);
@@ -153,6 +160,11 @@ export async function GET(request: NextRequest) {
     exportTimestamps.set(userId, Date.now());
 
     // 6. Log export request for audit (without logging the data)
+    await logAuditEvent('data.export_completed', userId, {
+      conversation_count: (exportData.conversations as unknown[])?.length ?? 0,
+      memory_count: (exportData.memories as unknown[])?.length ?? 0,
+    }, true, auditContext);
+
     console.log('[DATA_EXPORT] User data exported', {
       userId,
       timestamp: new Date().toISOString(),
