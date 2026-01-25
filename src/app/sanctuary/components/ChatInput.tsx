@@ -79,7 +79,7 @@ export function ChatInput({
           e.currentTarget.style.background = 'transparent';
         }}
       >
-        <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
         </svg>
       </button>
@@ -112,7 +112,7 @@ export function ChatInput({
           e.currentTarget.style.background = 'transparent';
         }}
       >
-        <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+        <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
           <path d="M12 1a4 4 0 00-4 4v7a4 4 0 008 0V5a4 4 0 00-4-4z" />
           <path d="M19 10v2a7 7 0 01-14 0v-2" />
           <line x1="12" y1="19" x2="12" y2="23" />
@@ -121,10 +121,15 @@ export function ChatInput({
       </button>
 
       {/* Text Input */}
+      <label htmlFor="vera-chat-input" className="sr-only">
+        Type your message to VERA
+      </label>
       <textarea
+        id="vera-chat-input"
         ref={inputRef}
         className="input-field"
         aria-label="Message to VERA"
+        aria-describedby="chat-input-hint"
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={onKeyDown}
@@ -145,6 +150,9 @@ export function ChatInput({
           opacity: isGated ? 0.6 : 1,
         }}
       />
+      <span id="chat-input-hint" className="sr-only">
+        Press Enter to send your message
+      </span>
 
       {/* Send Button */}
       <button

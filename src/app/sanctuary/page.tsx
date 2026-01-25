@@ -583,6 +583,17 @@ export default function VeraSanctuary() {
         paddingLeft: sidebarOpen ? '340px' : '60px',
         transition: 'padding-left 300ms cubic-bezier(0.4, 0, 0.2, 1)',
       }}>
+        {/* Screen reader announcement for new messages */}
+        <div 
+          aria-live="assertive" 
+          aria-atomic="true"
+          className="sr-only"
+        >
+          {messages.length > 0 && messages[messages.length - 1]?.role === 'assistant' && (
+            <span>VERA says: {messages[messages.length - 1]?.content?.slice(0, 200)}</span>
+          )}
+        </div>
+
         {/* Toast */}
         {toastMessage && (
           <div

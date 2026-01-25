@@ -257,7 +257,8 @@ export default function TrustTransparencySidebar({
 
   return (
     <>
-    <div
+    <nav
+      aria-label="Main navigation"
       style={{
         position: 'fixed',
         top: 0,
@@ -308,6 +309,8 @@ export default function TrustTransparencySidebar({
             </div>
             <button
               onClick={() => onOpenChange(!open)}
+              aria-label={open ? 'Collapse sidebar' : 'Expand sidebar'}
+              aria-expanded={open}
               style={{
                 width: 28,
                 height: 28,
@@ -321,7 +324,6 @@ export default function TrustTransparencySidebar({
                 justifyContent: 'center',
                 transition: 'all 150ms ease',
               }}
-              title={open ? 'Collapse sidebar' : 'Expand sidebar'}
             >
               {open ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
             </button>
@@ -965,7 +967,7 @@ export default function TrustTransparencySidebar({
             </div>
           )}
         </div>
-      </div>
+      </nav>
 
       {/* Privacy Settings Modal */}
       <PrivacySettingsModal
