@@ -35,6 +35,8 @@ VERA is partially conformant with WCAG 2.1 Level AA. "Partially conformant" mean
 
 ### 3.1 Automated Testing
 
+#### ESLint jsx-a11y Plugin
+
 **ESLint jsx-a11y Plugin** configured with stricter rules:
 
 ```javascript
@@ -55,6 +57,49 @@ VERA is partially conformant with WCAG 2.1 Level AA. "Partially conformant" mean
   }
 }
 ```
+
+#### vitest-axe Automated Testing
+
+**Runtime accessibility testing** using vitest-axe with axe-core:
+
+```bash
+# Run accessibility tests
+npm run test:a11y
+
+# Run all tests (unit + a11y)
+npm run test:all
+```
+
+**Test Coverage** (16 automated tests):
+- Skip link accessibility
+- Chat input labels and ARIA
+- Navigation landmark roles
+- ARIA live regions for chat
+- Form accessibility (labels, errors, required fields)
+- Modal accessibility
+- Heading hierarchy
+- Link and button accessibility
+- Image alt text
+
+**Usage in Tests**:
+
+```typescript
+// tests/a11y/components.test.ts
+import { axe } from 'vitest-axe';
+import { expect } from 'vitest';
+
+it('should have no accessibility violations', async () => {
+  const html = `<button aria-label="Send">...</button>`;
+  const results = await axe(html);
+  expect(results).toHaveNoViolations();
+});
+```
+
+**Test Files**:
+- `tests/a11y/components.test.ts` - Component accessibility tests
+- `tests/utils/a11y.ts` - Accessibility test utilities
+- `tests/vitest-setup.ts` - Vitest matchers setup
+- `vitest.a11y.config.ts` - jsdom environment config for a11y tests
 
 ### 3.2 Implemented Accessibility Features
 
@@ -259,6 +304,9 @@ When reporting accessibility issues, please include:
 | `src/app/sanctuary/components/ChatInput.tsx` | Accessible chat input with labels |
 | `src/components/sidebar/TrustTransparencySidebar.tsx` | Navigation with `<nav aria-label>` |
 | `eslint.config.mjs` | jsx-a11y plugin configuration |
+| `tests/a11y/components.test.ts` | vitest-axe accessibility tests |
+| `tests/utils/a11y.ts` | Accessibility test utilities |
+| `vitest.a11y.config.ts` | jsdom environment for a11y tests |
 
 ---
 
@@ -266,6 +314,7 @@ When reporting accessibility issues, please include:
 
 | Date | Version | Changes | Reviewer |
 |------|---------|---------|----------|
+| 2026-01-25 | 1.2 | Add vitest-axe automated a11y testing (16 tests) | Accessibility Team |
 | 2026-01-25 | 1.1 | Phase 1 & 2 fixes: focus-visible, sr-only, nav semantics, chat a11y | Accessibility Team |
 | 2026-01-25 | 1.0 | Initial accessibility audit and documentation | Accessibility Team |
 

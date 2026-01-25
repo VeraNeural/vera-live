@@ -20,7 +20,8 @@
     ],
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "types": ["vitest/globals", "vitest-axe"]
   },
   "include": [
     "next-env.d.ts",
@@ -28,7 +29,8 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    "**/*.mts",
+    "tests/vitest-setup.ts"
 , "src/components/sanctuary/learn/Emotionlesson3"  ],
   "exclude": ["node_modules"]
 }

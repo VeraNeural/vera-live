@@ -1,11 +1,14 @@
 import { defineConfig } from 'vitest/config';
 import path from 'path';
 
+/**
+ * Vitest configuration for accessibility tests
+ * Uses jsdom environment for DOM-based axe-core testing
+ */
 export default defineConfig({
   test: {
-    environment: 'node',
-    include: ['tests/**/*.test.ts'],
-    exclude: ['tests/a11y/**/*.test.ts'],
+    environment: 'jsdom',
+    include: ['tests/a11y/**/*.test.ts'],
     reporters: ['default'],
     setupFiles: ['./tests/vitest-setup.ts'],
     env: {
