@@ -6,7 +6,7 @@ import { validateMessages } from '@/lib/vera/governance/messageValidator';
 import type { ChatRequestBody, ChatContext, RoutingTier } from '@/lib/vera/core/types';
 import { meteringIdFromSessionId, recordMessage, resolveMeteringIdForClerkUserId } from '@/lib/auth/messageCounter';
 import { authorize } from '@/lib/julija';
-import { applyRateLimit, buildRateLimitHeaders, type RateLimitResult } from '@/lib/rateLimiter';
+import { applyRateLimit } from '@/lib/security/rateLimiter';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -49,12 +49,12 @@ export async function POST(req: NextRequest) {
     }
 
     // ============================================
-    // RATE LIMITING (P0 SECURITY)
+    // RATE LIMITING (P0 SECURITY - Supabase-backed)
+    // Limits: anonymous=5/24h, free=20/24h, pro/sanctuary=100/h
     // ============================================
     const rateLimit = await applyRateLimit(
       req,
       tierResult.userId,
-      sessionId,
       tierResult.tier || 'anonymous',
       '/api/chat'
     );
@@ -163,6 +163,14 @@ export async function POST(req: NextRequest) {
       }
     } catch (e) {
       console.error('CHAT_METERING_RECORD_FAILED:', e);
+    }
+
+    // 7.6 Record rate limit usage AFTER successful response
+    // This ensures we only count requests that actually succeeded
+    try {
+      await rateLimit.recordSuccess();
+    } catch (e) {
+      console.error('CHAT_RATE_LIMIT_RECORD_FAILED:', e);
     }
 
     // 8. Build response

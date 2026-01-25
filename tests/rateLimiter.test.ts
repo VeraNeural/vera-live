@@ -1,13 +1,17 @@
 /**
  * Rate Limiter Tests
  *
- * Tests for sliding window rate limiting with tier-based limits.
+ * Tests for:
+ * 1. In-memory sliding window rate limiting (lib/rateLimiter.ts)
+ * 2. Supabase-backed rate limiter configuration (lib/security/rateLimiter.ts)
  */
 
 import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
+
+// In-memory rate limiter tests
 import {
   checkRateLimit,
-  getConfigForTier,
+  getConfigForTier as getInMemoryConfigForTier,
   getIdentifier,
   buildRateLimitHeaders,
   TIER_LIMITS,
@@ -17,7 +21,15 @@ import {
   type RateLimitConfig,
 } from '@/lib/rateLimiter';
 
-describe('rateLimiter', () => {
+// Supabase-backed rate limiter configuration tests
+import {
+  getConfigForTier as getSupabaseConfigForTier,
+  getRateLimitIdentifier,
+  getRateLimitHeaders as getSupabaseRateLimitHeaders,
+  TIER_CONFIGS,
+} from '@/lib/security/rateLimiter';
+
+describe('rateLimiter (in-memory)', () => {
   beforeEach(() => {
     // Reset store before each test
     __resetStore();
@@ -156,15 +168,15 @@ describe('rateLimiter', () => {
 
   describe('getConfigForTier', () => {
     it('should return correct config for known tiers', () => {
-      expect(getConfigForTier('anonymous')).toEqual(TIER_LIMITS.anonymous);
-      expect(getConfigForTier('free')).toEqual(TIER_LIMITS.free);
-      expect(getConfigForTier('pro')).toEqual(TIER_LIMITS.pro);
-      expect(getConfigForTier('sanctuary')).toEqual(TIER_LIMITS.sanctuary);
+      expect(getInMemoryConfigForTier('anonymous')).toEqual(TIER_LIMITS.anonymous);
+      expect(getInMemoryConfigForTier('free')).toEqual(TIER_LIMITS.free);
+      expect(getInMemoryConfigForTier('pro')).toEqual(TIER_LIMITS.pro);
+      expect(getInMemoryConfigForTier('sanctuary')).toEqual(TIER_LIMITS.sanctuary);
     });
 
     it('should return default config for unknown tiers', () => {
-      expect(getConfigForTier('unknown')).toEqual(TIER_LIMITS.default);
-      expect(getConfigForTier('')).toEqual(TIER_LIMITS.default);
+      expect(getInMemoryConfigForTier('unknown')).toEqual(TIER_LIMITS.default);
+      expect(getInMemoryConfigForTier('')).toEqual(TIER_LIMITS.default);
     });
   });
 
@@ -261,6 +273,149 @@ describe('rateLimiter', () => {
 
       expect(blocked.allowed).toBe(false);
       expect(blocked.retryAfter).toBeGreaterThan(0);
+    });
+  });
+});
+
+// ============================================================================
+// Supabase-backed Rate Limiter Tests (Configuration Only)
+// Note: Actual Supabase integration tests require a test database
+// ============================================================================
+
+describe('rateLimiter (Supabase-backed configuration)', () => {
+  describe('TIER_CONFIGS', () => {
+    it('should define limits for all tiers', () => {
+      expect(TIER_CONFIGS.anonymous).toBeDefined();
+      expect(TIER_CONFIGS.free).toBeDefined();
+      expect(TIER_CONFIGS.pro).toBeDefined();
+      expect(TIER_CONFIGS.sanctuary).toBeDefined();
+      expect(TIER_CONFIGS.enterprise).toBeDefined();
+      expect(TIER_CONFIGS.default).toBeDefined();
+    });
+
+    it('should have correct anonymous tier limits (5/24h)', () => {
+      expect(TIER_CONFIGS.anonymous.limit).toBe(5);
+      expect(TIER_CONFIGS.anonymous.windowSeconds).toBe(86400); // 24 hours
+    });
+
+    it('should have correct free tier limits (20/24h)', () => {
+      expect(TIER_CONFIGS.free.limit).toBe(20);
+      expect(TIER_CONFIGS.free.windowSeconds).toBe(86400); // 24 hours
+    });
+
+    it('should have correct pro tier limits (100/h)', () => {
+      expect(TIER_CONFIGS.pro.limit).toBe(100);
+      expect(TIER_CONFIGS.pro.windowSeconds).toBe(3600); // 1 hour
+    });
+
+    it('should have correct sanctuary tier limits (100/h)', () => {
+      expect(TIER_CONFIGS.sanctuary.limit).toBe(100);
+      expect(TIER_CONFIGS.sanctuary.windowSeconds).toBe(3600); // 1 hour
+    });
+
+    it('should have correct enterprise tier limits (1000/h)', () => {
+      expect(TIER_CONFIGS.enterprise.limit).toBe(1000);
+      expect(TIER_CONFIGS.enterprise.windowSeconds).toBe(3600); // 1 hour
+    });
+  });
+
+  describe('getConfigForTier', () => {
+    it('should return correct config for known tiers', () => {
+      expect(getSupabaseConfigForTier('anonymous')).toEqual(TIER_CONFIGS.anonymous);
+      expect(getSupabaseConfigForTier('free')).toEqual(TIER_CONFIGS.free);
+      expect(getSupabaseConfigForTier('pro')).toEqual(TIER_CONFIGS.pro);
+      expect(getSupabaseConfigForTier('sanctuary')).toEqual(TIER_CONFIGS.sanctuary);
+      expect(getSupabaseConfigForTier('enterprise')).toEqual(TIER_CONFIGS.enterprise);
+    });
+
+    it('should return default config for unknown tiers', () => {
+      expect(getSupabaseConfigForTier('unknown')).toEqual(TIER_CONFIGS.default);
+      expect(getSupabaseConfigForTier('')).toEqual(TIER_CONFIGS.default);
+    });
+  });
+
+  describe('getRateLimitIdentifier', () => {
+    it('should return user: prefix for authenticated users', () => {
+      const result = getRateLimitIdentifier('user-123');
+      expect(result).toBe('user:user-123');
+    });
+
+    it('should return ip: prefix for anonymous users (no req)', () => {
+      const result = getRateLimitIdentifier(null);
+      expect(result).toMatch(/^anon:/);
+    });
+
+    it('should handle empty userId', () => {
+      const result = getRateLimitIdentifier('');
+      expect(result).toMatch(/^anon:/);
+    });
+
+    it('should handle undefined userId', () => {
+      const result = getRateLimitIdentifier(undefined);
+      expect(result).toMatch(/^anon:/);
+    });
+  });
+
+  describe('getRateLimitHeaders', () => {
+    it('should build correct headers for allowed request', () => {
+      const result = {
+        allowed: true,
+        limit: 100,
+        remaining: 95,
+        resetAt: 1706200000,
+        retryAfter: 3600,
+        currentCount: 5,
+        tier: 'pro',
+      };
+
+      const headers = getSupabaseRateLimitHeaders(result);
+
+      expect(headers['X-RateLimit-Limit']).toBe('100');
+      expect(headers['X-RateLimit-Remaining']).toBe('95');
+      expect(headers['X-RateLimit-Reset']).toBe('1706200000');
+      expect(headers['Retry-After']).toBeUndefined(); // Only on 429
+    });
+
+    it('should include Retry-After header for blocked request', () => {
+      const result = {
+        allowed: false,
+        limit: 5,
+        remaining: 0,
+        resetAt: 1706200000,
+        retryAfter: 3600,
+        currentCount: 5,
+        tier: 'anonymous',
+      };
+
+      const headers = getSupabaseRateLimitHeaders(result);
+
+      expect(headers['X-RateLimit-Limit']).toBe('5');
+      expect(headers['X-RateLimit-Remaining']).toBe('0');
+      expect(headers['Retry-After']).toBe('3600');
+    });
+  });
+
+  describe('security invariants', () => {
+    it('should never exceed enterprise limits', () => {
+      expect(TIER_CONFIGS.enterprise.limit).toBeLessThanOrEqual(1000);
+    });
+
+    it('should have higher limits for paid tiers', () => {
+      expect(TIER_CONFIGS.anonymous.limit).toBeLessThan(TIER_CONFIGS.free.limit);
+      expect(TIER_CONFIGS.free.limit).toBeLessThan(TIER_CONFIGS.pro.limit);
+      expect(TIER_CONFIGS.pro.limit).toBeLessThanOrEqual(TIER_CONFIGS.sanctuary.limit);
+      expect(TIER_CONFIGS.sanctuary.limit).toBeLessThan(TIER_CONFIGS.enterprise.limit);
+    });
+
+    it('should have shorter windows for paid tiers', () => {
+      // Anonymous/free: 24 hour window
+      expect(TIER_CONFIGS.anonymous.windowSeconds).toBe(86400);
+      expect(TIER_CONFIGS.free.windowSeconds).toBe(86400);
+      
+      // Paid tiers: 1 hour window
+      expect(TIER_CONFIGS.pro.windowSeconds).toBe(3600);
+      expect(TIER_CONFIGS.sanctuary.windowSeconds).toBe(3600);
+      expect(TIER_CONFIGS.enterprise.windowSeconds).toBe(3600);
     });
   });
 });
