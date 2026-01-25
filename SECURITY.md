@@ -2,7 +2,7 @@
 
 > **Classification**: Internal  
 > **Last Updated**: 2026-01-25  
-> **Version**: 1.0  
+> **Version**: 1.1  
 
 VERA is an AI-powered mental wellness application. Due to the sensitive nature of user conversations, memories, and personal data, security incidents require heightened response protocols.
 
@@ -363,15 +363,78 @@ If a security incident affects crisis detection or response capabilities:
 
 ---
 
-## 10. Revision History
+## 10. Audit Log Retention
+
+VERA maintains compliance audit logs for security monitoring and regulatory compliance.
+
+### 10.1 Retention Policy
+
+| Setting | Default | Configuration |
+|---------|---------|---------------|
+| **Retention Period** | 365 days | `AUDIT_RETENTION_DAYS` env var |
+| **Cleanup Schedule** | Daily at 3 AM UTC | External cron or Supabase scheduled function |
+| **Affected Table** | `audit_logs` | All entries older than retention period |
+
+### 10.2 What Is Logged
+
+| Event Category | Examples | Retention Reason |
+|----------------|----------|------------------|
+| **Authentication** | Login, logout, failed attempts | Security monitoring |
+| **Data Access** | Export requests, deletion requests | GDPR/CCPA compliance |
+| **Subscriptions** | Created, cancelled, payment failures | Business audit trail |
+| **Consent** | Cookie preferences, memory consent | Regulatory compliance |
+| **Security** | Rate limiting, blocked requests | Threat detection |
+| **Admin Actions** | Settings changes, user access | Accountability |
+
+### 10.3 Privacy Safeguards
+
+Audit logs are designed to be privacy-compliant:
+
+- **IP Addresses**: Hashed (not stored in plain text)
+- **User Agents**: Truncated to 200 characters
+- **Metadata**: Sanitized to remove PII before logging
+- **Never Logged**: Passwords, tokens, message content, conversation data
+
+### 10.4 Manual Cleanup
+
+Administrators can trigger manual cleanup via:
+
+```bash
+# Via Admin API (requires admin authentication)
+POST /api/admin/cleanup-audit-logs
+Content-Type: application/json
+
+{ "retentionDays": 365 }
+
+# Via external cron (requires API key)
+POST /api/admin/cleanup-audit-logs
+Authorization: Bearer <ADMIN_CLEANUP_API_KEY>
+```
+
+### 10.5 Database Function
+
+For Supabase scheduled jobs:
+
+```sql
+-- Run cleanup with default 365-day retention
+SELECT cleanup_old_audit_logs();
+
+-- Run cleanup with custom retention
+SELECT cleanup_old_audit_logs(90);
+```
+
+---
+
+## 11. Revision History
 
 | Date | Version | Changes | Author |
 |------|---------|---------|--------|
+| 2026-01-25 | 1.1 | Add audit log retention policy | Engineering Team |
 | 2026-01-25 | 1.0 | Initial version | Engineering Team |
 
 ---
 
-## 11. Document Control
+## 12. Document Control
 
 - **Owner**: Security Lead
 - **Review Frequency**: Quarterly
