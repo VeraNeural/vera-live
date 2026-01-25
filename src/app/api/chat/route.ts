@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { handleMessage, ChatResult } from '@/lib/vera/core/handleMessage';
 import { getOrCreateSession, normalizeConversationId, buildSessionCookie } from '@/lib/vera/auth/sessionManager';
 import { resolveTier } from '@/lib/vera/auth/tierResolver';
@@ -6,6 +6,7 @@ import { validateMessages } from '@/lib/vera/governance/messageValidator';
 import type { ChatRequestBody, ChatContext, RoutingTier } from '@/lib/vera/core/types';
 import { meteringIdFromSessionId, recordMessage, resolveMeteringIdForClerkUserId } from '@/lib/auth/messageCounter';
 import { authorize } from '@/lib/julija';
+import { applyRateLimit, buildRateLimitHeaders, type RateLimitResult } from '@/lib/rateLimiter';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -21,8 +22,9 @@ function jsonResponse(
   return NextResponse.json(payload, { status: options?.status ?? 200 });
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const startedAt = Date.now();
+  let rateLimitHeaders: Record<string, string> = {};
 
   try {
     // 1. Check API key
@@ -44,6 +46,25 @@ export async function POST(req: Request) {
       return jsonResponse(tierResult.gateResponse.text, {
         gate: tierResult.gateResponse.gate,
       });
+    }
+
+    // ============================================
+    // RATE LIMITING (P0 SECURITY)
+    // ============================================
+    const rateLimit = await applyRateLimit(
+      req,
+      tierResult.userId,
+      sessionId,
+      tierResult.tier || 'anonymous',
+      '/api/chat'
+    );
+
+    // Store headers to add to final response
+    rateLimitHeaders = rateLimit.headers;
+
+    // If rate limited, return 429 immediately
+    if (!rateLimit.allowed && rateLimit.response) {
+      return rateLimit.response;
     }
 
     // ============================================
@@ -152,7 +173,12 @@ export async function POST(req: Request) {
 
     const res = jsonResponse(result.content, { gate: result.gate, extras });
 
-    // 9. Set cookies
+    // 9. Add rate limit headers
+    for (const [key, value] of Object.entries(rateLimitHeaders)) {
+      res.headers.set(key, value);
+    }
+
+    // 10. Set cookies
     if (shouldSetCookie) {
       const cookie = buildSessionCookie(sessionId);
       res.cookies.set(cookie.name, cookie.value, cookie.options);
