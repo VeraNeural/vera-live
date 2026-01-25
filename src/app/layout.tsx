@@ -4,6 +4,8 @@ import { ClerkProvider } from '@clerk/nextjs'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import Providers from './providers'
 import PwaClient from '@/components/pwa/PwaClient'
+import { CookieBanner } from '@/components/consent/CookieBanner'
+import { ConsentAwareScripts } from '@/components/consent/ConsentAwareScripts'
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -40,6 +42,8 @@ export default function RootLayout({
             <ThemeProvider>
               {children}
               <PwaClient />
+              <CookieBanner />
+              <ConsentAwareScripts />
             </ThemeProvider>
           </Providers>
         </body>
