@@ -232,56 +232,61 @@ export function useOpsRoomEffects({
     const currentId = selectedAction?.id;
     if (currentId === 'thinking-orchestrator') return;
     if (currentId === 'language-learning') return;
+    if (!thinkingAction) return;
     setSelectedAction(thinkingAction);
     setSelectedDropdownOption(null);
     setFormFields({});
     setSimpleInput('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeCategory, thinkingAction]);
+  }, [activeCategory]);
 
   // Effect 6: Auto-select work-life orchestrator when entering work-life category
   useEffect(() => {
     if (activeCategory !== 'work-life') return;
     if (selectedAction?.id === 'worklife-orchestrator') return;
+    if (!workLifeAction) return;
     setSelectedAction(workLifeAction);
     setSelectedDropdownOption(null);
     setFormFields({});
     setSimpleInput('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeCategory, workLifeAction]);
+  }, [activeCategory]);
 
   // Effect 7: Auto-select money orchestrator when entering money category
   useEffect(() => {
     if (activeCategory !== 'money') return;
     if (selectedAction?.id === 'money-orchestrator') return;
+    if (!moneyAction) return;
     setSelectedAction(moneyAction);
     setSelectedDropdownOption(null);
     setFormFields({});
     setSimpleInput('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeCategory, moneyAction]);
+  }, [activeCategory]);
 
   // Effect 8: Auto-select wellness orchestrator when entering relationships-wellness category
   useEffect(() => {
     if (activeCategory !== 'relationships-wellness') return;
     if (selectedAction?.id === 'wellness-orchestrator') return;
+    if (!wellnessAction) return;
     setSelectedAction(wellnessAction);
     setSelectedDropdownOption(null);
     setFormFields({});
     setSimpleInput('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeCategory, wellnessAction]);
+  }, [activeCategory]);
 
   // Effect 9: Auto-select communication orchestrator when entering communication category
   useEffect(() => {
     if (activeCategory !== 'communication') return;
     if (selectedAction?.id === 'communication-orchestrator') return;
+    if (!communicationAction) return;
     setSelectedAction(communicationAction);
     setSelectedDropdownOption(null);
     setFormFields({});
     setSimpleInput('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeCategory, communicationAction]);
+  }, [activeCategory]);
 
   // Effect 10: Handle create category default activity
   useEffect(() => {
@@ -292,6 +297,7 @@ export function useOpsRoomEffects({
     if (currentId === 'social-post') return;
     if (currentId === 'bio-about') return;
     if (currentId === 'creative-writing') return;
+    if (!createSharedAction) return;
     const sharedCreateIds = new Set(['bio-about', 'creative-writing']);
     if (!sharedCreateIds.has(createActivityId)) {
       setCreateActivityId('bio-about');
@@ -302,7 +308,7 @@ export function useOpsRoomEffects({
     setFormFields({});
     setSimpleInput('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeCategory, createActivityId, createSharedAction]);
+  }, [activeCategory]);
 
   // Effect 11: Auto-generate on respond mode change
   useEffect(() => {
@@ -313,5 +319,6 @@ export function useOpsRoomEffects({
     if (output !== null) {
       handleGenerate();
     }
-  }, [respondMode, selectedAction, simpleInput, isGenerating, output, handleGenerate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [respondMode, selectedAction?.id, simpleInput, isGenerating, output]);
 }

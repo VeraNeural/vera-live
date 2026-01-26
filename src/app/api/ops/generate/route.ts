@@ -214,7 +214,7 @@ async function generateSinglePass(
       return { content: response.choices[0]?.message?.content || 'No response generated.', provider };
     }
     default:
-      return generateSinglePass('claude', systemPrompt, userInput);
+      return generateSinglePass('gpt4', systemPrompt, userInput);
   }
 }
 
@@ -552,7 +552,14 @@ export async function POST(request: NextRequest) {
     const body: GenerationRequest = await request.json();
     const { systemPrompt, userInput, mode, provider, taskType, activityId, thinkingMode } = body;
 
+    console.log('[OPS] === REQUEST START ===');
+    console.log('[OPS] activityId:', activityId);
+    console.log('[OPS] provider:', provider);
+    console.log('[OPS] userInput length:', userInput?.length);
+    console.log('[OPS] userInput preview:', userInput?.substring(0, 100));
+
     if (!userInput || !userInput.trim()) {
+      console.log('[OPS] === RETURNING 400 === Missing required fields');
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -560,6 +567,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!activityId) {
+      console.log('[OPS] === RETURNING 400 === Missing activityId');
       return NextResponse.json(
         { error: 'Missing activityId' },
         { status: 400 }
@@ -567,6 +575,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!ACTIVITY_MODEL_CONTRACTS[activityId]) {
+      console.log('[OPS] === RETURNING 400 === Missing activity model contract for:', activityId);
       return NextResponse.json(
         { error: 'Missing activity model contract' },
         { status: 400 }
@@ -628,27 +637,44 @@ export async function POST(request: NextRequest) {
         .filter(Boolean)
         .join('\n');
     }
-    const selectedProvider = provider || 'claude';
+    const selectedProvider = provider || 'gpt4';
+    console.log('[OPS] Calling AI provider:', selectedProvider);
+    
     const result = await generateSinglePass(selectedProvider, assembledSystemPrompt, userInput);
+    
+    console.log('[OPS] AI Response received:');
+    console.log('[OPS]   - Provider:', result.provider);
+    console.log('[OPS]   - Content length:', result.content?.length);
+    console.log('[OPS]   - Content preview:', result.content?.substring(0, 300));
 
+    console.log('[OPS] Running validateOutput...');
     const validation = validateOutput(activityId, result.content);
+    console.log('[OPS] Validation result:', { valid: validation.valid, reasons: validation.reasons });
+    
     if (!validation.valid) {
-      console.error('[OPS Generate] Output validation failed:', { activityId, reasons: validation.reasons, contentLength: result.content?.length });
+      console.error('[OPS] === RETURNING 400 === Output validation failed');
+      console.error('[OPS] Validation reasons:', validation.reasons);
+      console.error('[OPS] Full content that failed:', result.content);
       return NextResponse.json(
         { error: 'Output validation failed', details: validation.reasons },
         { status: 400 }
       );
     }
 
+    console.log('[OPS] Running safetyLayer...');
     const safetyResult = safetyLayer(userInput, result.content);
+    console.log('[OPS] Safety result:', safetyResult);
+    
     if (safetyResult.outcome !== 'allow') {
-      console.error('[OPS Generate] Safety layer blocked:', { outcome: safetyResult.outcome, message: safetyResult.message });
+      console.error('[OPS] === RETURNING 400 === Safety layer blocked');
+      console.error('[OPS] Safety outcome:', safetyResult.outcome, safetyResult.message);
       return NextResponse.json(
         { error: safetyResult.message || 'Request blocked' },
         { status: 400 }
       );
     }
 
+    console.log('[OPS] === SUCCESS === Returning 200');
     return NextResponse.json({ content: result.content, provider: result.provider });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);

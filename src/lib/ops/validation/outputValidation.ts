@@ -37,21 +37,37 @@ export function validateOutput(activityId: string, output: string): ValidationRe
   const reasons: string[] = [];
   const contract = ACTIVITY_MODEL_CONTRACTS[activityId];
 
+  console.log('[validateOutput] activityId:', activityId);
+  console.log('[validateOutput] output length:', output?.length);
+  console.log('[validateOutput] output trimmed length:', output?.trim().length);
+  console.log('[validateOutput] contract:', contract ? { outputType: contract.outputType } : 'MISSING');
+
   if (!contract) {
+    console.log('[validateOutput] FAIL: Missing contract');
     return { valid: false, reasons: ['Missing activity model contract.'] };
   }
 
   if (!output || !output.trim()) {
+    console.log('[validateOutput] FAIL: Empty output');
     return { valid: false, reasons: ['Empty output.'] };
   }
 
   const typeValidator = OUTPUT_TYPE_VALIDATORS[contract.outputType];
-  if (!typeValidator || !typeValidator(output)) {
+  const typeValidatorResult = typeValidator ? typeValidator(output) : false;
+  console.log('[validateOutput] outputType:', contract.outputType);
+  console.log('[validateOutput] typeValidator exists:', !!typeValidator);
+  console.log('[validateOutput] typeValidator result:', typeValidatorResult);
+  
+  if (!typeValidator || !typeValidatorResult) {
+    console.log('[validateOutput] FAIL: Output type validation failed for type:', contract.outputType);
     reasons.push('Output type validation failed.');
   }
 
   const rules = ACTIVITY_VALIDATION_RULES[activityId];
+  console.log('[validateOutput] activity-specific rules:', rules);
+  
   if (rules?.minLength && output.trim().length < rules.minLength) {
+    console.log('[validateOutput] FAIL: Output length', output.trim().length, '< minLength', rules.minLength);
     reasons.push('Output length below minimum.');
   }
 

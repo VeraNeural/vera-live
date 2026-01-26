@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { opsRoom, type Category, type Activity, type DropdownOption } from '@/app/sanctuary/ops/consolidatedData';
@@ -251,7 +251,7 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
     return acc;
   }, {});
 
-  const normalizeCategoryFromView = (view?: string): { category: string; actionId?: string; languageTab?: 'learn' | 'translate' } | null => {
+  const normalizeCategoryFromView = useCallback((view?: string): { category: string; actionId?: string; languageTab?: 'learn' | 'translate' } | null => {
     const v = (view || '').toLowerCase().trim();
     if (!v) return null;
 
@@ -268,7 +268,7 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
     if (v === 'creativity' || v === 'content') return { category: 'create' };
 
     return null;
-  };
+  }, []);
 
   const isDark = manualTheme === 'dark' ? true : manualTheme === 'light' ? false : (timeOfDay === 'evening' || timeOfDay === 'night');
   const colors = isDark ? TIME_COLORS.evening : TIME_COLORS[timeOfDay];
