@@ -66,6 +66,19 @@ type GenerationRequest = {
 };
 
 // ============================================================================
+// ORCHESTRATOR TO DEFAULT ACTIVITY MAPPING
+// When user selects an orchestrator without a specific activity, use these defaults
+// ============================================================================
+const ORCHESTRATOR_DEFAULT_ACTIVITY: Record<string, string> = {
+  'communication-orchestrator': 'decode-message',
+  'worklife-orchestrator': 'worklife-analysis',
+  'money-orchestrator': 'money-analysis',
+  'thinking-orchestrator': 'thinking-analysis',
+  'wellness-orchestrator': 'wellness-analysis',
+  'create': 'bio-about',
+};
+
+// ============================================================================
 // PROMPTS (imported from ./prompts)
 // VALIDATION (imported from ./validation)
 // ============================================================================
@@ -574,15 +587,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!ACTIVITY_MODEL_CONTRACTS[activityId]) {
-      console.log('[OPS] === RETURNING 400 === Missing activity model contract for:', activityId);
+    // Map orchestrator to default activity if needed
+    const resolvedActivityId = ORCHESTRATOR_DEFAULT_ACTIVITY[activityId] || activityId;
+    if (resolvedActivityId !== activityId) {
+      console.log(`[OPS] Mapped orchestrator '${activityId}' to activity '${resolvedActivityId}'`);
+    }
+
+    if (!ACTIVITY_MODEL_CONTRACTS[resolvedActivityId]) {
+      console.log('[OPS] === RETURNING 400 === Missing activity model contract for:', resolvedActivityId);
       return NextResponse.json(
         { error: 'Missing activity model contract' },
         { status: 400 }
       );
     }
 
-    const fragment = ACTIVITY_PROMPT_FRAGMENTS[activityId];
+    const fragment = ACTIVITY_PROMPT_FRAGMENTS[resolvedActivityId];
     if (!fragment) {
       return NextResponse.json(
         { error: 'Missing activity prompt fragment' },
@@ -590,8 +609,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const resolvedMode = resolveThinkingMode(activityId, thinkingMode);
-    if (ACTIVITY_DEFAULT_THINKING_MODE[activityId] === undefined) {
+    const resolvedMode = resolveThinkingMode(resolvedActivityId, thinkingMode);
+    if (ACTIVITY_DEFAULT_THINKING_MODE[resolvedActivityId] === undefined) {
       return NextResponse.json(
         { error: 'Missing activity default thinking mode' },
         { status: 400 }
@@ -619,12 +638,12 @@ export async function POST(request: NextRequest) {
     const focusBlock = systemPrompt ? extractFocusBlock(systemPrompt) : '';
     const toneBlock = systemPrompt ? extractToneBlock(systemPrompt) : '';
     let assembledSystemPrompt: string;
-    if (activityId === 'respond') {
+    if (resolvedActivityId === 'respond') {
       assembledSystemPrompt = RESPOND_PROMPT;
-    } else if (activityId === 'worklife-analysis' || activityId === 'worklife-action' || activityId === 'worklife-clarify' || activityId === 'worklife-sorted' || activityId === 'money-analysis' || activityId === 'money-action' || activityId === 'thinking-detect' || activityId === 'thinking-analysis' || activityId === 'thinking-action') {
+    } else if (resolvedActivityId === 'worklife-analysis' || resolvedActivityId === 'worklife-action' || resolvedActivityId === 'worklife-clarify' || resolvedActivityId === 'worklife-sorted' || resolvedActivityId === 'money-analysis' || resolvedActivityId === 'money-action' || resolvedActivityId === 'thinking-detect' || resolvedActivityId === 'thinking-analysis' || resolvedActivityId === 'thinking-action') {
       // Use the passed systemPrompt directly for Work & Life, Money, and Thinking unified flows
       assembledSystemPrompt = systemPrompt;
-    } else if (activityId === 'decode-message') {
+    } else if (resolvedActivityId === 'decode-message') {
       assembledSystemPrompt = DECODE_MESSAGE_PROMPT;
     } else {
       assembledSystemPrompt = [
@@ -648,7 +667,7 @@ export async function POST(request: NextRequest) {
     console.log('[OPS]   - Content preview:', result.content?.substring(0, 300));
 
     console.log('[OPS] Running validateOutput...');
-    const validation = validateOutput(activityId, result.content);
+    const validation = validateOutput(resolvedActivityId, result.content);
     console.log('[OPS] Validation result:', { valid: validation.valid, reasons: validation.reasons });
     
     if (!validation.valid) {

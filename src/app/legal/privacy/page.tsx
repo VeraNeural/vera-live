@@ -612,12 +612,21 @@ export default function PrivacyPolicyPage() {
         </footer>
       </div>
 
+      {/* Global styles to override body background */}
+      <style jsx global>{`
+        body {
+          background: #0d1b2a !important;
+        }
+      `}</style>
+      
       <style jsx>{`
         .privacy-policy {
           min-height: 100vh;
           background: linear-gradient(135deg, #0d1b2a 0%, #1b3a4b 100%);
           color: #e0e7ee;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          position: relative;
+          z-index: 1;
         }
 
         .policy-container {
