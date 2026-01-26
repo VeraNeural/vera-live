@@ -229,13 +229,15 @@ export function useOpsRoomEffects({
   // Effect 5: Auto-select thinking orchestrator when entering thinking-learning category
   useEffect(() => {
     if (activeCategory !== 'thinking-learning') return;
-    if (selectedAction?.id === 'thinking-orchestrator') return;
-    if (selectedAction?.id === 'language-learning') return;
+    const currentId = selectedAction?.id;
+    if (currentId === 'thinking-orchestrator') return;
+    if (currentId === 'language-learning') return;
     setSelectedAction(thinkingAction);
     setSelectedDropdownOption(null);
     setFormFields({});
     setSimpleInput('');
-  }, [activeCategory, selectedAction, thinkingAction, setSelectedAction, setSelectedDropdownOption, setFormFields, setSimpleInput]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCategory, thinkingAction]);
 
   // Effect 6: Auto-select work-life orchestrator when entering work-life category
   useEffect(() => {
@@ -245,7 +247,8 @@ export function useOpsRoomEffects({
     setSelectedDropdownOption(null);
     setFormFields({});
     setSimpleInput('');
-  }, [activeCategory, selectedAction?.id, workLifeAction, setSelectedAction, setSelectedDropdownOption, setFormFields, setSimpleInput]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCategory, workLifeAction]);
 
   // Effect 7: Auto-select money orchestrator when entering money category
   useEffect(() => {
@@ -255,7 +258,8 @@ export function useOpsRoomEffects({
     setSelectedDropdownOption(null);
     setFormFields({});
     setSimpleInput('');
-  }, [activeCategory, selectedAction?.id, moneyAction, setSelectedAction, setSelectedDropdownOption, setFormFields, setSimpleInput]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCategory, moneyAction]);
 
   // Effect 8: Auto-select wellness orchestrator when entering relationships-wellness category
   useEffect(() => {
@@ -265,7 +269,8 @@ export function useOpsRoomEffects({
     setSelectedDropdownOption(null);
     setFormFields({});
     setSimpleInput('');
-  }, [activeCategory, wellnessAction, setSelectedAction, setSelectedDropdownOption, setFormFields, setSimpleInput]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCategory, wellnessAction]);
 
   // Effect 9: Auto-select communication orchestrator when entering communication category
   useEffect(() => {
@@ -275,16 +280,18 @@ export function useOpsRoomEffects({
     setSelectedDropdownOption(null);
     setFormFields({});
     setSimpleInput('');
-  }, [activeCategory, selectedAction?.id, communicationAction, setSelectedAction, setSelectedDropdownOption, setFormFields, setSimpleInput]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCategory, communicationAction]);
 
   // Effect 10: Handle create category default activity
   useEffect(() => {
     if (activeCategory !== 'create') return;
-    if (selectedAction?.id === 'create') return;
-    if (selectedAction?.id === 'write-email') return;
-    if (selectedAction?.id === 'social-post') return;
-    if (selectedAction?.id === 'bio-about') return;
-    if (selectedAction?.id === 'creative-writing') return;
+    const currentId = selectedAction?.id;
+    if (currentId === 'create') return;
+    if (currentId === 'write-email') return;
+    if (currentId === 'social-post') return;
+    if (currentId === 'bio-about') return;
+    if (currentId === 'creative-writing') return;
     const sharedCreateIds = new Set(['bio-about', 'creative-writing']);
     if (!sharedCreateIds.has(createActivityId)) {
       setCreateActivityId('bio-about');
@@ -294,7 +301,8 @@ export function useOpsRoomEffects({
     setSelectedDropdownOption(null);
     setFormFields({});
     setSimpleInput('');
-  }, [activeCategory, selectedAction?.id, createActivityId, createSharedAction, setCreateActivityId, setCreateOptionId, setSelectedAction, setSelectedDropdownOption, setFormFields, setSimpleInput]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCategory, createActivityId, createSharedAction]);
 
   // Effect 11: Auto-generate on respond mode change
   useEffect(() => {

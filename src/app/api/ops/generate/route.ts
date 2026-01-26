@@ -633,14 +633,16 @@ export async function POST(request: NextRequest) {
 
     const validation = validateOutput(activityId, result.content);
     if (!validation.valid) {
+      console.error('[OPS Generate] Output validation failed:', { activityId, reasons: validation.reasons, contentLength: result.content?.length });
       return NextResponse.json(
-        { error: 'Output validation failed' },
+        { error: 'Output validation failed', details: validation.reasons },
         { status: 400 }
       );
     }
 
     const safetyResult = safetyLayer(userInput, result.content);
     if (safetyResult.outcome !== 'allow') {
+      console.error('[OPS Generate] Safety layer blocked:', { outcome: safetyResult.outcome, message: safetyResult.message });
       return NextResponse.json(
         { error: safetyResult.message || 'Request blocked' },
         { status: 400 }
@@ -649,9 +651,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ content: result.content, provider: result.provider });
   } catch (error) {
-    console.error('Multi-AI generation error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('[OPS Generate] Error:', errorMessage, error);
     return NextResponse.json(
-      { error: 'Failed to generate response' },
+      { error: 'Failed to generate response', details: errorMessage },
       { status: 500 }
     );
   }

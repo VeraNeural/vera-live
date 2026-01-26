@@ -35,12 +35,12 @@
 | Security training program | ⚠️ | Training records | Formalize annual training |
 | Background checks | ⚠️ | HR records | Document process |
 
-#### CC2: Communication and Information ⚠️
+#### CC2: Communication and Information ✅
 
 | Control | Status | Evidence | Action Required |
 |---------|--------|----------|-----------------|
-| Privacy Policy published | ❌ | Missing | **Create /legal/privacy page** |
-| Terms of Service published | ❌ | Missing | **Create /legal/terms page** |
+| Privacy Policy published | ✅ | `/legal/privacy` page | None |
+| Terms of Service published | ✅ | `/legal/terms` page | None |
 | Security.md disclosure | ✅ | `SECURITY.md` | None |
 | User documentation | ✅ | README, in-app help | None |
 
@@ -150,11 +150,11 @@
 
 ---
 
-### Privacy (P Series) - 75% Ready
+### Privacy (P Series) - 90% Ready
 
 | Control | Status | Evidence | Action Required |
 |---------|--------|----------|-----------------|
-| Privacy notice | ❌ | Missing page | **Create /legal/privacy** |
+| Privacy notice | ✅ | `/legal/privacy` page | None |
 | Consent collection | ✅ | UI consent flows | None |
 | GDPR compliance | ✅ | `GDPR_COMPLIANCE.md` | None |
 | CCPA compliance | ✅ | `CCPA_COMPLIANCE.md` | None |
@@ -171,8 +171,8 @@
 
 | # | Action | Owner | Target Date | Status |
 |---|--------|-------|-------------|--------|
-| 1 | Create `/legal/privacy` page | Engineering | 2 weeks | ⬜ Not started |
-| 2 | Create `/legal/terms` page | Engineering | 2 weeks | ⬜ Not started |
+| 1 | Create `/legal/privacy` page | Engineering | 2 weeks | ✅ Complete |
+| 2 | Create `/legal/terms` page | Engineering | 2 weeks | ✅ Complete |
 | 3 | Implement alertAdmin() for real alerts | Engineering | 2 weeks | ⬜ Not started |
 | 4 | Define and publish uptime SLA | Engineering | 1 week | ⬜ Not started |
 | 5 | Complete BAA with Anthropic | Legal | 3 weeks | ⬜ Not started |

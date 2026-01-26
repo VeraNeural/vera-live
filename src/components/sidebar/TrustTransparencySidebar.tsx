@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useClerk, useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   Plus,
   Target,
@@ -951,19 +952,18 @@ export default function TrustTransparencySidebar({
                 Privacy
               </button>
               <span style={{ color: colors.textSecondary, fontSize: 12 }}>·</span>
-              <button
+              <Link
+                href="/legal/terms"
                 style={{
-                  border: 'none',
-                  background: 'none',
                   fontSize: 12,
                   color: colors.textSecondary,
                   fontWeight: 400,
-                  cursor: 'pointer',
+                  textDecoration: 'none',
                   padding: '4px',
                 }}
               >
                 Terms
-              </button>
+              </Link>
             </div>
           )}
         </div>

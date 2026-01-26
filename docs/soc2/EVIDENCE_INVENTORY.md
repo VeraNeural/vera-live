@@ -42,8 +42,8 @@ This document catalogs evidence demonstrating VERA's compliance with SOC 2 Trust
 
 | ID | Evidence | Location | Type | Frequency |
 |----|----------|----------|------|-----------|
-| CC2.1 | Privacy Policy | `/legal/privacy` (pending) | POL | Annual review |
-| CC2.2 | Terms of Service | `/legal/terms` (pending) | POL | Annual review |
+| CC2.1 | Privacy Policy | `/legal/privacy` | POL | Annual review |
+| CC2.2 | Terms of Service | `/legal/terms` | POL | Annual review |
 | CC2.3 | Security disclosure page | `SECURITY.md` | DOC | On change |
 | CC2.4 | User documentation | `README.md`, Help center | DOC | On change |
 
@@ -157,7 +157,7 @@ This document catalogs evidence demonstrating VERA's compliance with SOC 2 Trust
 
 | ID | Evidence | Location | Type | Frequency |
 |----|----------|----------|------|-----------|
-| P1.1 | Privacy policy | `/legal/privacy` (pending) | POL | Annual |
+| P1.1 | Privacy policy | `/legal/privacy` | POL | Annual |
 | P1.2 | Consent mechanisms | UI consent flows | TECH | On change |
 | P1.3 | GDPR compliance documentation | `docs/GDPR_COMPLIANCE.md` | DOC | Annual |
 | P1.4 | CCPA compliance documentation | `docs/CCPA_COMPLIANCE.md` | DOC | Annual |
@@ -185,8 +185,8 @@ This document catalogs evidence demonstrating VERA's compliance with SOC 2 Trust
 
 | Gap | Priority | Remediation | Target Date |
 |-----|----------|-------------|-------------|
-| `/legal/privacy` page | High | Create privacy policy page | Q1 2026 |
-| `/legal/terms` page | High | Create terms of service page | Q1 2026 |
+| Formal uptime SLA | Medium | Document SLA commitment | Q1 2026 |
+| Disaster Recovery test | Medium | Conduct and document DR test | Q2 2026 |
 | Formal uptime SLA | Medium | Document SLA commitment | Q1 2026 |
 | Disaster Recovery test | Medium | Conduct and document DR test | Q2 2026 |
 | Penetration test | Medium | Engage third-party tester | Q2 2026 |
