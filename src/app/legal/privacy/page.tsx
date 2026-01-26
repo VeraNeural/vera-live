@@ -1,12 +1,6 @@
 "use client";
 
-import type { Metadata } from 'next';
 import Link from 'next/link';
-
-export const metadata: Metadata = {
-  title: 'Privacy Policy | VERA Neural',
-  description: 'Learn how VERA Neural protects your privacy and handles your personal data. GDPR and CCPA compliant privacy practices.',
-};
 
 export default function PrivacyPolicyPage() {
   const lastUpdated = 'January 25, 2026';

@@ -1,12 +1,6 @@
 "use client";
 
-import type { Metadata } from 'next';
 import Link from 'next/link';
-
-export const metadata: Metadata = {
-  title: 'Terms of Service | VERA Neural',
-  description: 'Terms of Service for VERA Neural. Read our terms and conditions for using the VERA emotional wellness platform.',
-};
 
 export default function TermsOfServicePage() {
   const lastUpdated = 'January 25, 2026';
