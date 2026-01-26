@@ -597,6 +597,15 @@ export default function ProfessionalsLanding() {
             <a className="footer-link" onClick={() => router.push('/sanctuary')}>
               Explore Your Space →
             </a>
+            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '24px' }}>
+              <a href="/legal/privacy" style={{ fontSize: '0.75rem', color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(42,42,42,0.4)', textDecoration: 'none' }}>
+                Privacy Policy
+              </a>
+              <span style={{ color: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(42,42,42,0.2)' }}>·</span>
+              <a href="/legal/terms" style={{ fontSize: '0.75rem', color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(42,42,42,0.4)', textDecoration: 'none' }}>
+                Terms of Service
+              </a>
+            </div>
           </div>
         </div>
       </div>
