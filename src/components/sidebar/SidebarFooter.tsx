@@ -30,6 +30,13 @@ export function SidebarFooter({ isDark }: SidebarFooterProps) {
       >
         Terms
       </Link>
+      <span className={`text-[11px] ${textClass} opacity-40`}>·</span>
+      <Link
+        href="/legal/disclaimer"
+        className={`text-[11px] ${textClass} ${hoverClass} transition-colors duration-150`}
+      >
+        Disclaimer
+      </Link>
     </div>
   );
 }
