@@ -10,7 +10,7 @@ import { TimeOfDay, ThemeMode, ConsentStatus, Room, Message, QuickPrompt } from 
 import { TIME_COLORS, getQuickPrompts, NAV_HINT_ROTATIONS, RoomIcon, ROOMS } from './constants';
 import { getTimeOfDay, getGreeting, getVeraGreeting } from './utils';
 import { GLOBAL_STYLES } from './styles';
-import { ChatInput, QuickPrompts } from './components';
+import { ChatInput, QuickPrompts, type AttachedFile } from './components';
 
 // ============================================================================
 // GLOBAL STYLES
@@ -34,6 +34,7 @@ export default function VeraSanctuary() {
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showAllRooms, setShowAllRooms] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   
   // Consent & conversation state
   const [consentStatus, setConsentStatus] = useState<ConsentStatus>('unknown');
@@ -62,6 +63,7 @@ export default function VeraSanctuary() {
     setIsTyping(false);
     setCurrentConversationId(null);
     setIsFirstMessage(true);
+    setAttachedFiles([]);
     // Sidebar stays as-is for persistent navigation
     
     // Reset textarea height
@@ -316,22 +318,39 @@ export default function VeraSanctuary() {
 
   const handleSend = async (text?: string) => {
     const messageText = (text ?? inputValue).trim();
-    if (!messageText) return;
+    const hasAttachments = attachedFiles.length > 0;
+    
+    if (!messageText && !hasAttachments) return;
 
     if (chatGate) {
       showToast(chatGate === 'upgrade_required' ? 'Upgrade to keep chatting today.' : 'Please sign up to keep chatting.');
       return;
     }
 
+    // Build message content with attachments info
+    let displayContent = messageText;
+    if (hasAttachments) {
+      const attachmentNames = attachedFiles.map(f => f.file.name).join(', ');
+      if (messageText) {
+        displayContent = `${messageText}\n\n📎 Attached: ${attachmentNames}`;
+      } else {
+        displayContent = `📎 Attached: ${attachmentNames}`;
+      }
+    }
+
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: messageText,
+      content: displayContent,
       timestamp: new Date(),
     };
 
+    // Store attachments to send with API call
+    const filesToSend = [...attachedFiles];
+    
     setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
+    setAttachedFiles([]); // Clear attachments after sending
 
     // Intercept command-like messages and route via VERA Navigator
     const navResult = executeCommand(messageText);
@@ -395,6 +414,41 @@ export default function VeraSanctuary() {
 
     // Call VERA API - format messages for /api/chat
     try {
+      // Build the current message content
+      // For images, we need to format them for Claude's vision API
+      let currentMessageContent: string | Array<{ type: string; text?: string; source?: { type: string; media_type: string; data: string } }> = messageText || 'Please look at the attached image(s).';
+      
+      // If we have image attachments, format for Claude vision
+      const imageAttachments = filesToSend.filter(f => f.type === 'image');
+      if (imageAttachments.length > 0) {
+        const contentParts: Array<{ type: string; text?: string; source?: { type: string; media_type: string; data: string } }> = [];
+        
+        // Add images first
+        for (const img of imageAttachments) {
+          // Extract base64 data from data URL
+          const base64Match = img.preview.match(/^data:([^;]+);base64,(.+)$/);
+          if (base64Match) {
+            contentParts.push({
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: base64Match[1],
+                data: base64Match[2],
+              },
+            });
+          }
+        }
+        
+        // Add text if present
+        if (messageText) {
+          contentParts.push({ type: 'text', text: messageText });
+        } else {
+          contentParts.push({ type: 'text', text: 'What do you see in this image?' });
+        }
+        
+        currentMessageContent = contentParts;
+      }
+      
       const formattedMessages = [
         ...messages
           .filter((m) => !m.isConsentPrompt && m.role !== 'system')
@@ -402,7 +456,7 @@ export default function VeraSanctuary() {
             role: m.role as 'user' | 'assistant',
             content: m.content,
           })),
-        { role: 'user' as const, content: messageText },
+        { role: 'user' as const, content: currentMessageContent },
       ];
 
       const response = await fetch('/api/chat', {
@@ -554,23 +608,18 @@ export default function VeraSanctuary() {
   const hasMessages = messages.length > 0;
   const isGated = chatGate === 'signup_required' || chatGate === 'upgrade_required';
 
+  // File attachment handlers
+  const handleFileAttach = (file: AttachedFile) => {
+    setAttachedFiles((prev) => [...prev, file]);
+  };
+
+  const handleFileRemove = (fileId: string) => {
+    setAttachedFiles((prev) => prev.filter((f) => f.id !== fileId));
+  };
+
   return (
     <>
       <style jsx global>{GLOBAL_STYLES}</style>
-      
-      {/* Hidden file input for attachments */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        style={{ display: 'none' }}
-        onChange={(e) => {
-          const file = e.currentTarget.files?.[0];
-          e.currentTarget.value = '';
-          if (!file) return;
-          showToast('Attachment functionality coming soon');
-        }}
-      />
 
       <div style={{
         position: 'fixed',
@@ -804,6 +853,9 @@ export default function VeraSanctuary() {
                       onSend={() => handleSend()}
                       onKeyDown={handleKeyDown}
                       onVoiceClick={() => router.push('/voice')}
+                      onFileAttach={handleFileAttach}
+                      onFileRemove={handleFileRemove}
+                      attachedFiles={attachedFiles}
                       inputRef={inputRef}
                       fileInputRef={fileInputRef}
                       colors={colors}
@@ -1218,6 +1270,9 @@ export default function VeraSanctuary() {
                 onSend={() => handleSend()}
                 onKeyDown={handleKeyDown}
                 onVoiceClick={() => router.push('/voice')}
+                onFileAttach={handleFileAttach}
+                onFileRemove={handleFileRemove}
+                attachedFiles={attachedFiles}
                 inputRef={inputRef}
                 fileInputRef={fileInputRef}
                 colors={colors}

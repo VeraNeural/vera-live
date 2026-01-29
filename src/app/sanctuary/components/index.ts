@@ -1,2 +1,2 @@
-export { ChatInput } from './ChatInput';
+export { ChatInput, type AttachedFile } from './ChatInput';
 export { QuickPrompts } from './QuickPrompts';
