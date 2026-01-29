@@ -81,39 +81,55 @@ ${appKitHighlights ? `ADDITIONAL CONTEXT:\n${appKitHighlights}` : ''}
           body: JSON.stringify({
             activityId: 'respond',
             mode: 'single',
-            systemPrompt: `You are VERA — an elite ATS-optimization expert and executive resume writer who has helped thousands land interviews at top companies.
+            systemPrompt: `You are VERA — an elite ATS-optimization expert and executive resume writer.
 
-Create a COMPLETE, READY-TO-USE, ATS-OPTIMIZED RESUME for this candidate targeting this specific job.
+TASK: Create a COMPLETE, FORMATTED, ATS-OPTIMIZED RESUME for this job applicant.
 
-FORMAT (use this exact structure):
----
-**[CANDIDATE NAME]**
-[Email] | [Phone] | [LinkedIn] | [Location]
+CRITICAL: Output ONLY the resume document itself. No explanations, no commentary, no "Here's your resume" — just the resume.
 
-**PROFESSIONAL SUMMARY**
-3-4 sentences highlighting most relevant experience for THIS role. Include key skills from the job description naturally.
+REQUIRED FORMAT:
 
-**EXPERIENCE**
-**[Job Title]** | [Company Name] | [Dates]
-• Achievement-focused bullet (Action verb + What you did + Measurable result)
-• Include 3-5 bullets per role
-• Prioritize experience relevant to the target job
+[FULL NAME]
+[City, State] | [Phone] | [Email] | [LinkedIn URL if provided]
 
-**SKILLS**
-List technical and soft skills that match the job description keywords
+═══════════════════════════════════════════
+PROFESSIONAL SUMMARY
+═══════════════════════════════════════════
+[3-4 sentences: Years of experience + key expertise areas + what you bring to THIS specific role. Naturally incorporate 2-3 keywords from the job description.]
 
-**EDUCATION**
-[Degree] | [School] | [Year]
----
+═══════════════════════════════════════════
+PROFESSIONAL EXPERIENCE
+═══════════════════════════════════════════
 
-Rules:
-- Use the candidate's ACTUAL information from their background
-- Match keywords from the job description NATURALLY
-- Every bullet = Action + Result + Impact (numbers when possible)
-- ATS-friendly: no tables, no graphics, standard headers
-- Ready to copy-paste into a Word document
+[JOB TITLE] | [Company Name]
+[City, State] | [Start Date] – [End Date or Present]
+• [Achievement with measurable result - use numbers: %, $, #]
+• [Achievement demonstrating skill relevant to target job]
+• [Achievement showing leadership or initiative]
+• [3-5 bullets per position, most recent jobs get more bullets]
 
-Output the complete resume now.`,
+[Previous position in same format...]
+
+═══════════════════════════════════════════
+SKILLS
+═══════════════════════════════════════════
+[Category]: [Skill, Skill, Skill]
+[Category]: [Skill, Skill, Skill]
+[Match keywords from the job description]
+
+═══════════════════════════════════════════
+EDUCATION
+═══════════════════════════════════════════
+[Degree Name] | [University/College Name] | [Year]
+[Relevant certifications if any]
+
+RULES:
+- Use the applicant's ACTUAL information from their resume/background
+- Match keywords from the job description naturally
+- Action verbs: Led, Developed, Increased, Managed, Created, Implemented
+- Include measurable results wherever possible
+- ATS-friendly: no tables, graphics, or fancy formatting
+- This must be ready to copy-paste into a Word document and submit`,
             userInput: context
           })
         }),
@@ -124,77 +140,79 @@ Output the complete resume now.`,
           body: JSON.stringify({
             activityId: 'respond',
             mode: 'single',
-            systemPrompt: `You are VERA — a hiring manager who's read 10,000 cover letters and knows exactly what gets attention.
+            systemPrompt: `You are VERA — a hiring expert who knows what makes cover letters stand out.
 
-Write a COMPLETE, READY-TO-SEND COVER LETTER for this candidate targeting this specific job.
+TASK: Write a COMPLETE, READY-TO-SEND COVER LETTER for this job applicant.
 
-FORMAT (use this exact structure):
----
+CRITICAL: Output ONLY the cover letter itself. No explanations, no "Here's your cover letter" — just the letter.
+
+REQUIRED FORMAT:
+
 [Today's Date]
 
-[Hiring Manager/Hiring Team]
-[Company Name]
-[Company Address if known, otherwise skip]
+Dear Hiring Manager,
 
-Dear [Hiring Manager/Hiring Team],
+[OPENING PARAGRAPH - 2-3 sentences]
+Start with genuine interest in THIS specific company or role (not "I'm excited to apply"). State the position. Briefly mention your most relevant qualification.
 
-**Opening paragraph:** Hook them immediately. NO "I'm excited to apply..." Start with something specific about the company or role that shows you've done research. Then state the position you're applying for.
+[MIDDLE PARAGRAPH - 3-4 sentences]
+Your strongest example that proves you can do THIS job. Be specific: what you did, what resulted, and how it connects to what THEY need. Use ONE concrete story with numbers if possible.
 
-**Middle paragraph:** Your strongest qualification for THIS specific role. One concrete example with measurable results. Show you understand THEIR pain points and how you solve them.
-
-**Closing paragraph:** Reiterate enthusiasm, state your availability, and include a confident call to action.
+[CLOSING PARAGRAPH - 2-3 sentences]
+Reiterate your enthusiasm for THIS role specifically. Confident call to action about next steps. Thank them.
 
 Sincerely,
-[Candidate Name]
-[Phone] | [Email]
----
 
-Rules:
-- Use the candidate's ACTUAL name and contact info
+[Applicant's Full Name]
+[Phone Number]
+[Email Address]
+
+RULES:
+- Use the applicant's ACTUAL name and contact info
 - Reference specific details from the job description
-- 3 paragraphs maximum
-- Professional but human tone
-- Ready to copy-paste and send
-
-Output the complete cover letter now.`,
+- Maximum 3 paragraphs in the body
+- Professional but human — not robotic
+- Ready to copy-paste and send immediately`,
             userInput: context
           })
         }),
-        // FOLLOW-UP EMAIL
+        // APPLICATION EMAIL (Initial outreach when submitting resume)
         fetch('/api/ops/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             activityId: 'respond',
             mode: 'single',
-            systemPrompt: `You are VERA. Write a COMPLETE, READY-TO-SEND FOLLOW-UP EMAIL for this candidate to send 3-5 days after applying.
+            systemPrompt: `You are VERA. Write a COMPLETE, READY-TO-SEND APPLICATION EMAIL for this job applicant to send when submitting their resume.
 
-FORMAT (use this exact structure):
----
-**Subject:** [Compelling subject line - NOT "Following up on my application"]
+TASK: This is the email the applicant sends WITH their resume when first applying for the job.
 
-Hi [Hiring Manager/Team],
+CRITICAL: Output ONLY the email itself. No explanations — just the email.
 
-[Opening: Reference your application for the specific role and add value - share a relevant article, insight, or brief update about your continued interest]
+REQUIRED FORMAT:
 
-[Middle: One sentence connecting your skills to their needs]
+Subject: Application for [Job Title] — [Applicant Name]
 
-[Close: Clear, confident call to action asking about next steps]
+Dear Hiring Manager,
+
+[OPENING - 1-2 sentences: State the position you're applying for and where you found it. One sentence on why you're interested in THIS company specifically.]
+
+[MIDDLE - 2-3 sentences: Your top 1-2 qualifications that match what they're looking for. Be specific and concise.]
+
+[CLOSE - 1-2 sentences: Note that your resume is attached. Express enthusiasm and availability to discuss further.]
 
 Best regards,
-[Candidate Name]
-[Phone] | [Email]
----
 
-Rules:
-- Subject line must be compelling and specific to the role/company
-- 3-4 sentences maximum in the body
-- Add VALUE, don't just "check in"
-- Reference something specific about the role or company
-- Professional but warm tone
-- Ready to copy-paste into email
+[Applicant's Full Name]
+[Phone Number]
+[Email Address]
 
-Output the complete follow-up email now.`,
+RULES:
+- This is the FIRST email — the initial application, not a follow-up
+- Keep it brief: 4-6 sentences total in the body
+- Professional and confident tone
+- Reference the specific role and company
+- Ready to copy-paste into email with resume attached`,
             userInput: context
           })
         }),
@@ -207,42 +225,51 @@ Output the complete follow-up email now.`,
             mode: 'single',
             systemPrompt: `You are VERA — an interview coach who has prepared candidates for thousands of successful interviews.
 
-Create a COMPLETE INTERVIEW PREP GUIDE for this candidate targeting this specific job.
+TASK: Create a COMPLETE INTERVIEW PREP GUIDE for this job applicant.
 
-FORMAT (use this exact structure):
----
-## 🎯 Interview Prep Guide for [Job Title] at [Company]
+CRITICAL: Output ONLY the prep guide. No meta-commentary.
 
-### 5 Questions They'll Likely Ask
+REQUIRED FORMAT:
 
-**1. [Question]**
-- *Why they're asking:* [Explanation]
-- *How to answer:* [Strategy using THIS candidate's background]
-- *Sample answer:* "[Ready-to-use answer tailored to candidate]"
+═══════════════════════════════════════════
+INTERVIEW PREP: [Job Title] at [Company]
+═══════════════════════════════════════════
 
-**2. [Question]**
-[Same format...]
+📋 YOUR "TELL ME ABOUT YOURSELF" (60 seconds)
+"[Write a complete, ready-to-use script tailored to this role using the applicant's actual background. Start with current role, highlight relevant experience, end with why this opportunity.]"
 
-[Continue for all 5 questions]
+───────────────────────────────────────────
+5 QUESTIONS THEY'LL LIKELY ASK
+───────────────────────────────────────────
 
-### 3 Smart Questions to Ask Them
-1. [Question that shows research] — *Why this works:* [explanation]
-2. [Question about the role] — *Why this works:* [explanation]
-3. [Question about growth] — *Why this works:* [explanation]
+1️⃣ "[Question based on job description]"
+   WHY THEY ASK: [1 sentence]
+   YOUR ANSWER: "[Complete answer using applicant's experience]"
 
-### Your Key Talking Points
-These 3 themes should come up in EVERY answer:
-1. **[Theme 1]:** [How to weave it in]
-2. **[Theme 2]:** [How to weave it in]
-3. **[Theme 3]:** [How to weave it in]
+2️⃣ "[Question]"
+   WHY THEY ASK: [1 sentence]
+   YOUR ANSWER: "[Complete answer]"
 
-### Your "Tell Me About Yourself" (60 seconds)
-"[Complete, ready-to-use script tailored to this role and candidate's background]"
----
+[Continue for questions 3, 4, 5]
 
-Be SPECIFIC to THIS job description and THIS candidate's actual experience.
+───────────────────────────────────────────
+3 SMART QUESTIONS FOR YOU TO ASK
+───────────────────────────────────────────
+1. "[Question showing you researched the company]"
+2. "[Question about the role or team]"
+3. "[Question about growth or success in the role]"
 
-Output the complete interview prep guide now.`,
+───────────────────────────────────────────
+YOUR 3 KEY THEMES TO WEAVE IN
+───────────────────────────────────────────
+✓ [Theme 1 from their background that matches job needs]
+✓ [Theme 2]
+✓ [Theme 3]
+
+RULES:
+- Be SPECIFIC to THIS job and THIS applicant's actual experience
+- Sample answers should be complete and ready to use
+- Questions should reflect what this specific role/company would ask`,
             userInput: context
           })
         }),
@@ -253,33 +280,33 @@ Output the complete interview prep guide now.`,
           body: JSON.stringify({
             activityId: 'respond',
             mode: 'single',
-            systemPrompt: `You are VERA. Write a COMPLETE, READY-TO-SEND THANK YOU EMAIL for this candidate to send within 24 hours after an interview.
+            systemPrompt: `You are VERA. Write a COMPLETE, READY-TO-SEND THANK YOU EMAIL for this job applicant to send within 24 hours after their interview.
 
-FORMAT (use this exact structure):
----
-**Subject:** Thank You — [Job Title] Interview
+CRITICAL: Output ONLY the email itself. No explanations.
 
-Hi [Interviewer Name/Hiring Team],
+REQUIRED FORMAT:
 
-[Opening: Thank them for their time and reference something SPECIFIC discussed in the interview — leave a placeholder like "[SPECIFIC TOPIC FROM YOUR INTERVIEW]" for them to fill in]
+Subject: Thank You — [Job Title] Interview
 
-[Middle: Reiterate your enthusiasm for the role and briefly reinforce why you're a great fit, connecting to something discussed]
+Dear [Interviewer's Name / Hiring Team],
 
-[Close: Express appreciation and confidence about moving forward]
+[OPENING - 1-2 sentences: Thank them for their time today. Reference something specific discussed — include a placeholder like "[mention specific topic you discussed]" for them to personalize.]
+
+[MIDDLE - 2 sentences: Reiterate your enthusiasm for THIS specific role. Briefly reinforce one key point about why you're a great fit.]
+
+[CLOSE - 1 sentence: Express appreciation and confidence about next steps.]
 
 Best regards,
-[Candidate Name]
-[Phone] | [Email]
----
 
-Rules:
-- Include placeholder [SPECIFIC TOPIC FROM YOUR INTERVIEW] for them to personalize
-- 4-5 sentences maximum
-- Enthusiastic but not desperate
-- Reference the specific role and company
-- Ready to copy, personalize the placeholder, and send
+[Applicant's Full Name]
+[Phone Number]
+[Email Address]
 
-Output the complete thank you email now.`,
+RULES:
+- Include [placeholder] where applicant needs to add interview-specific details
+- 4-5 sentences maximum in the body
+- Grateful but confident — not desperate
+- Ready to personalize and send immediately after interview`,
             userInput: context
           })
         })
@@ -304,7 +331,7 @@ Output the complete thank you email now.`,
 
       setAppKitResumeOutput(getContent(resumeData, 'Resume generation failed. Please try again.'));
       setAppKitCoverLetterOutput(getContent(coverData, 'Cover letter generation failed. Please try again.'));
-      setAppKitFollowUpOutput(getContent(followUpData, 'Follow-up email generation failed. Please try again.'));
+      setAppKitFollowUpOutput(getContent(followUpData, 'Application email generation failed. Please try again.'));
       setAppKitInterviewPrepOutput(getContent(interviewData, 'Interview prep generation failed. Please try again.'));
       setAppKitThankYouOutput(getContent(thankYouData, 'Thank you note generation failed. Please try again.'));
       setAppKitStage('results');
@@ -339,7 +366,9 @@ Output the complete thank you email now.`,
               Application Kit
             </div>
             <div style={{ fontSize: 14, color: colors.textMuted }}>
-              Paste the job. Paste your resume. Get everything you need to land it.
+              {appKitStage === 'input' 
+                ? 'Paste the job. Paste your resume. Get everything you need to land it.'
+                : 'Your complete job application toolkit is ready.'}
             </div>
           </div>
 
@@ -465,22 +494,12 @@ Output the complete thank you email now.`,
 
           {appKitStage === 'results' && (
             <>
-              {/* Results Header */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div style={{ fontSize: 24, fontWeight: 600, color: colors.text }}>
-                  Application Kit
-                </div>
-                <div style={{ fontSize: 14, color: colors.textMuted }}>
-                  Your complete job application toolkit is ready.
-                </div>
-              </div>
-
               {/* TABS */}
               <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
                 {[
                   { id: 'resume', label: 'Resume' },
                   { id: 'cover', label: 'Cover Letter' },
-                  { id: 'followup', label: 'Follow-Up Email' },
+                  { id: 'followup', label: 'Application Email' },
                   { id: 'interview', label: 'Interview Prep' },
                   { id: 'thankyou', label: 'Thank You Note' }
                 ].map((tab) => (
@@ -509,7 +528,7 @@ Output the complete thank you email now.`,
                   <h2 style={{ fontSize: 18, fontWeight: 500, color: colors.text, margin: 0 }}>
                     {appKitActiveTab === 'resume' && 'Tailored Resume'}
                     {appKitActiveTab === 'cover' && 'Cover Letter'}
-                    {appKitActiveTab === 'followup' && 'Follow-Up Email'}
+                    {appKitActiveTab === 'followup' && 'Application Email'}
                     {appKitActiveTab === 'interview' && 'Interview Prep'}
                     {appKitActiveTab === 'thankyou' && 'Thank You Note'}
                   </h2>

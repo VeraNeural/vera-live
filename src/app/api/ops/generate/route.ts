@@ -639,7 +639,9 @@ export async function POST(request: NextRequest) {
     const toneBlock = systemPrompt ? extractToneBlock(systemPrompt) : '';
     let assembledSystemPrompt: string;
     if (resolvedActivityId === 'respond') {
-      assembledSystemPrompt = RESPOND_PROMPT;
+      // Use passed systemPrompt if provided (for Application Kit and other tools that pass custom prompts)
+      // Fall back to generic RESPOND_PROMPT only if no custom prompt is given
+      assembledSystemPrompt = systemPrompt && systemPrompt.trim() ? systemPrompt : RESPOND_PROMPT;
     } else if (resolvedActivityId === 'worklife-analysis' || resolvedActivityId === 'worklife-action' || resolvedActivityId === 'worklife-clarify' || resolvedActivityId === 'worklife-sorted' || resolvedActivityId === 'money-analysis' || resolvedActivityId === 'money-action' || resolvedActivityId === 'thinking-detect' || resolvedActivityId === 'thinking-analysis' || resolvedActivityId === 'thinking-action') {
       // Use the passed systemPrompt directly for Work & Life, Money, and Thinking unified flows
       assembledSystemPrompt = systemPrompt;

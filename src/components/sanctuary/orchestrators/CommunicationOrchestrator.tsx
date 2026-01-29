@@ -143,7 +143,7 @@ Write ONLY the response they can copy and send.`;
           mode: generationMode,
           provider: selectedProvider,
           taskType: 'respond',
-          activityId: 'communication-orchestrator',
+          activityId: 'respond',
         }),
       });
       
