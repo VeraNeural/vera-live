@@ -1156,8 +1156,8 @@ export default function OpsRoom({ onBack, initialView, initialCategory, initialA
   };
 
   const handleBack = () => {
-    // Came from sidebar - always go back to sanctuary
-    if (initialActivity) {
+    // Came from quick prompt or sidebar deep link - always go back to sanctuary
+    if (initialActivity || initialView) {
       onBack();
       return;
     }
