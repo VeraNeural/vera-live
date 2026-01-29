@@ -296,18 +296,20 @@ export default function TrustTransparencySidebar({
             marginBottom: open ? '16px' : '0',
             gap: '8px',
           }}>
-            <div 
-              style={{
-                fontFamily: "'Cormorant Garamond', Georgia, serif",
-                fontSize: open ? 24 : 18,
-                fontWeight: 700,
-                color: isDark ? '#ffffff' : '#1a1a1a',
-                letterSpacing: '0.02em',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-              }}>
-              {open ? 'VERA' : 'V'}
-            </div>
+            {open && (
+              <div 
+                style={{
+                  fontFamily: "'Cormorant Garamond', Georgia, serif",
+                  fontSize: 24,
+                  fontWeight: 700,
+                  color: isDark ? '#ffffff' : '#1a1a1a',
+                  letterSpacing: '0.02em',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                }}>
+                VERA
+              </div>
+            )}
             <button
               onClick={() => onOpenChange(!open)}
               aria-label={open ? 'Collapse sidebar' : 'Expand sidebar'}
